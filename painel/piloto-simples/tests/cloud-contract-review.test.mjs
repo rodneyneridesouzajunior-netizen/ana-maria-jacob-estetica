@@ -8,6 +8,7 @@ import {hash,WorkspaceError} from '../../../supabase/functions/app-workspace/rul
 import {testPNG} from '../../../supabase/functions/app-workspace/test-images.mjs';
 import {saveProcedure,saveProduct,receiveLot,completeVisit} from '../operations-domain.mjs';
 import {savePatient} from '../patients-domain.mjs';
+import {receivePayment,reversePayment,createInstallments,saveExpense,payExpense,reverseExpensePayment,cancelExpense,financeReport} from '../finance-domain.mjs';
 
 // Real browser-independent session bridge, cloud store, Edge handler and domain rules.
 // Repository IO is a fixture; SQL atomicity is covered separately by migration.test.mjs.
@@ -86,4 +87,36 @@ test('review contract: the existing map undo action works without permitting arb
  assert.equal(undone.revision,4);assert.equal(undone.visits[0].maps['review-photo'].version,2);assert.deepEqual(undone.visits[0].maps['review-photo'].points,[]);assert.equal(undone.auditLog.length,4);
  await assert.rejects(h.store.commit(4,s=>{s.visits[0].maps['review-photo']={version:3,points:[],history:[[],[]]};}),{code:'map_version_conflict'});
  assert.equal(h.row().revision,4);
+});
+
+test('review contract: partial receipts and reversed expenses retain cents and event dates through cloud replay',async t=>{
+ const h=harness(t);await h.store.load();await h.store.commit(0,addInitial);
+ let state=await h.store.commit(1,s=>completeVisit(s,{...op('review-finance-completion'),visitId:'review-visit',procedureId:'review-proc',consumptions:[]}));
+ const billId=state.bills[0].id;
+ state=await h.store.commit(state.revision,s=>createInstallments(s,{billId,count:3,firstDueDate:'2026-10-31'}));
+ assert.deepEqual(state.installments.map(x=>x.amount),[3334,3334,3333]);
+ assert.deepEqual(state.installments.map(x=>x.dueDate),['2026-10-31','2026-11-30','2026-12-31']);
+ const installmentId=state.installments[0].id;
+ state=await h.store.commit(state.revision,s=>{
+  receivePayment(s,{id:'review-receipt',operationId:'review-receipt-op',billId,installmentId,amount:1333,date:'2026-10-15',method:'Pix'});
+  saveExpense(s,{id:'review-expense',description:'Despesa fictícia de contrato',amount:3750,dueDate:'2026-10-15',category:'outro'},{operationId:'review-expense-op',date:day});
+ });
+ h.drop('commit');
+ await assert.rejects(h.store.commit(state.revision,s=>payExpense(s,{id:'review-expense-payment',operationId:'review-expense-payment-op',expenseId:'review-expense',amount:3750,date:'2026-10-15',method:'Pix'})),e=>e.uncertain);
+ state=await h.store.resolvePending();assert.equal(state.expensePayments.length,1);assert.equal(state.financeHistory.filter(x=>x.action==='pagamento_despesa').length,1);
+ const before=financeReport(state,'2026-10');assert.equal(before.received,1333);assert.equal(before.paid,3750);assert.equal(before.cash,-2417);assert.equal(before.outstanding,8668);
+ state=await h.store.commit(state.revision,s=>{
+  reversePayment(s,{paymentId:'review-receipt',reason:'Teste de devolução no mês seguinte',date:'2026-11-02'});
+  reverseExpensePayment(s,{paymentId:'review-expense-payment',reason:'Teste de estorno no mês seguinte',date:'2026-11-02',operationId:'review-expense-reversal-op'});
+ });
+ const october=financeReport(state,'2026-10'),november=financeReport(state,'2026-11');
+ assert.equal(october.received,1333);assert.equal(october.paid,3750);assert.equal(october.cash,-2417);
+ assert.equal(november.received,-1333);assert.equal(november.paid,-3750);assert.equal(november.cash,2417);
+ assert.equal(october.outstanding,10001);assert.equal(october.expenseOutstanding,3750);
+ state=await h.store.commit(state.revision,s=>saveExpense(s,{...s.expenses[0],amount:4001},{operationId:'review-expense-correction-op',expectedVersion:1,date:'2026-11-02',reason:'Correção fictícia após devolução'}));
+ assert.equal(state.expenses[0].version,2);assert.equal(state.financeHistory.find(x=>x.action==='correcao_despesa').previous.amount,3750);
+ state=await h.store.commit(state.revision,s=>cancelExpense(s,{expenseId:'review-expense',operationId:'review-expense-cancel-op',expectedVersion:2,date:'2026-11-02',reason:'Cancelamento fictício após correção'}));
+ const reloaded=await h.store.load();assert.equal(reloaded.revision,state.revision);assert.equal(reloaded.expenses[0].version,3);
+ assert.equal(reloaded.payments.length,1);assert.equal(reloaded.paymentReversals.length,1);assert.equal(reloaded.expensePayments.length,1);assert.equal(reloaded.expensePaymentReversals.length,1);
+ assert.equal(financeReport(reloaded,'2026-11').cash,2417);assert.equal(financeReport(reloaded,'2026-11').expenseOutstanding,0);
 });

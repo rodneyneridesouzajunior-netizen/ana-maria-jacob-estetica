@@ -10,8 +10,8 @@
     },
     {
       "name": "clinic-domain.mjs",
-      "sourceSha256": "2ffc016dc72ac9d17d1b0120642e73a850fcf80cc3a63b1b990babc6d80a8901",
-      "generatedSha256": "052c59a24a1e05afe99a782a9bd6e7100c6f0832fb721d721348d4771675175c",
+      "sourceSha256": "a9d1059e2f62a612dadb9687033092ff1218e59f704ef13c3bb4d31f4f3aa3d4",
+      "generatedSha256": "983af5da75ba9eaa477d83fe648d63e65d811feef175920a3102bff2fcfe8620",
       "mode": "exact-copy"
     },
     {
@@ -58,7 +58,7 @@
     },
     {
       "name": "comparison-library.mjs",
-      "sourceSha256": "9329b191d725a464e2a80d180bb56e47398b34556e7c8529b40eb56fa2a5d20e",
+      "sourceSha256": "3d4d3a1d329ce4cedced1a429e33b2fbfba8486e8ee60fb1c00e992fea13fe44",
       "generatedSha256": "2632c038344117742d01e72dcb34be121ff962223128fc79252ef4e488a0d67a",
       "mode": "pure-prefix"
     },

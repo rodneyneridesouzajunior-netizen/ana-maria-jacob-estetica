@@ -175,11 +175,14 @@ export function saveMonthlyGoal(state,{month,basis,target}){
   if(!Number.isSafeInteger(target)||target<=0||target>100000000)throw Error('Informe uma meta positiva em centavos, dentro do limite local.');
   ensureClinic(state);const goal={month,basis,target};state.clinic.goals=state.clinic.goals.filter(g=>g.month!==month);state.clinic.goals.push(goal);return goal;
 }
-export function getMonthlyGoal(state,month=dateKey().slice(0,7)){
+export function getMonthlyGoal(state,month=dateKey().slice(0,7),{today}={}){
+  if(today!==undefined&&!validDate(today))throw Error('Data de referência da meta inválida.');
   const goal=clinicConfig(state).goals.find(g=>g.month===month);
   if(!goal)return{month,configured:false,basis:'received',target:0,actual:0,remaining:0,percent:0};
   // Use the same financial contract as the Finance page, without normalizing the caller in a read.
-  const report=financeReport({...state,bills:state.bills||[],payments:state.payments||[]},month);
+  // Explicit Home cutoff; historical months and the existing two-argument API remain complete.
+  const period=today&&month===today.slice(0,7)?{period:'month',today}:month;
+  const report=financeReport({...state,bills:state.bills||[],payments:state.payments||[]},period);
   const gross=goal.basis==='billed'?report.billed:report.grossReceived;
   const reversals=goal.basis==='received'?report.reversed:0;
   const actual=goal.basis==='billed'?report.billed:report.received;

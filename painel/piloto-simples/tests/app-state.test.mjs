@@ -111,3 +111,28 @@ test('Hoje preserva o dia atual ao recusar descarte de uma edição',async()=>{
  await h.listeners.get('click')[0](actionEvent('today'));
  assert.equal(h.run('agendaDate'),'2026-10-16');assert.equal(h.run('dirty'),true);
 });
+
+test('rota 3D antiga abre o mapa da mesma consulta e preserva salvamento ao alternar abas',async()=>{
+ const h=harness(),before=structuredClone(h.workspace());
+ h.run("history.replaceState=(_a,_b,hash)=>{location.hash=hash;};render=async()=>{};drawMap=()=>{};location.hash='#paciente/demo-marina/demo-consulta/3d';");
+ await h.run('setHash()');
+ assert.equal(h.run('location.hash'),'#paciente/demo-marina/demo-consulta/mapa');assert.equal(h.run('acceptedHash'),h.run('location.hash'));
+ assert.equal(h.run('patientId'),'demo-marina');assert.equal(h.run('visitId'),'demo-consulta');assert.equal(h.run('tab'),'mapa');
+ assert.deepEqual(h.workspace(),before);assert.match(h.run('patientPage()'),/class="tab active" href="#paciente\/demo-marina\/demo-consulta\/mapa"/);assert.doesNotMatch(h.run('patientPage()'),/id="facial-panel"/);
+ h.run("selectedId='a';");preparePoint(h);const save=h.listeners.get('submit')[0](submitEvent('point-form'));h.flush();await save;
+ const saved=structuredClone(h.workspace());assert.equal(saved.visits[0].maps['demo-foto'].points[0].region,'Edição de a');
+ for(const destination of ['registro','fotos','documentos','mapa']){
+  h.run(`location.hash='#paciente/demo-marina/demo-consulta/${destination}';`);await h.run('setHash()');assert.equal(h.run('tab'),destination);assert.deepEqual(structuredClone(h.workspace()),saved);
+ }
+ assert.equal(h.run('map().points[0].region'),'Edição de a');assert.equal(h.run('dirty'),false);assert.equal(h.run('busy'),false);
+});
+
+test('redirecionamento 3D não descarta rascunho recusado nem atravessa um salvamento em andamento',async()=>{
+ const h=harness();h.run("history.replaceState=(_a,_b,hash)=>{location.hash=hash;};render=async()=>{};drawMap=()=>{};");preparePoint(h);h.confirm(false);
+ h.run("location.hash='#paciente/demo-marina/demo-consulta/3d';");await h.run('setHash()');
+ assert.equal(h.run('location.hash'),'#paciente/demo-marina/demo-consulta/mapa');assert.equal(h.run('dirty'),true);assert.equal(h.el('point-region').value,'Edição de a');assert.equal(h.run('selectedId'),'a');
+ const save=h.listeners.get('submit')[0](submitEvent('point-form'));
+ h.run("location.hash='#paciente/demo-marina/demo-consulta/3d';");await h.run('setHash()');
+ assert.equal(h.run('location.hash'),'#paciente/demo-marina/demo-consulta/mapa');assert.equal(h.run('busy'),true);assert.equal(h.run('tab'),'mapa');
+ h.flush();await save;assert.equal(h.points()[0].region,'Edição de a');assert.equal(h.run('busy'),false);assert.equal(h.run('dirty'),false);
+});

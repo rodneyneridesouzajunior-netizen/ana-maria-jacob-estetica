@@ -1,1 +1,1 @@
-location.replace('../painel/piloto-simples/' + (location.hash || '#hoje'));
+location.replace('../painel/piloto-simples/connected.html' + (location.hash || '#hoje'));

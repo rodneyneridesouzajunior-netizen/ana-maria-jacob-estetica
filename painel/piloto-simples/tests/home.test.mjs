@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {homeData,getHomeData,renderHome} from '../home.mjs';
 import {financeReport} from '../finance-domain.mjs';
 import {saveMonthlyGoal,getMonthlyGoal,dismissClinicAlert} from '../clinic-domain.mjs';
+import {renderGoalCard} from '../clinic-ui.mjs';
 
 const now=new Date('2026-10-15T12:00:00');
 function fixture(){return{patients:[{id:'p1',name:'Paciente de teste'}],appointments:[
@@ -89,4 +90,27 @@ test('gráfico oferece os seis valores acessíveis e nomes de serviços não inj
   assert.equal(desc?.split('; ').length,6);assert.match(desc,/set: R\$\s50,00/);assert.match(desc,/out: R\$\s100,00/);
   assert.match(html,/&lt;script&gt;unsafe&lt;\/script&gt;/);assert.doesNotMatch(html,/<script>unsafe/);
   assert.match(html,/Inclui rascunhos de consulta. Não indica procedimentos concluídos/);
+});
+
+test('mês atual da Home e gráfico terminam hoje, sem cortar os últimos dias dos meses anteriores',()=>{
+  const state=fixture();state.bills.push({id:'future',date:'2026-10-20',total:10001,cost:0},{id:'last-month-end',date:'2026-09-30',total:7001,cost:0});
+  state.payments.push({id:'future-payment',billId:'future',date:'2026-10-20',amount:3334},{id:'last-month-payment',billId:'last-month-end',date:'2026-09-30',amount:1501});
+  state.paymentReversals=[{id:'future-reversal',paymentId:'future-payment',date:'2026-10-21',amount:500}];
+  const snapshot=structuredClone(state),home=homeData(state,now),financial=financeReport({...state},{period:'month',today:'2026-10-15'});
+  assert.equal(home.billedMonth,10000);assert.equal(home.receivedMonth,3000);assert.equal(home.reversedMonth,0);
+  assert.equal(home.billedMonth,financial.billed);assert.equal(home.receivedMonth,financial.received);
+  assert.equal(home.series.at(-1).total,10000);assert.equal(home.series.at(-1).received,3000);
+  assert.equal(home.series.at(-2).total,12001);assert.equal(home.series.at(-2).received,2501);
+  assert.deepEqual(state,snapshot);assert.match(renderHome(state,now),/até hoje/i);
+});
+
+test('meta da Home respeita o mesmo dia dos indicadores e conserva o contrato antigo para outros consumidores',()=>{
+  const state=fixture();state.payments.push({id:'future-payment',billId:'b2',date:'2026-10-20',amount:3000});
+  saveMonthlyGoal(state,{month:'2026-10',basis:'received',target:6000});saveMonthlyGoal(state,{month:'2026-09',basis:'received',target:2000});
+  const snapshot=structuredClone(state),cutoff=getMonthlyGoal(state,'2026-10',{today:'2026-10-15'});
+  assert.equal(cutoff.actual,3000);assert.equal(cutoff.percent,50);assert.equal(getMonthlyGoal(state,'2026-10').actual,6000);
+  assert.equal(getMonthlyGoal(state,'2026-09',{today:'2026-10-15'}).actual,1000);
+  assert.match(renderGoalCard(state,{month:'2026-10',today:'2026-10-15'}),/50%/);assert.match(renderHome(state,now),/50%/);
+  assert.doesNotMatch(renderHome(state,now),/>100%/);assert.deepEqual(state,snapshot);
+  assert.throws(()=>getMonthlyGoal(state,'2026-10',{today:'2026-02-30'}),/Data/);
 });

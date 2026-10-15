@@ -1,0 +1,113 @@
+/* AMJ app foundation. Loaded last in both local and connected entry points.
+   Home owns its component styles in home.css. No assets/fonts are fetched here. */
+:root{
+  --ui-font:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;
+  --ui-bg:#faf8f6;--ui-warm:#faf8f6;--ui-surface:#fcfbfa;
+  --ui-ink:#1a1a1a;--ui-muted:#625f5b;--ui-line:#e9e3dc;
+  --ui-blush:#e5a9a9;--ui-blush-hover:#d4a5a5;--ui-blush-edge:#ae7777;
+  --ui-champagne:#d8c9b2;--ui-champagne-ink:#8b765a;
+  --ui-control-edge:#918b83;--ui-focus:#704b4b;
+  --ui-radius:20px;--ui-control-radius:16px;--ui-shadow:0 4px 30px rgba(0,0,0,.02);
+  --ui-space:24px;--ui-motion:160ms;
+  /* Compatibility tokens keep dark ink for legacy clinical indicators. */
+  --bg:var(--ui-bg);--white:var(--ui-surface);--ink:var(--ui-ink);--muted:var(--ui-muted);
+  --line:var(--ui-line);--rose:#7b4d55;--rose-deep:#453638;--rose-soft:#f3eeeb;
+  --gold:#78654c;--gold-soft:#f7f3ec;--radius:var(--ui-radius);--shadow:var(--ui-shadow);
+  font-family:var(--ui-font);font-size:14px;font-weight:500;line-height:1.6;color:var(--ui-ink);
+}
+body{background:var(--ui-bg);font-family:var(--ui-font)}
+.app{grid-template-columns:232px minmax(0,1fr)}
+.app .workspace{background:var(--ui-bg);min-width:0}
+.app .sidebar{padding:24px 14px 20px;background:var(--ui-warm);border-right:1px solid var(--ui-line)}
+.app .brand-window{margin-bottom:14px}
+.app .clinic-identity{padding:0 14px 24px}
+.app .clinic-identity strong{font-size:15px;font-weight:500;letter-spacing:-.015em;color:var(--ui-ink)}
+.app .rail-caption{font-size:11px;letter-spacing:.1em;color:var(--ui-muted)}
+.app .local-status{font-size:12px;line-height:1.6;color:var(--ui-muted);margin-top:10px;gap:7px}
+.app .local-status i{background:var(--ui-champagne-ink);width:5px;height:5px}
+.app .sidebar nav{display:grid;gap:4px}
+.app .nav-item{font-size:14px;font-weight:500;line-height:1.5;min-height:48px;margin:0;padding:12px 16px;gap:12px;color:var(--ui-muted);border:1px solid transparent;border-radius:16px;box-shadow:none;transform:none}
+.app .nav-item svg.icon{width:19px;height:19px;stroke-width:1.5}
+.app .nav-item.active{color:var(--ui-ink);background:var(--ui-blush);border-color:var(--ui-champagne);font-weight:600;box-shadow:none}
+.app .nav-item.section-start{margin-top:20px}.app .nav-item.section-start::before{top:-12px;border-color:var(--ui-line)}
+.app .rail-bottom{padding:20px 10px 0;border-color:var(--ui-line);gap:12px}
+.app .rail-bottom strong{font-size:13px;font-weight:500;color:var(--ui-ink)}.app .rail-bottom small{font-size:12px;color:var(--ui-muted)}
+.app .rail-bottom .avatar{background:var(--ui-surface);color:var(--ui-ink);border:1px solid var(--ui-champagne);font-weight:500}
+.app .topbar{min-height:76px;height:auto;padding:18px 36px;background:var(--ui-bg);border-bottom:1px solid var(--ui-line);box-shadow:none;gap:18px}
+.app .breadcrumbs{font-size:13px;color:var(--ui-muted);font-weight:500;line-height:1.6;min-width:0;overflow-wrap:anywhere}
+.app .breadcrumbs strong{font-weight:500;color:var(--ui-ink)}.app .breadcrumbs span:first-child{color:var(--ui-champagne-ink);padding:0 10px}
+.app .top-actions{gap:20px;flex-shrink:0}.app .date-label{font-size:12px;color:var(--ui-muted)}
+.app .area-switch{background:var(--ui-surface);border:1px solid var(--ui-line);border-radius:16px;padding:0 12px;min-height:44px;gap:8px;margin:0}
+.app .area-switch>span{font-size:12px;color:var(--ui-muted)}
+.app .area-switch select{font-size:13px;color:var(--ui-ink);width:134px;max-width:134px;min-height:42px;background:transparent;padding:8px 4px;border:0}
+.app .demo-banner{background:var(--ui-warm);color:var(--ui-muted);border-bottom:1px solid var(--ui-line);font-size:12px;line-height:1.7;padding:9px 36px;letter-spacing:0}
+.app .status-dot{background:var(--ui-champagne-ink);flex:none}
+.app .connection-bar{background:var(--ui-warm);color:var(--ui-ink);border-color:var(--ui-line);padding:12px 36px;font-size:13px;gap:12px}
+.app .connection-bar [data-cloud-status]{font-weight:500}.app .connection-bar small{font-size:12px;color:var(--ui-muted)}
+.app .connection-bar [data-kind=error],.app .connection-bar [data-kind=pending]{color:#963f36;font-weight:600}
+.app main{max-width:1536px;padding:32px 36px 40px;margin-inline:auto}
+.app :is(h1,h2,h3){font-family:var(--ui-font);color:var(--ui-ink);letter-spacing:-.03em}
+.app :is(.page-heading,.patient-head) h1{font-size:32px;font-weight:350;line-height:1.25}
+.app .subtitle{font-size:14px;line-height:1.7;color:var(--ui-muted);font-weight:500}
+.app .card,.app .map-card{border:1px solid var(--ui-line);border-radius:20px;box-shadow:var(--ui-shadow)}
+.app .card:focus-within,.app .map-card:focus-within{box-shadow:var(--ui-shadow)}
+.app .card-header{background:transparent;border-color:var(--ui-line)}
+.app :is(.primary,.secondary,.danger){border-radius:16px;min-height:44px;font-family:var(--ui-font);font-size:14px;font-weight:600;line-height:1.5;padding:11px 18px;box-shadow:none;transform:none;transition:background-color var(--ui-motion) ease,border-color var(--ui-motion) ease}
+.app .primary{color:var(--ui-ink);background:var(--ui-blush);border:1px solid var(--ui-blush-edge)}
+.app .secondary{color:var(--ui-ink);background:var(--ui-surface);border:1px solid var(--ui-control-edge)}
+.app .danger{background:var(--ui-surface);color:#963f36;border:1px solid #b87b72}
+.app .subtle{color:var(--ui-ink);font-size:14px;font-weight:600;min-height:44px}
+.app .icon-button{border:1px solid var(--ui-control-edge);border-radius:16px;background:var(--ui-surface);color:var(--ui-ink);box-shadow:none;transform:none}
+.app :is(.primary,.secondary,.danger,.icon-button):disabled{background:#eeeae5;color:#6a655f;border-color:#c9c0b6;opacity:1;box-shadow:none;transform:none;cursor:not-allowed}
+.app input,.app select,.app textarea{font-family:var(--ui-font);font-size:16px;font-weight:500;line-height:1.5;color:var(--ui-ink);border-color:var(--ui-control-edge)}
+.app :is(input,textarea)::placeholder{color:#746d66}.app label{color:var(--ui-muted)}
+.app .page-footer{max-width:1536px;border-top:1px solid var(--ui-line);font-size:12px;line-height:1.7;color:var(--ui-muted);padding:20px 36px}
+:is(button,a,input,select,textarea,summary,[tabindex]):focus-visible{outline:2px solid var(--ui-focus);outline-offset:4px}
+.connected-gate{background:var(--ui-bg);font-family:var(--ui-font)}
+.connected-card{border:1px solid var(--ui-line);border-radius:20px;box-shadow:var(--ui-shadow);padding:32px;background:var(--ui-surface)}
+.connected-card h1{color:var(--ui-ink);font-size:30px;font-weight:350;letter-spacing:-.03em;line-height:1.3}
+.connected-card :is(p,label){color:var(--ui-muted);line-height:1.7}.connected-card a{color:var(--ui-ink);text-decoration:underline;text-underline-offset:4px}
+.connected-card .primary{color:var(--ui-ink);background:var(--ui-blush);border:1px solid var(--ui-blush-edge);border-radius:16px;min-height:46px;box-shadow:none;transform:none}
+.connected-card input{font-size:16px;min-height:46px;border-color:var(--ui-control-edge);border-radius:12px}
+/* Dialogs appended outside .app use the same controls without changing layout. */
+dialog{font-family:var(--ui-font);background:var(--ui-surface);color:var(--ui-ink);border-color:var(--ui-line);border-radius:20px}
+dialog .dialog-top h2{font-family:var(--ui-font);font-size:26px;font-weight:400;letter-spacing:-.03em}
+dialog :is(.primary,.secondary){border-radius:16px;min-height:44px;font-size:14px;font-weight:600;box-shadow:none;transform:none}
+dialog .primary{background:var(--ui-blush);border:1px solid var(--ui-blush-edge);color:var(--ui-ink)}
+dialog .secondary{background:var(--ui-surface);border-color:var(--ui-control-edge);color:var(--ui-ink)}
+dialog :is(input,textarea,select){font-family:var(--ui-font);font-size:16px;color:var(--ui-ink);border-color:var(--ui-control-edge)}
+dialog .primary:disabled{background:#eeeae5;color:#6a655f;border-color:#c9c0b6;opacity:1;box-shadow:none;transform:none}
+@media(hover:hover){
+  .app .nav-item:hover{color:var(--ui-ink);background:#f0ece7;box-shadow:none}
+  .app .nav-item.active:hover{background:var(--ui-blush-hover);box-shadow:none}
+  .app .primary:not(:disabled):hover,.connected-card .primary:not(:disabled):hover,dialog .primary:not(:disabled):hover{background:var(--ui-blush-hover);border-color:var(--ui-blush-edge);color:var(--ui-ink);transform:none;box-shadow:none}
+  .app :is(.secondary,.icon-button):not(:disabled):hover{background:var(--ui-warm);transform:none;box-shadow:none}
+  .app .subtle:hover{text-decoration:underline;text-underline-offset:4px}
+}
+.app :is(.primary,.secondary,.icon-button):not(:disabled):active{background:#e7d9d0;transform:none;box-shadow:none}
+@media(max-width:1150px){
+  .app{grid-template-columns:210px minmax(0,1fr)}.app .sidebar{padding:22px 10px 16px}
+  .app .topbar{padding:16px 26px}.app main{padding:28px 26px 36px}
+  .app .demo-banner,.app .connection-bar{padding-inline:26px}.app .page-footer{padding-inline:26px}
+}
+@media(max-width:850px){
+  .app{display:block}.app .workspace{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  .app .sidebar{height:calc(80px + env(safe-area-inset-bottom,0px));padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));border-right:0;border-top:1px solid var(--ui-line);background:var(--ui-warm);overflow:hidden}
+  .app .sidebar nav{display:flex;gap:6px;height:100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;justify-content:flex-start}
+  .app .nav-item{display:flex;flex-direction:column;flex:0 0 88px;min-width:88px;min-height:58px;font-size:11px;line-height:1.4;gap:4px;padding:8px 6px;border-radius:16px;margin:0}
+  .app .nav-item.section-start{margin:0}.app .nav-item.section-start::before{display:none}
+  .app .nav-item.active,.app .nav-item.active:hover{box-shadow:none}
+  .app .topbar{min-height:66px;padding-block:12px}.app .clinic-identity,.app .rail-bottom,.app .sidebar .brand-window{display:none}
+  .toast{bottom:calc(94px + env(safe-area-inset-bottom,0px))}
+}
+@media(max-width:620px){
+  .app main{padding:24px 16px 32px}.app .topbar{padding-inline:16px;gap:12px}
+  .app .breadcrumbs{font-size:12px;max-width:calc(100% - 120px)}.app .breadcrumbs span:first-child{padding:0 5px}
+  .app .area-switch{padding:0 8px}.app .area-switch>span{display:none}.app .area-switch select{width:102px;max-width:102px;font-size:12px}
+  .app .top-actions{gap:0}.app .demo-banner,.app .connection-bar{padding-inline:16px}
+  .app .connection-bar{gap:8px}.app .connection-bar [data-cloud-status]{min-width:100%}
+  .app :is(.page-heading,.patient-head) h1{font-size:28px}.app .page-footer{padding:20px 16px}
+  .app .page-heading .primary{min-height:44px;font-size:14px;padding:11px 16px}
+}
+@media(prefers-reduced-motion:reduce){.app *,.connected-gate *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+@media print{.app,.app .workspace{background:#fff}.app main{max-width:none;padding:0}.app .card,.app .map-card{box-shadow:none}.app .connection-bar{display:none}}
