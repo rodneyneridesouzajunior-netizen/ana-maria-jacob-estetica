@@ -14,7 +14,7 @@ function harness(t,{fail=false,defer=false}={}){
  t.after(()=>{handles.forEach(h=>h.dispose());for(const [key,value]of Object.entries(previous)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}w.close();});
  const event=(el,type)=>el.dispatchEvent(new w.Event(type,{bubbles:true,cancelable:true}));
  const set=(dialog,name,value)=>{const field=dialog.querySelector(`[name="${name}"]`);assert.ok(field,name);field.value=value;event(field,'input');return field;};
- const options={getState:()=>state,mutate,notify:message=>notices.push(message),today:'2026-10-15'};
+ const options={getState:()=>state,mutate,postalClient:{lookup:async()=>{throw Error('Serviço de CEP indisponível no ensaio');}},notify:message=>notices.push(message),today:'2026-10-15'};
  return{w,event,set,options,handles,notices,get state(){return state;},get saves(){return saves;},unfail(){failSave=false;},resolve(){resolveSave();}};
 }
 

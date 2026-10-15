@@ -11,7 +11,7 @@ document.body.prepend(gate);shell.hidden=true;
 const escape=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let auth,bridge,store,started=false,busy=false;
 const message=text=>{const el=gate.querySelector('[data-login-status]');if(el)el.textContent=text;};
-const base=body=>`<div class="connected-card"><img src="assets/logo.png" alt="Ana Maria Jacob — Estética Avançada"><p class="eyebrow">ÁREA PRIVADA</p>${body}<p data-login-status role="status" aria-live="polite"></p><p class="small-label">Homologação da nova versão: use dados fictícios. Os exemplos do navegador não são importados.</p><a href="index.html">Abrir demonstração local</a> · <a href="https://anamariajacob.com.br/painel/">Painel atual da clínica</a></div>`;
+const base=body=>`<div class="connected-card"><img src="assets/logo.png" alt="Ana Maria Jacob — Estética Avançada"><p class="eyebrow">ÁREA PRIVADA</p>${body}<p data-login-status role="status" aria-live="polite"></p><p class="small-label">Versão em validação clínica. Utilize dados fictícios enquanto os fluxos são conferidos.</p><a href="https://anamariajacob.com.br/">Site da clínica</a> · <a href="https://anamariajacob.com.br/painel/">Documentos oficiais</a></div>`;
 function invalidate(){clearClinicalBridge();window.dispatchEvent(new Event('amj:connection-invalidated'));shell.hidden=true;gate.hidden=false;gate.innerHTML=base('<h1>Acesso encerrado</h1><p>Os dados privados foram retirados desta tela.</p><button class="primary" data-login-reload>Entrar novamente</button>');}
 async function ready(){
   if(started){location.reload();return;}

@@ -50,7 +50,7 @@ test('modo conectado preserva conteúdo e impede assinatura demo, inclusive em f
  assert.equal(mutations,0);assert.equal(w.document.querySelector('dialog'),null);assert.match(notifications.at(-1)[0],/não foi homologada/);
  host.querySelector('[data-doc="link"]').click();await tick();
  assert.equal(copied,'https://example.invalid/app/#documento/doc');assert.match(notifications.at(-1)[0],/conta autorizada/);
- assert.match(renderPatientsPage(state),/Homologação conectada/);assert.match(renderClinicPage(state),/Configuração no servidor/);
+ assert.match(renderPatientsPage(state),/Ambiente conectado em homologação/);assert.match(renderClinicPage(state),/Configuração no servidor/);
  assert.match(catalogPage(state,{section:'overview'}),/Homologação conectada/);
  printable('Teste',`<p>${userText}</p>`);assert.match(printed,/Ambiente conectado em homologação/);assert.ok(printed.includes(userText));
  const proposal={patientId:'demo-marina',title:'Teste',version:1,status:'rascunho',items:[{id:'item',procedureId:'procedure',name:'Item local',sessions:1,unitPrice:10000,unitCost:1000}],notes:userText,discountBps:0};

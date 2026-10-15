@@ -8,7 +8,7 @@ const viewerRoot=path.resolve(root,'../rosto3d/v2');
 const types={'.html':'text/html; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.js':'text/javascript; charset=utf-8','.json':'application/json; charset=utf-8','.css':'text/css; charset=utf-8','.jpg':'image/jpeg','.png':'image/png','.webp':'image/webp','.ttf':'font/ttf','.woff2':'font/woff2','.txt':'text/plain; charset=utf-8'};
 http.createServer(async(req,res)=>{
   res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Cache-Control','no-store');res.setHeader('Referrer-Policy','no-referrer');
-  res.setHeader('Content-Security-Policy',"default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'sha256-GqsWfEjHm73zbHa7lGbVXfv95jxypKuCtjd6kntjIRA='; font-src 'self'; connect-src 'self' https://rjxtxoqprnumouqakxbc.supabase.co; frame-ancestors 'self'; object-src 'none'; base-uri 'none'; form-action 'self'");
+  res.setHeader('Content-Security-Policy',"default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'sha256-GqsWfEjHm73zbHa7lGbVXfv95jxypKuCtjd6kntjIRA='; font-src 'self'; connect-src 'self' https://rjxtxoqprnumouqakxbc.supabase.co https://viacep.com.br; frame-ancestors 'self'; object-src 'none'; base-uri 'none'; form-action 'self'");
   if(!['GET','HEAD'].includes(req.method)){res.writeHead(405);return res.end();}
   try {
     const url=new URL(req.url,'http://127.0.0.1'),pathname=decodeURIComponent(url.pathname),viewer=pathname.startsWith('/painel/rosto3d/v2/'),base=viewer?viewerRoot:root,rel=(viewer?pathname.slice('/painel/rosto3d/v2/'.length):pathname.replace(/^\/+/,''))||'index.html';
