@@ -31,7 +31,7 @@ export function annotationCheck(point) {
   if(!point.region?.trim()||point.region.length>100) throw Error('Dê um nome à região.');
   if((point.product||'').length>120||(point.notes||'').length>2000||(point.lot||'').length>80) throw Error('Texto muito longo.');
   if(point.quantity!==null && (!Number.isFinite(point.quantity)||point.quantity<=0||point.quantity>100000)) throw Error('Quantidade inválida.');
-  if(!['mL','U','mg','sem quantidade'].includes(point.unit)) throw Error('Selecione a unidade.');
+  if(!['mL','U','mg','g','un','fios','sem quantidade'].includes(point.unit)) throw Error('Selecione a unidade.');
   if(point.quantity!==null&&point.unit==='sem quantidade') throw Error('Escolha a unidade da quantidade informada.');
   return point;
 }

@@ -1,0 +1,12 @@
+.finance-period-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:0 0 24px}
+.finance-periods{display:flex;flex-wrap:wrap;gap:4px;padding:5px;border:1px solid var(--line,#e9e1e5);border-radius:14px;background:#fff}
+.finance-periods button{min-height:44px;border:0;border-radius:10px;padding:10px 17px;background:transparent;color:var(--ink,#28232b);font:inherit;font-size:14px;cursor:pointer}
+.finance-periods button[aria-pressed=true]{background:var(--rose-soft,#fae9ee);color:var(--rose-deep,#703046);font-weight:700}
+.finance-periods button:hover{background:var(--rose-soft,#fae9ee)}
+.finance-periods button:focus-visible{outline:2px solid var(--rose,#9b405b);outline-offset:2px}
+.finance-page .metric small,.finance-page .card-header p{line-height:1.6}
+.finance-caption{padding:0 24px 18px;color:var(--muted,#746a72);font-size:13px;line-height:1.6}
+.finance-reversal{background:#fcf7f9}
+.finance-page td .toolbar{gap:4px}
+.finance-page td{overflow-wrap:anywhere}
+@media(max-width:600px){.finance-period-bar{gap:8px}.finance-periods{width:100%}.finance-periods button{flex:1;padding:10px 8px}.finance-page .card-header{align-items:flex-start;flex-wrap:wrap;gap:14px}}
