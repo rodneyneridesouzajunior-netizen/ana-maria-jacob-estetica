@@ -45,7 +45,7 @@ export function createSessionBridge(authController, { now = Date.now, onInvalida
         renewalTimer = null;
         if (destroyed || invalidated || before !== revision) return;
         void requireReady().catch(error => {
-          if (!destroyed && !invalidated && before === revision) invalidate(error?.code || 'session_changed');
+          if (!destroyed && !invalidated && before === revision && error?.code !== 'session_check_superseded') invalidate(error?.code || 'session_changed');
         });
       }, 0);
       renewalTimer.unref?.();
@@ -58,16 +58,24 @@ export function createSessionBridge(authController, { now = Date.now, onInvalida
     const sequence = ++readinessSequence;
     const next = await authController.getNextStep();
     if (before !== revision || destroyed || invalidated) throw new IntegrationError('session_changed', 'O acesso mudou durante a consulta.');
-    if (!next.session || next.step === 'login') throw new IntegrationError('login_required', 'Entre com sua conta para acessar a área privada.');
+    const rejectSuperseded = () => {
+      if (sequence < scheduledSequence) throw new IntegrationError('session_check_superseded', 'A sessão foi atualizada durante esta verificação. Tente novamente.');
+    };
+    if (!next.session || next.step === 'login') { rejectSuperseded(); throw new IntegrationError('login_required', 'Entre com sua conta para acessar a área privada.'); }
     if (next.step !== 'ready' || next.aal?.currentLevel !== 'aal2') {
+      rejectSuperseded();
       throw new IntegrationError('mfa_required', 'Confirme o código do autenticador antes de acessar dados clínicos.');
     }
     const { access_token: token, expires_at: expiresAt, user } = next.session;
     if (!token || !user?.id || !Number.isFinite(expiresAt) || expiresAt * 1000 <= now() + 5000) {
+      // A later call may already have validated the refreshed session. Reject
+      // this obsolete result without revoking that newer verified access.
+      rejectSuperseded();
       invalidate('session_expired');
       throw new IntegrationError('session_expired', 'A sessão expirou. Entre novamente antes de continuar.');
     }
     if (currentUser && currentUser !== user.id) {
+      rejectSuperseded();
       invalidate('identity_changed');
       throw new IntegrationError('session_changed', 'A conta mudou. Abra novamente a área privada.');
     }

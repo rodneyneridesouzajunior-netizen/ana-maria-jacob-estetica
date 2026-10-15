@@ -1,4 +1,5 @@
 import {emptyState,validateTransition,stable,hash,uuid,validId,fail,WorkspaceError,imageInfo} from './rules.mjs';
+import {CLINICAL_ACTIONS,createClinicalBridge} from './clinical-bridge.mjs';
 const ORIGINS=new Set(['https://anamariajacob.com.br','https://www.anamariajacob.com.br','http://127.0.0.1:8765','http://localhost:8765','http://127.0.0.1:8766','http://localhost:8766']);
 const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'};
 const revision=n=>Number.isSafeInteger(n)&&n>=0;
@@ -6,6 +7,7 @@ async function limited(req,max){if(Number(req.headers.get('content-length')||0)>
 function publicPhoto(p){if(!p)return null;const {original_path,preview_path,status,...safe}=p;return safe;}
 function workspace(row,state){return {schema:1,revision:row?.revision||0,state:row?.state||state,state_hash:row?.state_hash||null,updated_at:row?.updated_at||row?.created_at||null};}
 export function createWorkspaceHandler({authenticate,authorize,repository,now=()=>new Date().toISOString()}){
+ const clinical=createClinicalBridge({repository,authorize});
  return async function handle(req){const origin=req.headers.get('origin')||'',cors={'Access-Control-Allow-Origin':ORIGINS.has(origin)?origin:'https://anamariajacob.com.br','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS',Vary:'Origin','Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'};
   const response=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:cors});
   let ctx;try{
@@ -17,7 +19,8 @@ export function createWorkspaceHandler({authenticate,authorize,repository,now=()
    const multipart=(req.headers.get('content-type')||'').startsWith('multipart/form-data');
    const bytes=await limited(req,multipart?11*1024*1024:5*1024*1024);let p;
    try{p=multipart?await new Request(req.url,{method:'POST',headers:{'Content-Type':req.headers.get('content-type')},body:bytes}).formData():JSON.parse(new TextDecoder().decode(bytes));}catch{fail('invalid_payload','Envio inválido.');}
-   const action=multipart?p.get('acao'):p?.acao;if(!['abrir','commit','status_operacao','upload','obterfoto'].includes(action)||multipart!== (action==='upload'))fail('unsupported_action','Operação não reconhecida.');
+   const action=multipart?p.get('acao'):p?.acao;if(!['abrir','commit','status_operacao','upload','obterfoto',...CLINICAL_ACTIONS].includes(action)||multipart!== (action==='upload'))fail('unsupported_action','Operação não reconhecida.');
+   if(CLINICAL_ACTIONS.includes(action))return response({...fields,...await clinical(p,ctx,req)});
    if(action==='abrir'){const row=await repository.load(ctx.clinicId),state=emptyState();return response({...fields,workspace:workspace(row,state)});}
    if(action==='status_operacao'){
     if(!uuid(p.operation_id))fail('invalid_operation','Identificador de operação inválido.');const op=await repository.operation(ctx.clinicId,p.operation_id);if(!op)return response({...fields,operation:null});

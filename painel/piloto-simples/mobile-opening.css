@@ -1,0 +1,62 @@
+/* The phone has its own opening and navigation, with the official mark intact. */
+.app .mobile-brand{display:none}
+.app .nav-mobile-menu{display:none}
+.area-directory{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.area-directory-card{display:flex;align-items:center;gap:14px;min-height:116px;padding:22px;border:1px solid var(--ui-line);border-radius:20px;background:var(--ui-surface);color:var(--ui-ink);text-decoration:none;box-shadow:var(--ui-shadow)}
+.area-directory-card>.icon{width:24px;height:24px;flex:none;color:#9c7944}
+.area-directory-card>span:first-of-type{flex:1;min-width:0}
+.area-directory-card strong{display:block;font-size:16px;font-weight:600;line-height:1.4}
+.area-directory-card small{display:block;font-size:12px;color:var(--ui-muted);line-height:1.6;margin-top:7px}
+.area-directory-card:hover{border-color:var(--ui-champagne);background:var(--ui-warm)}
+@media(max-width:850px){
+  .app .topbar{display:grid;grid-template-columns:minmax(0,1fr) 136px;gap:12px;padding:10px 20px;height:auto;min-height:112px;align-items:center;background:var(--ui-bg);border-bottom:1px solid var(--ui-champagne)}
+  .app .mobile-brand{display:block;width:184px;max-width:100%;aspect-ratio:1.52;margin:0;justify-self:start}
+  .app .mobile-brand img{filter:none}
+  .app .topbar .breadcrumbs{display:none}
+  .app .top-actions{display:block;min-width:0;width:136px}
+  .app .top-actions .date-label{display:none}
+  .app .area-switch{display:grid;width:136px;gap:0;border-color:var(--ui-control-edge);padding:7px 10px;border-radius:16px;background:var(--ui-surface)}
+  .app .area-switch>span{display:block;font-size:10px;line-height:1.3;color:var(--ui-muted);letter-spacing:.04em}
+  .app .area-switch select{display:block;width:114px;max-width:114px;font-size:13px;font-weight:600;min-height:32px;padding:3px 0}
+  .app .connection-bar{padding:10px 20px;gap:4px 12px;align-items:center}
+  .app .connection-bar [data-cloud-status]{font-size:12px;flex:1 1 180px;min-width:0}
+  .app .connection-bar button{min-height:40px;padding:7px 4px;font-size:12px}
+  .app .connection-bar small{flex-basis:100%;font-size:11px}
+  .app .sidebar nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;overflow:visible;align-items:stretch}
+  .app .sidebar .nav-item{display:none;min-width:0;width:100%;min-height:58px;padding:8px 2px;font-size:10px;letter-spacing:-.02em}
+  .app .sidebar .nav-item[data-mobile-primary="true"],.app .sidebar .nav-mobile-menu{display:flex}
+  .app .sidebar .nav-item svg{flex:none}
+  .area-directory{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .area-directory-card{padding:18px 16px;flex-wrap:wrap;gap:12px;align-content:start;min-height:156px}
+  .area-directory-card>span:first-of-type{flex:1 0 100%;order:2}
+  .area-directory-card>span:last-child{margin-left:auto}
+  .area-directory-card strong{font-size:15px}
+  .app main{padding:20px 16px 28px}
+  .sp-home .sp-hero{padding:22px 20px;gap:20px;border-color:#e4d8d1}
+  .sp-home .sp-hero-heading{gap:18px}
+  .sp-home .sp-hero-date{font-size:11px;margin-bottom:12px}
+  .sp-home .sp-hero h1{font-size:27px;line-height:1.2;max-width:100%}
+  .sp-home .sp-hero-heading p:not(.sp-hero-date){font-size:13px;line-height:1.5;margin-top:10px}
+  .sp-home .sp-hero-actions{gap:10px}
+  .sp-home :is(.sp-hero-primary,.sp-hero-secondary){min-height:48px;padding:10px 12px;font-size:13px;border-radius:16px}
+  .sp-home .sp-hero-body{gap:18px}
+  .sp-home .sp-hero-value-label{font-size:12px}
+  .sp-home .sp-hero-value{font-size:36px;line-height:1.2}
+  .sp-home .sp-billed small{font-size:11px}
+  .sp-home .sp-hero-metrics{gap:16px 20px;padding-top:18px}
+  .sp-home .sp-mini-label{font-size:11px;line-height:1.5}
+  .sp-home .sp-hero-metrics strong{font-size:22px;margin-top:6px}
+  .connected-gate{padding:18px;align-items:start;padding-top:max(28px,env(safe-area-inset-top))}
+  .connected-card{padding:24px 22px;border-radius:24px}
+  .connected-card>img{width:270px;max-width:100%;margin:0 auto 22px;filter:none}
+  .connected-card h1{font-size:28px;line-height:1.25}
+  .connected-card form{gap:18px;margin:24px 0}
+  .connected-card .primary{width:100%;min-height:52px}
+}
+@media(max-width:360px){
+  .app .topbar{padding-inline:14px;grid-template-columns:minmax(0,1fr) 126px;gap:8px}
+  .app .top-actions,.app .area-switch{width:126px}.app .area-switch select{width:104px;max-width:104px}
+  .app .connection-bar{padding-inline:16px}
+  .sp-home .sp-hero{padding:20px 16px}.sp-home .sp-hero h1{font-size:25px}
+  .sp-home .sp-hero-actions{flex-direction:column}.sp-home :is(.sp-hero-primary,.sp-hero-secondary){flex:auto;width:100%}
+}

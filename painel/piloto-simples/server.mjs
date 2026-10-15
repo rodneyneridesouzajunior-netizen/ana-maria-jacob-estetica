@@ -2,6 +2,7 @@ import http from 'node:http';
 import {readFile,stat} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {createHash} from 'node:crypto';
 const root=path.dirname(fileURLToPath(import.meta.url)),port=Number(process.env.AMJ_PILOT_PORT||8766);
 const viewerRoot=path.resolve(root,'../rosto3d/v2');
 const types={'.html':'text/html; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.js':'text/javascript; charset=utf-8','.json':'application/json; charset=utf-8','.css':'text/css; charset=utf-8','.jpg':'image/jpeg','.png':'image/png','.webp':'image/webp','.ttf':'font/ttf','.woff2':'font/woff2','.txt':'text/plain; charset=utf-8'};
@@ -14,6 +15,11 @@ http.createServer(async(req,res)=>{
     const target=path.resolve(base,rel.endsWith('/')?rel+'index.html':rel);
     if(!target.startsWith(base+path.sep)||rel.split('/').some(s=>s.startsWith('.'))||!types[path.extname(target)])throw Error();
     const info=await stat(target);if(!info.isFile())throw Error();
-    res.setHeader('Content-Type',types[path.extname(target)]);res.writeHead(200);res.end(req.method==='HEAD'?undefined:await readFile(target));
+    const bytes=await readFile(target);
+    if(path.extname(target)==='.html'){
+      const map=bytes.toString('utf8').match(/<script type="importmap" data-amj-release>([\s\S]*?)<\/script>/);
+      if(map){const hash=createHash('sha256').update(map[1]).digest('base64');res.setHeader('Content-Security-Policy',String(res.getHeader('Content-Security-Policy')).replace("script-src 'self'",`script-src 'self' 'sha256-${hash}'`));}
+    }
+    res.setHeader('Content-Type',types[path.extname(target)]);res.writeHead(200);res.end(req.method==='HEAD'?undefined:bytes);
   }catch{res.writeHead(404,{'Content-Type':'text/plain; charset=utf-8'});res.end('Arquivo não encontrado.');}
 }).listen(port,'127.0.0.1',()=>console.log(`Piloto local: http://127.0.0.1:${port}`));

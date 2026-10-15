@@ -1,0 +1,25 @@
+{
+  "id": "/site/",
+  "name": "Ana Maria Jacob · Site",
+  "short_name": "Ana · Site",
+  "lang": "pt-BR",
+  "start_url": "/?source=homescreen",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FCFBFA",
+  "theme_color": "#D4A5A5",
+  "icons": [
+    {
+      "src": "/assets/icons/ana-site-192-v1.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/icons/ana-site-512-v1.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -62,3 +62,12 @@ test('an older readiness call resolving late cannot restore the obsolete expiry 
  resolve({step:'ready',session:{access_token:first.token,expires_at:first.expiresAt,user:{id:USER}},aal:{currentLevel:'aal2'}});await older;
  await h.tick(50001);assert.deepEqual(h.notifications,[]);assert.equal((await h.bridge.requireReady()).expiresAt,400);
 });
+
+test('an expired stale readiness result cannot invalidate a newer verified renewal',async t=>{
+ const h=fixture(t),first=await h.bridge.requireReady();let resolve;
+ h.defer(new Promise(r=>resolve=r));const older=h.bridge.requireReady();h.defer(null);
+ await h.tick(10000);h.emit('TOKEN_REFRESHED',h.fresh());await h.tick(0);
+ await h.tick(60000);
+ resolve({step:'ready',session:{access_token:first.token,expires_at:first.expiresAt,user:{id:USER}},aal:{currentLevel:'aal2'}});
+ await assert.rejects(older);assert.deepEqual(h.notifications,[]);assert.equal((await h.bridge.requireReady()).expiresAt,400);
+});
