@@ -1,11 +1,12 @@
 import {emptyStudy,validateStudy,pointPosition,replacePoint} from './study.mjs';
-export function annotations({THREE,scene,models,registry,getMode,render,host,revealPoint=async()=>true}){
- let doc=emptyStudy(),baseline=JSON.stringify(doc),selected='',tool='rotate',version=0,busy=false,contextNonce=0;
+export function annotations({THREE,scene,models,registry,getMode,render,host,revealPoint=async()=>true,local=false,storageMode='local-browser'}){
+ let doc=emptyStudy(),baseline=JSON.stringify(doc),selected='',tool='rotate',version=0,busy=false,contextNonce=0,readOnly=local;
  const group=new THREE.Group(),alphaMasks=new WeakMap();scene.add(group);
  const section=document.createElement('section');section.className='point-editor';
  section.innerHTML='<h2>Pontos e observações</h2><p id="point-context" class="small">Estudo livre. Abra uma consulta no app para salvar no prontuário.</p><div class="point-tools"><button data-tool="rotate" aria-pressed="true">Girar</button><button data-tool="mark" aria-pressed="false">Marcar ponto</button><button data-tool="move" aria-pressed="false">Mover ponto</button></div><p class="small">Em Marcar ponto, toque na superfície desejada. Cada base tem suas próprias marcações.</p><label class="stack">Pontos deste estudo<select id="point-list"><option value="">Nenhum ponto</option></select></label><label class="stack">Nome do ponto<input id="point-name" maxlength="100" placeholder="Ex.: observação da avaliação"></label><label class="stack">Observações do ponto<textarea id="point-notes" maxlength="2000" rows="3"></textarea></label><button id="point-delete">Excluir ponto selecionado</button><label class="stack">Observações gerais<textarea id="study-notes" maxlength="4000" rows="3"></textarea></label><button id="study-save" class="primary" disabled>Salvar no prontuário</button><p id="point-status" role="status" class="small">Sem alterações.</p>';
  document.querySelector('aside').prepend(section);const $=id=>section.querySelector('#'+id);
- function status(msg){$('point-status').textContent=msg;}
+ if(local){$('point-context').textContent='Estudo genérico local. Abra uma consulta para vincular e salvar.';$('study-save').textContent=storageMode==='clinic-server'?'Salvar no servidor':'Salvar neste navegador';}
+ function status(msg){$('point-status').textContent=msg;if(local)host()?.editorState?.(window,{dirty:changed(),busy});}
  function changed(){return JSON.stringify(doc)!==baseline;}
  function hitMaterial(hit){return Array.isArray(hit.object.material)?hit.object.material[hit.face?.materialIndex??0]:hit.object.material;}
  function textureAlpha(map,uv){
@@ -33,11 +34,11 @@ export function annotations({THREE,scene,models,registry,getMode,render,host,rev
   const select=$('point-list');select.replaceChildren();const blank=document.createElement('option');blank.value='';blank.textContent=doc.points.length?'Escolha um ponto':'Nenhum ponto';select.append(blank);
   doc.points.forEach((p,i)=>{const option=document.createElement('option');option.value=p.id;option.textContent=(i+1)+'. '+p.label+' · '+(p.mode==='appearance'?'rosto':'atlas');select.append(option);});select.value=selected;
   const p=doc.points.find(p=>p.id===selected);$('point-name').value=p?.label||'';$('point-notes').value=p?.notes||'';$('study-notes').value=doc.notes;
-  for(const id of ['point-name','point-notes','point-delete'])$(id).disabled=busy||!p;
-  for(const b of section.querySelectorAll('[data-tool]')){b.disabled=busy;b.setAttribute('aria-pressed',String(b.dataset.tool===tool));}
-  $('study-save').disabled=busy||!host()||!section.dataset.bound;$('study-notes').disabled=busy;$('point-list').disabled=busy;redraw();
+  for(const id of ['point-name','point-notes','point-delete'])$(id).disabled=busy||readOnly||!p;
+  for(const b of section.querySelectorAll('[data-tool]')){b.disabled=busy||readOnly&&b.dataset.tool!=='rotate';b.setAttribute('aria-pressed',String(b.dataset.tool===tool));}
+  $('study-save').disabled=busy||readOnly||!host()||!section.dataset.bound;$('study-notes').disabled=busy||readOnly;$('point-list').disabled=busy;redraw();if(local)host()?.editorState?.(window,{dirty:changed(),busy});
  }
- function dirty(){status('Alterações não salvas no prontuário.');}
+ function dirty(){status(local?'Alterações ainda não salvas.':'Alterações não salvas no prontuário.');}
  for(const b of section.querySelectorAll('[data-tool]'))b.onclick=()=>{if(b.dataset.tool==='move'&&!selected){status('Selecione primeiro o ponto que deseja mover.');return;}tool=b.dataset.tool;syncFields();};
  $('point-list').onchange=async()=>{
   if(busy)return;selected=$('point-list').value;tool='rotate';syncFields();const point=doc.points.find(p=>p.id===selected);if(!point)return;
@@ -49,10 +50,11 @@ export function annotations({THREE,scene,models,registry,getMode,render,host,rev
  $('point-name').oninput=()=>{if(selected){doc=replacePoint(doc,selected,{label:$('point-name').value});const o=[...$('point-list').options].find(o=>o.value===selected);if(o)o.textContent=$('point-name').value;dirty();}};
  $('point-notes').oninput=()=>{if(selected){doc=replacePoint(doc,selected,{notes:$('point-notes').value});dirty();}};
  $('study-notes').oninput=()=>{doc={...doc,notes:$('study-notes').value};dirty();};
- $('point-delete').onclick=()=>{if(!selected||!confirm('Excluir este ponto do estudo? A alteração só será gravada após salvar com sua senha.'))return;doc={...doc,points:doc.points.filter(p=>p.id!==selected)};selected='';tool='rotate';syncFields();dirty();};
+ $('point-delete').onclick=()=>{if(readOnly||!selected||!confirm(local?'Excluir este ponto? A alteração será gravada somente ao salvar o estudo.':'Excluir este ponto do estudo? A alteração só será gravada após salvar com sua senha.'))return;doc={...doc,points:doc.points.filter(p=>p.id!==selected)};selected='';tool='rotate';syncFields();dirty();};
  $('study-save').onclick=async()=>{let snapshot;try{snapshot=validateStudy(doc,registry);}catch(e){status(e.message);return;}
-  if(!changed()){status('Este estudo já está salvo.');return;}const parent=host();if(!parent)return;const nonce=contextNonce;busy=true;syncFields();status('Confirme sua senha para salvar nesta consulta…');
-  try{const result=await parent.saveStudy(window,snapshot,version);if(nonce!==contextNonce)return;version=result.version;baseline=JSON.stringify(snapshot);doc=snapshot;status('Salvo no prontuário · versão '+version+'.');}
+  if(readOnly){status('Consulta bloqueada: estudo disponível somente para leitura.');return;}
+  if(!changed()){status('Este estudo já está salvo.');return;}const parent=host();if(!parent)return;const nonce=contextNonce;busy=true;syncFields();status(local?(storageMode==='clinic-server'?'Salvando no servidor da clínica…':'Salvando nesta consulta, somente neste navegador…'):'Confirme sua senha para salvar nesta consulta…');
+  try{const result=await parent.saveStudy(window,snapshot,version);if(nonce!==contextNonce)return;version=result.version;baseline=JSON.stringify(snapshot);doc=snapshot;status((local?(storageMode==='clinic-server'?'Salvo no servidor':'Salvo neste navegador'):'Salvo no prontuário')+' · versão '+version+'.');}
   catch(e){if(nonce===contextNonce)status(e.message||'Não foi salvo. Tente novamente.');}finally{if(nonce===contextNonce){busy=false;syncFields();}}
  };
  function tap(ray){if(busy)return true;
@@ -62,7 +64,7 @@ export function annotations({THREE,scene,models,registry,getMode,render,host,rev
   const marker=ray.intersectObjects(group.children.filter(obj=>obj.userData.pointId),false)[0];
   const front=hits.find(hit=>hit.object.userData.layer!=='surface'||!hitMaterial(hit).transparent);
   if(marker&&(!front||marker.distance<=front.distance+.09)){selected=marker.object.userData.pointId;syncFields();return true;}
-  if(tool==='rotate')return false;
+  if(tool==='rotate'||readOnly)return false;
   if(tool==='move'&&!selected){status('Selecione um ponto para mover.');return true;}
   const current=doc.points.find(p=>p.id===selected);
   if(tool==='move'&&current?.mode!==getMode()){status('Volte à base '+(current.mode==='appearance'?'Rosto com pele':'Camadas anatômicas')+' para mover este ponto. As duas bases têm marcações independentes.');return true;}
@@ -73,12 +75,12 @@ export function annotations({THREE,scene,models,registry,getMode,render,host,rev
   const bary=THREE.Triangle.getBarycoord(hit.point,vertices[0],vertices[1],vertices[2],new THREE.Vector3());if(!bary)return true;
   const anchor={mode:getMode(),meshId:hit.object.name,triangle:t,barycentric:bary.toArray()};
   if(tool==='move'){doc=replacePoint(doc,selected,anchor);tool='rotate';}else{if(doc.points.length>=200){status('Limite de 200 pontos por estudo.');return true;}const p={...anchor,id:crypto.randomUUID(),label:'Ponto '+(doc.points.length+1),notes:''};doc={...doc,points:[...doc.points,p]};selected=p.id;}
-  syncFields();dirty();$('point-name').focus();return true;
+  syncFields();dirty();if(!local||!window.matchMedia('(max-width: 620px), (pointer: coarse)').matches)$('point-name').focus();return true;
  }
  syncFields();
  return {tap,refresh:redraw,hasChanges:changed,isBusy:()=>busy,getStudy:()=>validateStudy(doc,registry),
-  loadStudy(study,label){contextNonce++;doc=study?validateStudy(study.document,registry):emptyStudy();baseline=JSON.stringify(doc);selected='';version=study?.version||0;busy=false;section.dataset.bound='true';$('point-context').textContent=label;tool='rotate';syncFields();status(study?'Estudo carregado · versão '+version+'.':'Consulta vinculada. Marque os pontos e salve.');},
-  unbind(){contextNonce++;delete section.dataset.bound;doc=emptyStudy();baseline=JSON.stringify(doc);selected='';busy=false;syncFields();},
+  loadStudy(study,label,options={}){contextNonce++;doc=study?validateStudy(study.document,registry):emptyStudy();baseline=JSON.stringify(doc);selected='';version=study?.version||0;busy=false;readOnly=Boolean(options.readOnly);section.dataset.bound='true';$('point-context').textContent=label;tool='rotate';syncFields();status(readOnly?'Consulta bloqueada: somente leitura.':study?'Estudo carregado · versão '+version+'.':'Consulta vinculada. Marque os pontos e salve.');},
+  unbind(){contextNonce++;delete section.dataset.bound;doc=emptyStudy();baseline=JSON.stringify(doc);selected='';busy=false;readOnly=local;syncFields();},
   dispose(){contextNonce++;doc=emptyStudy();baseline='';clearMarkers();scene.remove(group);section.remove();}
  };
 }

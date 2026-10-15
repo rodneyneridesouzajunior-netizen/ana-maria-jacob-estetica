@@ -1,9 +1,10 @@
+import {ensureFacialStudies,assertFacialHistoryPreserved} from './facial-study-domain.mjs';
 import {seed} from './domain.mjs';
 import {ensureOperations} from './operations-domain.mjs';
 import {normalizeClinicState} from './clinic-domain.mjs';
 import {ensureFinance} from './finance-domain.mjs';
 import {ensureDocuments} from './documents-domain.mjs';
-export function normalizeWorkspace(value){ensureOperations(value);normalizeClinicState(value);ensureFinance(value);ensureDocuments(value);for(const key of ['comparisons','auditLog']){value[key]??=[];if(!Array.isArray(value[key]))throw Error('Coleção local incompatível: '+key);}return value;}
+export function normalizeWorkspace(value){ensureFacialStudies(value);ensureOperations(value);normalizeClinicState(value);ensureFinance(value);ensureDocuments(value);for(const key of ['comparisons','auditLog']){value[key]??=[];if(!Array.isArray(value[key]))throw Error('Coleção local incompatível: '+key);}return value;}
 const NAME='amj-piloto-local-20261015';
 let db,connecting;
 export function connect() {
@@ -17,6 +18,7 @@ export function connect() {
   });return connecting.finally(()=>{connecting=undefined;});
 }
 function immutableRecords(old,value,photo){
+ assertFacialHistoryPreserved(old,value);
  for(const previous of old.visits.filter(v=>v.status==='concluido'||v.lockedAt)){const current=value.visits.find(v=>v.id===previous.id);const core=v=>{if(!v)return null;const {addenda,...rest}=v;return rest;};if(JSON.stringify(core(previous))!==JSON.stringify(core(current)))throw Error('Consulta concluída não pode ser reescrita. Use adendo.');const a=previous.addenda||[],b=current.addenda||[];if(!Array.isArray(b)||b.length<a.length||a.some((entry,i)=>JSON.stringify(entry)!==JSON.stringify(b[i])))throw Error('Adendos anteriores precisam ser preservados.');}
  for(const previous of old.documentResponses||[]){if(previous.status!=='assinado_demo'&&!previous.signature)continue;const current=(value.documentResponses||[]).find(d=>d.id===previous.id);if(JSON.stringify(current)!==JSON.stringify(previous))throw Error('Documento assinado de demonstração não pode ser reescrito nem removido.');}
  if(photo){if(!photo.id||!(photo.original instanceof Blob)||!(photo.preview instanceof Blob))throw Error('Fotografia incompleta.');if(old.visits.some(v=>(v.photos||[]).some(p=>p.id===photo.id)))throw Error('O original da fotografia já registrada não pode ser sobrescrito.');const owners=value.visits.filter(v=>(v.photos||[]).some(p=>p.id===photo.id));if(owners.length!==1||owners[0].status==='concluido'||owners[0].lockedAt)throw Error('A nova fotografia precisa pertencer a uma consulta em aberto.');}

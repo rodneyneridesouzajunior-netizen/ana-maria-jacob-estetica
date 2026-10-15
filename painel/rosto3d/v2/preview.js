@@ -4,10 +4,19 @@ import {initial,preset,visible,tissueLayers} from './layer-state.mjs';
 import {annotations} from './annotations.mjs?v=20260906-3';
 import {TapGesture} from './gesture.mjs';
 import {pointPosition} from './study.mjs';
+import {viewerPolicy,assertViewerMode,assertViewerStudy} from './pilot-mode.mjs';
+const policy=viewerPolicy(location.search);
 const embedded=window.parent!==window;
 const host=()=>{try{return embedded&&window.parent.location.origin===location.origin&&window.parent.AMJRosto3D?.frameAttached(window)?window.parent.AMJRosto3D:null;}catch{return null;}};
 if(embedded&&!host())throw Error('Abra este visor pelo app Fichas.');
 const $=id=>document.getElementById(id),viewer=$('viewer'),models=[],textures=new Map(),requests=new Map();
+if(policy.local){
+ document.body.classList.add('local-pilot');$('anatomy').hidden=true;$('anatomy').disabled=true;
+ document.querySelector('h1').textContent='Estudo 3D genérico';document.querySelector('.eyebrow').textContent=policy.storage==='clinic-server'?'MODELO EXTERNO · SERVIDOR DA CLÍNICA':'MODELO EXTERNO · SALVAMENTO LOCAL';
+ document.querySelector('.hint').textContent='Arraste para girar · pinça ou roda para aproximar. Marque pontos na pele; este modelo não reconstrói o rosto da paciente.';
+ const notes=$('appearance-controls').querySelectorAll('.small');notes[0].textContent='Modelo externo genérico. Sua geometria não representa uma paciente específica.';notes[1].textContent=policy.storage==='clinic-server'?'Dados de teste vinculados à consulta no servidor da clínica.':'Dados de teste salvos somente neste navegador. Sem sincronização com a nuvem.';
+ document.querySelector('.review p').textContent='Este estudo permite registrar observações na superfície de um modelo genérico. Não é reconstrução da paciente.';
+}
 let state={...initial},scene,camera,renderer,controls,editor,resizeObserver,disposed=false,ready=false,active=!document.hidden&&(!embedded||Boolean(host()?.frameAllowed(window))),lost=false,requestId=0,cameraFrame=0;
 const gesture=new TapGesture();
 const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();
@@ -63,6 +72,7 @@ function view(angle=0){
  controls.target.copy(target);camera.position.copy(target).add(new THREE.Vector3(Math.sin(a)*distance,.10,Math.cos(a)*distance));controls.maxDistance=Math.max(14,distance*1.6);controls.update();render();
 }
 async function setMode(value,{reframe=true}={}){
+ assertViewerMode(value,policy);
  gesture.clear();stopFocus();
  const token=++requestId;state.mode=value;state.selected='';state.isolated=false;$('loading').hidden=false;$('loading').textContent=value==='appearance'?'Preparando o rosto…':'Preparando as camadas anatômicas…';
  for(const mesh of models)mesh.visible=false;editor?.refresh();render();
@@ -122,9 +132,9 @@ try{
  document.addEventListener('visibilitychange',()=>{active=!document.hidden&&(!embedded||Boolean(host()?.frameAllowed(window)));if(!active){gesture.clear();stopFocus();}render();});
  window.addEventListener('blur',()=>{gesture.clear();stopFocus();});
  const registry=await loadJSON('./assets/point-registry.json');if(disposed||embedded&&!host())throw Error('Sessão encerrada.');
- editor=annotations({THREE,scene,models,registry,getMode:()=>state.mode,render,host,revealPoint});
- window.AMJRostoViewer={ready:()=>ready,hasChanges:()=>editor.hasChanges(),isBusy:()=>editor.isBusy(),getStudy:()=>editor.getStudy(),loadStudy(study,label){gesture.clear();stopFocus();return editor.loadStudy(study,label);},unbind(){gesture.clear();stopFocus();return editor.unbind();},failed:()=>lost,setActive(v){active=Boolean(v)&&!disposed;if(!active){gesture.clear();stopFocus();}render();},dispose(){disposed=true;gesture.clear();stopFocus();requestId++;editor.dispose();resizeObserver?.disconnect();controls?.dispose();for(const m of models){m.geometry.dispose();for(const mat of mats(m))mat.dispose();}for(const t of textures.values())t.dispose();models.length=0;renderer.dispose();renderer.domElement.remove();}};
+ editor=annotations({THREE,scene,models,registry,getMode:()=>state.mode,render,host,revealPoint,local:policy.local,storageMode:policy.storage});
+ window.AMJRostoViewer={ready:()=>ready,capabilities:()=>({storage:policy.storage,appearanceOnly:policy.appearanceOnly}),hasChanges:()=>editor.hasChanges(),isBusy:()=>editor.isBusy(),getStudy:()=>editor.getStudy(),loadStudy(study,label,options={}){assertViewerStudy(study,policy);gesture.clear();stopFocus();return editor.loadStudy(study,label,options);},unbind(){gesture.clear();stopFocus();return editor.unbind();},failed:()=>lost,setActive(v){active=Boolean(v)&&!disposed;if(!active){gesture.clear();stopFocus();}render();},dispose(){disposed=true;gesture.clear();stopFocus();requestId++;editor.dispose();resizeObserver?.disconnect();controls?.dispose();for(const m of models){m.geometry.dispose();for(const mat of mats(m))mat.dispose();}for(const t of textures.values())t.dispose();models.length=0;renderer.dispose();renderer.domElement.remove();}};
  window.addEventListener('beforeunload',e=>{if(editor.hasChanges()){e.preventDefault();e.returnValue='';}});
- await setMode('appearance');ready=true;if(embedded&&host())void host().frameReady(window);
+ await setMode('appearance');ready=true;if(embedded&&host())await host().frameReady(window);
  for(const type of ['pointerdown','keydown','input','wheel'])document.addEventListener(type,e=>{if(e.isTrusted)host()?.activity(window);},{passive:true,capture:true});
-}catch(error){lost=true;window.AMJRostoFailed=true;$('loading').textContent='Não foi possível iniciar o visor. '+error.message;}
+}catch(error){lost=true;window.AMJRostoFailed=true;$('loading').hidden=false;$('loading').textContent='Não foi possível iniciar o visor. '+error.message;}

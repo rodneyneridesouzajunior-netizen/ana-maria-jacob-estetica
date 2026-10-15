@@ -1,0 +1,72 @@
+{
+  "format": 1,
+  "source": "painel/piloto-simples",
+  "files": [
+    {
+      "name": "operations-domain.mjs",
+      "sourceSha256": "cd7358b8898952fd47d31d42a08ddf345dda5fa4ca5cbb1cc19dca632a79fee9",
+      "generatedSha256": "268f28205862b18a51a294dc4edc9a4f0e7f7a4b15538b186505d38451522554",
+      "mode": "exact-copy"
+    },
+    {
+      "name": "clinic-domain.mjs",
+      "sourceSha256": "2ffc016dc72ac9d17d1b0120642e73a850fcf80cc3a63b1b990babc6d80a8901",
+      "generatedSha256": "052c59a24a1e05afe99a782a9bd6e7100c6f0832fb721d721348d4771675175c",
+      "mode": "exact-copy"
+    },
+    {
+      "name": "finance-domain.mjs",
+      "sourceSha256": "cb70db61b2c7d0ac1147b2ee10d6d844a69e962f07560c8f78037953ef4a71e0",
+      "generatedSha256": "463b9dceadfd209197171b9c03f589e6f78028e8edfe81a11bde7bba96d340a6",
+      "mode": "exact-copy"
+    },
+    {
+      "name": "documents-domain.mjs",
+      "sourceSha256": "65095cb963f09c118a2b5798394b61a428eec0cb698e4558f76d7876cf2d3df5",
+      "generatedSha256": "5539639a27182bbf0e3351c11cb787b856e536d18ac348a3f21d7120b94c950e",
+      "mode": "exact-copy"
+    },
+    {
+      "name": "visit-workflow.mjs",
+      "sourceSha256": "70b7ff025ea848c6ea3232af8c43993a808d0debbf88e117a239b3860fe8797c",
+      "generatedSha256": "36b7ea44f345008411f3d4503d76461e8e225c299a3dacaf97384b1a7ca0dffa",
+      "mode": "exact-copy"
+    },
+    {
+      "name": "facial-study-domain.mjs",
+      "sourceSha256": "bae3a96bf1e3f6a75577dd52e5cf4916272773dd448b980725bb04cc134f41db",
+      "generatedSha256": "049bc46795f0dae9be0457e5ab631bbb95296a5e11fa5a90f51d75c9686b37b7",
+      "mode": "exact-copy"
+    },
+    {
+      "name": "patients-domain.mjs",
+      "sourceSha256": "0a8aed82e7e18dceebb7e1f054db103cb138ee66830290742e2f3b8469ea6b61",
+      "generatedSha256": "3136d65e0497a9bfae3ccfcb56c979a3bcf4b669689cbc8923b49bb973cb927d",
+      "mode": "exact-copy"
+    },
+    {
+      "name": "domain.mjs",
+      "sourceSha256": "c0dff0247413902274d46b896f4738e82af57115e61490228e8ac53dafd9dd82",
+      "generatedSha256": "2607f1d4fe06e31425080b80db28cb67ce024aba8d46545250160532d4d0a585",
+      "mode": "pure-prefix"
+    },
+    {
+      "name": "compare.mjs",
+      "sourceSha256": "26f5a0fe1614d0bb3b66496ce3f93bdcf4e73be8ef2c59fb53d3eee9df32ede4",
+      "generatedSha256": "42b447eef536b277a55fd74ce6a8ad2ceec9dd56a0bb09927cdb0f30561c7cac",
+      "mode": "pure-prefix"
+    },
+    {
+      "name": "comparison-library.mjs",
+      "sourceSha256": "9329b191d725a464e2a80d180bb56e47398b34556e7c8529b40eb56fa2a5d20e",
+      "generatedSha256": "2632c038344117742d01e72dcb34be121ff962223128fc79252ef4e488a0d67a",
+      "mode": "pure-prefix"
+    },
+    {
+      "name": "backup.mjs",
+      "sourceSha256": "7c90ea1dafd1dbba4440ec592602c79a1a179b2063cddf46d3b6f27f5e794c3e",
+      "generatedSha256": "1fcc3d1768957a02b88610a5f99b5a24ffc4b94ab2d665e0c59e749e114e7dc6",
+      "mode": "pure-prefix"
+    }
+  ]
+}

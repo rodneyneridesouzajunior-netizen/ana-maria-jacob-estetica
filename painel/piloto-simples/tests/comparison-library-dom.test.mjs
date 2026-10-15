@@ -1,0 +1,46 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {mountComparisonLibrary,saveComparisonRecord,comparisonRecordDraft} from '../comparison-library.mjs';
+const require=createRequire(new URL('../../../../../skinpro-analise/test-tools/package.json',import.meta.url));
+const {JSDOM}=require('jsdom');
+const tick=()=>new Promise(resolve=>setImmediate(resolve));
+const key=(v,p)=>JSON.stringify([v,p]);
+function harness(t,{readonly=false,initial=null,fail=false,defer=false}={}){
+ const dom=new JSDOM('<!doctype html><body><div id="library"></div></body>',{url:'https://example.invalid/app/'}),w=dom.window,previous={document:globalThis.document,FormData:globalThis.FormData,confirm:globalThis.confirm,Image:globalThis.Image};
+ Object.assign(globalThis,{document:w.document,FormData:w.FormData,confirm:()=>false,Image:class{set src(value){queueMicrotask(()=>this.onload());}}});
+ w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;this.dispatchEvent(new w.Event('close'));};
+ let state={patients:[{id:'ana'}],comparisons:[],visits:[{id:'v1',patientId:'ana',date:'2026-10-01',service:'Consulta de teste',photos:[{id:'p1',label:'Frontal',sha256:'1'.repeat(64)},{id:'p2',label:'Perfil',sha256:'2'.repeat(64)}]},{id:'v2',patientId:'ana',date:'2026-10-15',service:'Retorno de teste',photos:[{id:'p3',label:'Retorno',sha256:'3'.repeat(64)}]}]};if(initial)initial(state);
+ let saves=0,rejectSave=fail,resolvePending;
+ const root=w.document.getElementById('library'),notifications=[];
+ const mutate=async fn=>{if(defer)await new Promise(resolve=>resolvePending=resolve);if(rejectSave)throw Error('Armazenamento indisponível no teste');const next=structuredClone(state);fn(next);state=next;saves++;};
+ const handle=mountComparisonLibrary(root,{getState:()=>state,patientId:'ana',readPhoto:async()=> 'data:image/png;base64,AAAA',mutate,notify:message=>notifications.push(message),readonly});
+ t.after(()=>{handle.dispose();for(const [name,value]of Object.entries(previous)){if(value===undefined)delete globalThis[name];else globalThis[name]=value;}w.close();});
+ const event=(el,type)=>el.dispatchEvent(new w.Event(type,{bubbles:true,cancelable:true}));
+ const set=(name,value)=>{const field=root.querySelector(`[name="${name}"]`);field.value=value;event(field,'input');};
+ const photo=(side,value,checked=true)=>{const field=[...root.querySelectorAll(`[data-library-photo="${side}"]`)].find(x=>x.value===value);assert.ok(field);field.checked=checked;event(field,'change');};
+ return {w,root,handle,event,set,photo,notifications,get state(){return state;},get saves(){return saves;},unfail(){rejectSave=false;},resolve(){resolvePending();}};
+}
+function fill(h){h.root.querySelector('[data-library="new"]').click();h.set('title','Registro fictício inicial');h.set('area','Teste visual');h.set('notes','Somente teste; sem resultado clínico');h.photo('before',key('v1','p1'));}
+const initial=s=>saveComparisonRecord(s,{...comparisonRecordDraft(s,'ana'),id:'cmp',title:'Comparação existente',area:'Teste',notes:'',beforeDate:'2026-10-01',beforePhotos:[key('v1','p1')],before:key('v1','p1')},{operationId:'op-init',now:'2026-10-15T12:00:00Z'});
+
+test('DOM salva somente Antes, preserva campos em mudanças estruturais e bloqueia exportação incompleta',async t=>{
+ const h=harness(t);fill(h);await tick();assert.equal(h.root.querySelector('[name=title]').value,'Registro fictício inicial');assert.equal(h.root.querySelector('[name=beforeDate]').value,'2026-10-01');assert.equal(h.handle.isDirty(),true);assert.equal(h.root.querySelector('form').dataset.unsaved,'true');const confirmation=h.root.querySelector('[data-compare-confirm]');confirmation.checked=true;h.event(confirmation,'change');assert.equal(h.root.querySelector('[data-compare-export]').disabled,true);assert.equal(h.root.querySelector('.compare-photo.after').hidden,true);
+ h.event(h.root.querySelector('form'),'submit');await tick();assert.equal(h.saves,1);assert.equal(h.state.comparisons[0].after,'');assert.equal(h.state.comparisons[0].title,'Registro fictício inicial');assert.equal(h.handle.isDirty(),false);assert.match(h.root.querySelector('[data-library-status]').textContent,/armazenamento local/);
+});
+test('DOM acrescenta Depois à comparação salva, escolhe principal e abre versão anterior preservada',async t=>{
+ const h=harness(t,{initial});h.root.querySelector('[data-library="open"]').click();h.photo('before',key('v1','p2'));const primary=h.root.querySelector('[data-library-primary="before"]');primary.value=key('v1','p2');h.event(primary,'change');h.photo('after',key('v2','p3'));h.set('title','Comparação no retorno');h.root.querySelector('[data-compare-mode="slide"]').click();const slider=h.root.querySelector('#compare-position');slider.value='70';h.event(slider,'input');h.event(h.root.querySelector('form'),'submit');await tick();assert.equal(h.state.comparisons[0].version,2);assert.equal(h.state.comparisons[0].before,key('v1','p2'));assert.equal(h.state.comparisons[0].after,key('v2','p3'));assert.equal(h.state.comparisons[0].split,70);assert.equal(h.state.comparisons[0].history[0].snapshot.after,'');h.root.querySelector('[data-library="version"]').click();assert.equal(h.root.querySelector('[name=title]').value,'Comparação existente');assert.equal(h.root.querySelector('button[type=submit]'),null);assert.equal(h.handle.isDirty(),false);assert.match(h.root.querySelector('.comparison-library-editor h3').textContent,/Versão 1/);
+});
+test('DOM guarda rascunho ao cancelar troca, impede antes/depois com mesmo arquivo e discard externo não confirma novamente',t=>{
+ const h=harness(t);fill(h);h.root.querySelector('[data-library="new"]').click();assert.equal(h.root.querySelector('[name=title]').value,'Registro fictício inicial');h.photo('after',key('v1','p1'));assert.match(h.root.querySelector('[data-library-error]').textContent,/já está selecionado/);assert.equal(h.root.querySelector('[data-library-primary="after"]').disabled,true);let confirmations=0;globalThis.confirm=()=>{confirmations++;return false;};assert.equal(h.handle.discard(),true);assert.equal(confirmations,0);assert.equal(h.handle.isDirty(),false);assert.equal(h.root.querySelector('form'),null);
+});
+test('DOM falha de armazenamento conserva rascunho e repetição salva uma única versão',async t=>{
+ const h=harness(t,{fail:true});fill(h);h.event(h.root.querySelector('form'),'submit');await tick();assert.equal(h.saves,0);assert.equal(h.handle.isDirty(),true);assert.equal(h.root.querySelector('[name=notes]').value,'Somente teste; sem resultado clínico');assert.match(h.root.querySelector('[data-library-error]').textContent,/indisponível/);assert.equal(h.notifications.length,0);h.unfail();h.event(h.root.querySelector('form'),'submit');await tick();assert.equal(h.saves,1);assert.equal(h.state.comparisons.length,1);assert.equal(h.state.comparisons[0].version,1);
+});
+test('DOM gravação pendente bloqueia navegação, descarte e envio repetido; dispose não recebe atualização tardia',async t=>{
+ const h=harness(t,{defer:true});fill(h);h.event(h.root.querySelector('form'),'submit');assert.equal(h.handle.isBusy(),true);assert.equal(h.handle.discard(),false);h.event(h.root.querySelector('form'),'submit');h.root.querySelector('[data-library="new"]').click();assert.equal(h.root.querySelector('[name=title]').value,'Registro fictício inicial');h.handle.dispose();h.root.innerHTML='<p>Outra tela</p>';h.resolve();await tick();assert.equal(h.saves,1);assert.equal(h.root.textContent,'Outra tela');assert.equal(h.notifications.some(x=>x.includes('salva no')),false);
+});
+test('DOM readonly permite ver mas nenhuma escrita; exclusão exige motivo e conserva o histórico',async t=>{
+ const h=harness(t,{readonly:true,initial});assert.equal(h.root.querySelector('[data-library="new"]').disabled,true);assert.equal(h.root.querySelector('[data-library="delete"]'),null);h.root.querySelector('[data-library="open"]').click();assert.equal(h.root.querySelector('.comparison-metadata').disabled,true);h.event(h.root.querySelector('form'),'submit');await tick();assert.equal(h.saves,0);h.handle.dispose();
+ const editable=mountComparisonLibrary(h.root,{getState:()=>h.state,patientId:'ana',readPhoto:async()=>'',mutate:async fn=>fn(h.state)});t.after(()=>editable.dispose());h.root.querySelector('[data-library="delete"]').click();const dialog=document.querySelector('.feature-dialog'),field=dialog.querySelector('[name=reason]');field.value='Comparação duplicada no teste';h.event(field,'input');assert.equal(editable.isDirty(),true);h.event(dialog.querySelector('form'),'submit');await tick();assert.equal(h.state.comparisons[0].status,'excluido');assert.equal(h.state.comparisons[0].history.length,1);assert.equal(h.state.visits[0].photos.length,2);assert.equal(h.root.querySelector('[data-library="open"]'),null);const archive=h.root.querySelector('[data-library-archive]');archive.checked=true;h.event(archive,'change');assert.ok(h.root.querySelector('[data-library="open"]'));
+});

@@ -1,3 +1,4 @@
+import {isConnected} from './runtime-store.mjs';
 import {dateKey} from './domain.mjs';
 import {financeReport} from './finance-domain.mjs';
 import {getClinicAlerts} from './clinic-domain.mjs';
@@ -74,6 +75,6 @@ export function renderHome(state,now=new Date()){
     </div>
     ${alertPanel}
     <section class="sp-home-card sp-recent"><div class="sp-card-title"><div><span class="sp-section-kicker">Continue de onde parou</span><h2>Últimos atendimentos</h2><p>Situação de cada consulta e sua cobrança vinculada</p></div><a href="#pacientes">Ver prontuários ${icon('arrow')}</a></div>${data.recent.length?`<div class="table-wrap" role="region" aria-label="Últimos atendimentos; role horizontalmente em telas pequenas" tabindex="0"><table><thead><tr><th scope="col">Paciente</th><th scope="col">Atendimento</th><th scope="col">Data</th><th scope="col">Valor cobrado</th><th scope="col">Situação</th><th scope="col"><span class="sp-sr-only">Abrir consulta</span></th></tr></thead><tbody>${recentRows(state,data.recent)}</tbody></table></div>`:`<div class="sp-empty"><strong>Nenhuma consulta cadastrada.</strong><p>Comece pelo cadastro da paciente para manter tudo no mesmo prontuário.</p><button type="button" data-action="new-patient" class="sp-inline-action">Cadastrar paciente ${icon('plus')}</button></div>`}</section>
-    <p class="sp-home-footnote">Dados locais de demonstração. Recebido líquido desconta estornos do mês. Cobranças canceladas ficam fora dos valores; nenhuma medida acima representa lucro.</p>
+    <p class="sp-home-footnote">${isConnected()?'Dados de homologação salvos no servidor.':'Dados locais de demonstração.'} Recebido líquido desconta estornos do mês. Cobranças canceladas ficam fora dos valores; nenhuma medida acima representa lucro.</p>
   </div>`;
 }

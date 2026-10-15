@@ -157,3 +157,10 @@ enabled = true
 # consume the unchanged one-time recent-password proof. No anonymous access.
 verify_jwt = false
 entrypoint = "./functions/edicao-autorizacao/index.ts"
+
+[functions.app-workspace]
+enabled = true
+# Internal Auth validation requires Bearer, active session, owner and AAL2.
+# The gateway JWT check is disabled only to use this verified custom flow.
+verify_jwt = false
+entrypoint = "./functions/app-workspace/index.ts"
