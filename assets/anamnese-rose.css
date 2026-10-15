@@ -1,0 +1,27 @@
+/* Identidade visual: alterações de apresentação, sem mudar campos ou envio. */
+:root{--gelo:#fcf7f9;--dourado:#96672b;--linha:#d8bdc8;--tinta:#2b2030;--cinza:#584651;--raio:12px;--rose:#963d5b;--rose-profundo:#703046}
+body{font-weight:400;background:linear-gradient(160deg,#fffafc 0,#f8edf2 50%,#fcf7f9 100%)}
+header{padding:22px 0 20px;background:linear-gradient(120deg,#fff 0,#fcf2f6 55%,#f5e1e9 100%);border-bottom:2px solid #c58d9f}
+#marca{position:relative;display:block;width:245px;max-width:80vw;aspect-ratio:1.52;margin:0 auto;overflow:hidden;background:none}
+#marca img{position:absolute;display:block;width:142%;max-width:none;height:auto;left:-22%;top:-13%;margin:0;filter:brightness(.69) saturate(1.25) contrast(1.06)}
+.doc-titulo{font-size:12px;font-weight:600;letter-spacing:.14em;color:var(--rose-profundo);margin:12px 0 0}
+h2{font-size:29px;font-weight:700;color:var(--rose-profundo)}
+.legenda{color:#53434e;font-weight:400;line-height:1.65}
+label{color:#493340;font-weight:600;font-size:13px}
+input[type=text],input[type=tel],input[type=email],input[type=date],textarea,select{font-weight:400;border-color:#bd9eac;min-height:46px;color:#2b2030;box-shadow:0 2px 8px #6d294607}
+input:focus,textarea:focus,select:focus{outline-color:var(--rose);border-color:var(--rose)}
+.progresso{background:#fffafd;border-color:#d8bdc8}
+.barra{height:5px;background:#eddae3}.barra i{background:linear-gradient(90deg,#703046,#a64b6a,#b9843d)}
+.passo-info{color:#604153;font-weight:500}
+.sn button,.chips button{color:#583348;border-color:#ba9caa;font-weight:500}
+.sn button[aria-pressed=true],.chips button[aria-pressed=true]{background:var(--rose-profundo);border-color:var(--rose-profundo);color:#fff}
+.sn button.nao[aria-pressed=true]{background:#3a2e39;border-color:#3a2e39}
+.sn button:focus-visible,.chips button:focus-visible,#limpar:focus-visible{outline-color:var(--rose)}
+.nota{border-left-color:#af7d38;background:#fffaf3;color:#48343d}.nota strong{font-weight:600}
+.nav{background:#fffafd;border-top-color:#d8bdc8;box-shadow:0 -4px 20px #7030460b}
+button.principal,.acoes-fim button,.acoes-fim a{background:var(--rose);color:#fff;font-weight:600;box-shadow:0 5px 14px #7930491f}
+button.principal:hover,.acoes-fim button:hover,.acoes-fim a:hover{background:var(--rose-profundo)}
+button.secundaria{font-weight:500;color:var(--rose-profundo);border-color:#bd9eac}
+.acoes-fim .alt{background:white;color:var(--rose-profundo);border-color:var(--rose-profundo)}
+.assina-dica,footer{font-weight:400;color:#584651}
+@media(max-width:420px){header{padding-top:16px}#marca{width:220px}.doc-titulo{font-size:11px}h2{font-size:27px}}

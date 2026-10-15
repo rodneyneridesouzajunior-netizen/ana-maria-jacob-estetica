@@ -1,0 +1,13 @@
+/* Exibição da marca: usa o PNG oficial intacto, com menos margem transparente.
+   A resolução da fonte (1672 × 941) excede o necessário para os tamanhos da UI. */
+.brand-window{position:relative;display:block;overflow:hidden;aspect-ratio:1.52;width:210px;max-width:100%;padding:0;background:none;border:0}
+.brand-window img{position:absolute;display:block;width:142%;max-width:none;height:auto;left:-22%;top:-13%;margin:0;object-fit:contain;filter:brightness(.76) saturate(1.15)}
+.sidebar .brand-window{width:100%;margin:0 auto 12px}
+.clinic-identity strong{font-size:16px;font-weight:700;letter-spacing:-.025em;color:#703046}
+.breadcrumbs{color:#493d48;font-weight:600}
+.site-header .brand-window{width:220px;flex:none}
+.portrait-label strong{color:#392936;font-weight:600}
+footer .brand-window{width:230px;margin:0 auto 12px}
+.header .brand-window{width:200px;flex:none}
+@media(max-width:850px){.sidebar .brand-window{display:none}}
+@media(max-width:620px){.site-header .brand-window{width:145px}}

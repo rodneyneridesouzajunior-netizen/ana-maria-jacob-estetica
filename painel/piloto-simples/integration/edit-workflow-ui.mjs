@@ -1,0 +1,25 @@
+import {APPOINTMENT_TRANSITIONS,STATUS_LABELS,localAppointmentTime} from './edit-workflow.mjs';
+const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const field=(label,name,value='',type='text',required=false,max=160)=>`<label>${label}<input name="${name}" value="${esc(value)}" type="${type}" maxlength="${max}" ${required?'required':''}></label>`;
+const area=(label,name,value,max)=>`<label>${label}<textarea name="${name}" maxlength="${max}">${esc(value)}</textarea></label>`;
+const select=(label,name,value,options)=>`<label>${label}<select name="${name}">${options.map(([key,text])=>`<option value="${key}" ${value===key?'selected':''}>${text}</option>`).join('')}</select></label>`;
+export function renderPrivateEdit(kind,row,key){
+ let content='',title='';
+ if(kind==='edit-patient'){
+  title=`Editar paciente · ${row.nome}`;content=field('Nome','nome',row.nome,'text',true)+field('CPF','cpf',row.cpf,'text',false,14)+field('Telefone','telefone',row.telefone,'tel')+field('E-mail','email',row.email,'email')+field('Telefone de emergência','telefone_emergencia',row.telefone_emergencia,'tel')+field('Data de nascimento','data_nascimento',row.data_nascimento,'date')+select('Situação','status',row.status,[['active','Ativa'],['inactive','Inativa']])+area('Motivo da alteração','motivo','',500);
+ }
+ if(kind==='edit-appointment'){
+  title=`Editar horário · ${row.nome}`;content=field('Nome','nome',row.nome,'text',true,120)+field('Telefone','telefone',row.telefone,'tel',true)+field('E-mail','email',row.email,'email')+select('Categoria','categoria',row.categoria,[['avaliacao','Avaliação'],['procedimento','Procedimento'],['retorno','Retorno'],['acompanhamento','Acompanhamento']])+field('Procedimento','procedimento',row.procedimento,'text',true)+field('Data/hora de Brasília','data_hora',localAppointmentTime(row.data_hora),'datetime-local',true)+field('Duração (minutos)','duracao_min',row.duracao_min,'number',true)+area('Observações','observacoes',row.observacoes,2000)+`<label class="ci-checkbox"><input type="checkbox" name="reagendar">Confirmo o reagendamento se alterar data ou horário. A confirmação do horário será reiniciada.</label><p>Consentimentos de lembrete e vínculo de retorno existentes serão preservados. Editar não envia uma mensagem por esta tela.</p>`;
+ }
+ if(kind==='appointment-status'){
+  title=`Atualizar horário · ${row.nome}`;const next=APPOINTMENT_TRANSITIONS[row.status]??[];
+  content=`<p>Situação atual: <strong>${esc(STATUS_LABELS[row.status]||row.status)}</strong>.</p>`+select('Nova situação','status','',next.map(status=>[status,STATUS_LABELS[status]]))+area('Motivo do cancelamento (obrigatório ao cancelar)','motivo_cancelamento','',500)+`<p>Concluir ou marcar falta só é permitido após o início do horário. Concluir na agenda não finaliza automaticamente o prontuário nem calcula lucro.</p>`;
+ }
+ if(kind==='edit-record'){
+  title=`Editar prontuário · ${row.paciente?.nome||'Paciente'}`;content=field('Procedimento','tipo_procedimento',row.procedure_kind,'text',false,120)+field('Data do procedimento','data_procedimento',row.procedure_date,'date')+area('Queixa','queixa',row.complaint,2000)+area('Notas da técnica','notas_tecnica',row.technique_notes,5000)+field('Data de retorno','data_retorno',row.return_date,'date')+area('Orientações','orientacoes',row.care_notes,5000)+`<details><summary>Anamnese registrada, preservada nesta edição</summary><pre class="ci-clinical-text">${esc(JSON.stringify(row.anamnesis,null,2))}</pre></details><p>Paciente, vínculo com agenda, produtos, lotes e consentimentos serão preservados. Esta tela edita o registro textual do rascunho.</p>`;
+ }
+ if(kind==='finalize-record'){
+  title=`Finalizar prontuário · ${row.paciente?.nome||'Paciente'}`;content=`<dl><dt>Procedimento</dt><dd>${esc(row.procedure_kind||'Não informado')}</dd><dt>Data clínica</dt><dd>${esc(row.procedure_date||'Não informada')}</dd><dt>Fotos ativas</dt><dd>${esc(row.fotos_resumo?.ativas??0)}</dd><dt>Fotografia clínica</dt><dd>${row.consentimentos_atuais?.clinical_photography===true?'Consentimento registrado no servidor':'Consentimento não confirmado nesta leitura'}</dd></dl><p>O servidor verificará os requisitos da finalização, incluindo procedimento/data, consentimento e foto clínica. Depois de finalizado, o conteúdo clínico fica protegido contra edição comum.</p><p>Esta é a finalização pela administradora; termos e assinatura da paciente possuem seus próprios registros.</p><label class="ci-checkbox"><input type="checkbox" name="confirmar" required>Revisei este prontuário e confirmo sua finalização.</label>`;
+ }
+ return `<h3>${esc(title)}</h3><p>Versão ${esc(row.versao??row.version)} · base real.</p><form data-ci-form="${kind}" data-key="${esc(key)}" class="ci-edit">${content}<button type="submit">${kind==='finalize-record'?'Finalizar prontuário no servidor':'Salvar alteração no servidor'}</button><button type="button" data-ci-action="cancel-edit">Descartar e voltar</button></form>`;
+}

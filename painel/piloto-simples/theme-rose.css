@@ -1,0 +1,107 @@
+/* Identidade AMJ, 15/10/2026. Tema central da aplicação; a marca original permanece dourada. */
+:root{
+  --rose:#9b405b;--rose-deep:#703046;--rose-soft:#fae9ee;--rose-line:#deb6c3;
+  --bg:#f5f3f5;--white:#fff;--ink:#28232b;--muted:#665e68;--line:#e9e1e5;
+  --gold:#806229;--gold-soft:#f5edda;--green:#286148;--green-soft:#e8f5ed;
+  --red:#a52f43;--radius:24px;--shadow:0 4px 6px #44233303,0 16px 40px #44233306;
+  font-family:'Segoe UI',Arial,sans-serif;font-size:14px;line-height:1.55;
+}
+body{background:var(--bg)}
+.app{grid-template-columns:224px minmax(0,1fr)}
+.workspace{background:radial-gradient(ellipse at 90% 12%,#f3dce6a1,transparent 55%),radial-gradient(ellipse at 20% 100%,#dfb5c155,transparent 45%),var(--bg)}
+.sidebar{padding:20px 12px 16px;background:#fffafd;border-right:1px solid #eee8ec;overflow-y:auto}
+.brand{padding:0 12px 8px}.brand img{width:162px;height:94px;margin:auto}
+.clinic-identity{padding:4px 12px 22px}.clinic-identity strong{display:block;font-size:14px;color:var(--ink)}
+.rail-caption{padding:0;margin-bottom:5px;display:block;font-size:10px;letter-spacing:.12em;color:var(--muted)}
+.local-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);margin-top:13px}
+.local-status i{width:6px;height:6px;flex:none;background:var(--rose);border-radius:50%}
+.nav-item{font-size:13px;padding:11px 13px;min-height:44px;gap:12px;color:#645a64;margin:3px 0;border-radius:14px;font-weight:500}
+.nav-item svg.icon{width:18px;height:18px;stroke-width:1.5}
+.nav-item.active{color:var(--rose-deep);background:var(--rose-soft);box-shadow:inset 3px 0 var(--rose);font-weight:650}
+.nav-item:hover{background:#f5eef2;box-shadow:none}.nav-item.active:hover{background:var(--rose-soft);box-shadow:inset 3px 0 var(--rose)}
+.nav-item.section-start{margin-top:19px;position:relative}.nav-item.section-start:before{content:'';position:absolute;left:0;right:0;top:-10px;border-top:1px solid var(--line)}
+.nav-count{display:none}.rail-bottom{padding-top:15px}.rail-bottom strong{font-size:12px}.rail-bottom small{font-size:11px}
+.avatar{background:var(--rose-soft);border:1px solid #efdae1;color:var(--rose-deep)}
+.topbar{height:70px;padding:0 30px;background:#ffffffde;border-bottom:1px solid #eee8ec;box-shadow:0 5px 22px #512a3c04}
+.breadcrumbs{font-size:12px;color:var(--muted)}.breadcrumbs strong{font-weight:600;color:var(--ink)}.breadcrumbs span:first-child{color:#958b95;padding:0 12px}
+.top-actions{gap:16px}.date-label{font-size:11px;color:var(--muted)}
+.area-switch{display:flex;align-items:center;gap:10px;margin:0;border:1px solid #eee7ec;border-radius:30px;padding:0 12px;background:#fff;min-height:40px;font-weight:400}
+.area-switch>span{font-size:11px;white-space:nowrap;color:var(--muted)}.area-switch select{border:0;max-width:145px;width:145px;min-height:36px;font-size:12px;padding:6px;color:var(--ink);background:transparent}
+.demo-banner{font-size:11px;background:#fff6e7;color:#72531a;padding:5px 30px;letter-spacing:0}.status-dot{background:var(--gold)}
+main{max-width:1440px;padding:32px 30px 36px;min-height:calc(100vh - 170px)}
+h1,h2,h3,.visit-info h2{font-family:inherit;color:var(--ink)}h1{font-size:30px;font-weight:650;line-height:1.2;letter-spacing:-.035em}h2{font-size:17px;font-weight:650;letter-spacing:-.02em}h3{font-size:15px}
+.eyebrow{color:var(--rose);font-size:11px;letter-spacing:.08em}.subtitle{color:var(--muted);font-size:14px}.page-heading{margin-bottom:28px}.page-heading .eyebrow{display:none}
+.primary,.secondary,.danger{border-radius:999px;min-height:42px;padding:10px 18px;box-shadow:none;font-size:13px;font-weight:600}
+.primary{background:var(--rose);border-color:var(--rose);color:white;box-shadow:0 4px 10px #9b405b1c}
+.primary:hover{background:var(--rose-deep);border-color:var(--rose-deep);box-shadow:0 5px 12px #70304623;transform:translateY(-1px)}
+.primary:active{transform:translateY(1px);box-shadow:none}.primary:disabled{background:#a59da3;border-color:#a59da3;opacity:1;color:#fff;transform:none;box-shadow:none}
+.secondary{color:var(--ink);border-color:#ded5dc;background:#fff}.secondary:hover,.icon-button:hover{background:#fff7fa;box-shadow:0 3px 8px #44233308}
+.subtle{color:var(--rose-deep);font-size:13px;font-weight:600}.danger{color:var(--red);border-color:#ecc9ce}
+.icon-button{border-radius:50%;border-color:var(--line);box-shadow:none}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--rose);outline-offset:3px}
+.card,.map-card{border-color:#ffffffbd;border-radius:24px;box-shadow:var(--shadow)}.card:focus-within,.map-card:focus-within{box-shadow:0 0 0 1px var(--rose-line),var(--shadow)}
+.card-header{background:transparent;border-bottom:1px solid var(--line);padding:21px 23px}.card-body{padding:23px}
+.card-header p,.time,.time small,.details-text,.file-info,.map-status,.small-label,.saved-at{color:var(--muted)}
+.metric.featured{background:linear-gradient(115deg,var(--rose),var(--rose-deep));border-color:var(--rose);box-shadow:var(--shadow)}
+.metric-label,.metric small{color:var(--muted)}.metric.featured .metric-label,.metric.featured small{color:#fff4f7}
+.badge{border-radius:999px;padding:4px 9px}.badge.rose{background:var(--rose-soft);color:var(--rose-deep)}.badge.gold{background:var(--gold-soft);color:#72531a}.badge.green{background:var(--green-soft);color:var(--green)}
+label{color:#51454f}input,select,textarea{border-color:#9b8190;border-radius:12px;color:var(--ink)}input::placeholder,textarea::placeholder{color:#776a75}
+.note-box{background:#fff8ed;color:#72531a;border-color:#ecdfc4;font-size:12px}
+.tabs{border-bottom:1px solid var(--line);gap:24px}.tab{color:var(--muted);font-size:14px}.tab.active{color:var(--rose-deep);border-bottom-color:var(--rose);font-weight:650}
+.segmented{background:#f4eef2;border-radius:12px}.segment,.map-toolbar .segment{color:#60525c}.segment.active,.map-toolbar .segment.active{color:var(--rose-deep);background:#fff;box-shadow:0 2px 7px #4423330d}
+.photo-picker{border-bottom-color:var(--line)}.photo-stage{background:#ede9ec}.map-footer{background:#fffafc;border-top-color:var(--line)}
+.map-marker{background:var(--rose);color:#fff;border-color:#fff;box-shadow:0 2px 6px #3a182a40}.map-marker.selected{outline:3px solid var(--gold)}
+.point-entry.active{background:var(--rose-soft)}.point-entry .number{background:var(--rose-soft);color:var(--rose-deep)}
+.compare-help,.compare-selection label,.compare-image-title,.compare-photo figcaption,.compare-image-title span,.compare-confirm,.compare-status{color:var(--muted)}
+.compare-slider input,.compare-confirm input{accent-color:var(--rose)}.compare-empty{background:#f6f0f3;color:var(--muted);border-color:var(--line)}.compare-photo img{background:#eeeaed;border-color:var(--line)}
+.compare-export{border-top-color:var(--line)}
+[data-service-tone="procedimento"]{--service-ink:var(--rose-deep);--service-bg:#fae9ee;--service-border:#c78a9d}
+.appointment-row[data-service-tone],.visit-item[data-service-tone]{background:transparent;border-bottom-color:var(--line);border-left-width:3px}
+.service-tone{font-size:12px;border:0;padding:0;background:transparent;gap:7px}.service-tone .service-type{font-size:10px;border-radius:5px;padding:2px 5px}
+.service-label,.service-chip{border-radius:999px}.visit-info{border-radius:18px}.visit-info h2{font-size:22px}
+th{font-size:10px;font-weight:600;letter-spacing:.06em;background:#faf7fa;color:var(--muted)}th,td{border-bottom-color:var(--line)}
+.patient-head h1{font-size:28px}.patient-list-card .search-row{margin:0;padding:20px 23px;border-bottom:1px solid var(--line)}.patient-list-card .search-input{border-radius:999px;max-width:400px;min-height:42px;font-size:13px}
+.patient-total{margin-left:auto;color:var(--muted);font-size:12px;white-space:nowrap}.patient-grid{display:block}.patient-list-head,.patient-row{display:grid;grid-template-columns:minmax(200px,1.6fr) minmax(130px,1fr) minmax(110px,.8fr) 80px 24px;gap:18px;align-items:center}
+.patient-list-head{padding:13px 24px;background:#faf7fa;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+.patient-row{padding:21px 24px;min-height:100px;border-bottom:1px solid var(--line);transition:background 150ms ease}.patient-row:last-child{border-bottom:0}.patient-row:hover{background:#fff7fa}
+.patient-row-person{display:flex;align-items:center;gap:12px;min-width:0}.patient-row strong{font-size:14px;display:block}.patient-row small{font-size:12px;color:var(--muted);display:block;margin-top:4px}.patient-row-contact,.patient-row-date{font-size:12px;color:var(--muted)}.patient-history{color:var(--rose-deep);background:var(--rose-soft);border-radius:999px;padding:5px 10px;width:max-content;font-size:12px}
+.area-preparation{display:grid;gap:20px}.area-preparation p{color:var(--muted);font-size:14px;line-height:1.7}.area-sections{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.area-state{display:inline-block;background:var(--rose-soft);color:var(--rose-deep);font-size:12px;padding:5px 9px;border-radius:999px}
+.page-footer{border-top-color:var(--line);color:var(--muted);font-size:11px;padding:18px 30px}
+.sp-hero-date{text-transform:none;font-size:12px}.sp-hero-date::first-letter{text-transform:uppercase}
+.sp-hero-value-label,.sp-hero-body small,.sp-mini-label{font-size:12px}.sp-hero-primary,.sp-hero-secondary{min-height:44px;border-radius:999px;font-size:12px}
+.sp-hero-primary:hover,.sp-hero-secondary:hover{background:var(--rose-deep);color:white}
+.sp-card-title h2{font-size:17px}.sp-card-title p,.sp-card-title>a,.sp-card-footer,.sp-procedure-note,.sp-home-footnote,.sp-goal>p,.sp-goal-link,.sp-revenue-total>span{font-size:12px}
+.sp-next-person>strong{font-size:13px}.sp-next-person>span,.sp-next-person>small,.sp-next-time span,.sp-procedure-list strong,.sp-procedure-count{font-size:12px}
+.sp-next-time strong{font-size:14px}.sp-open-button{min-width:44px;width:44px;height:44px}
+.sp-recent th,.sp-recent td,.sp-recent td strong,.sp-record-status,.sp-table-open{font-size:12px}.sp-table-open{min-height:44px}
+.sp-goal-ring{width:86px;height:86px}.sp-goal-empty{font-size:15px}
+@media(min-width:1550px){main{padding-top:28px}.sp-home{gap:20px}}
+@media(min-width:1400px){
+  .sp-hero{position:relative;display:grid;grid-template-columns:minmax(220px,1fr) minmax(0,1.8fr);gap:22px 18px;padding:24px}
+  .sp-hero-heading{grid-column:1/-1;padding-right:340px}.sp-hero-symbol,.sp-hero-heading p:last-child{display:none}.sp-hero h1{font-size:24px;margin-bottom:0}
+  .sp-hero-body{display:contents}.sp-hero-body>div:first-child{grid-column:1;grid-row:2}
+  .sp-hero-actions{position:absolute;right:24px;top:24px;flex-direction:row;min-width:0;gap:9px}
+  .sp-hero-primary{background:#ffffff16;border-color:#ffffff55;color:#fff}.sp-hero-primary:hover{background:var(--rose-deep)}
+  .sp-hero-secondary{background:#fff;color:var(--rose-deep);border-color:#fff}.sp-hero-secondary:hover{background:#fff1f5;color:var(--rose-deep)}
+  .sp-hero-metrics{grid-column:2;grid-row:2;border:0;padding:0;align-self:end;gap:10px}.sp-hero-metrics>div{padding-left:12px;border-left:1px solid #ffffff40}
+  .sp-mini-label{font-size:11px}.sp-mini-label svg{display:none}.sp-hero-metrics strong{font-size:17px;margin-top:7px}
+  .sp-goal{display:grid;grid-template-columns:78px minmax(0,1fr);grid-template-rows:auto auto auto auto;gap:6px 16px;padding:24px;text-align:left;align-content:center}
+  .sp-goal .sp-card-title{grid-column:2;padding:0}.sp-goal .sp-card-icon{display:none}.sp-goal-ring{grid-column:1;grid-row:1/5;width:74px;height:74px;margin:0;align-self:center;border-width:7px}
+  .sp-goal-empty{grid-column:2;padding:0;font-size:14px}.sp-goal>p{grid-column:2;padding:0;margin:0}.sp-goal-link{grid-column:2;padding:5px 0 0;margin:0;justify-content:flex-start}
+}
+@media(max-width:1150px){.app{grid-template-columns:204px minmax(0,1fr)}.sidebar{padding-left:10px;padding-right:10px}.brand img{width:150px}main{padding:26px 24px}.topbar{padding:0 24px}.patient-list-head,.patient-row{grid-template-columns:minmax(170px,1.5fr) minmax(110px,1fr) 75px 20px;gap:12px}.patient-row-date,.patient-list-head .date-column{display:none}}
+@media(max-width:850px){.app{display:block}.sidebar{height:76px;padding:4px 8px;overflow:hidden;background:#fffcfe;border-top:1px solid var(--line)}.sidebar .brand,.clinic-identity,.rail-bottom{display:none}.sidebar nav{display:flex;overflow-x:auto;justify-content:flex-start;gap:4px;height:100%;scrollbar-width:thin}.nav-item{min-width:86px;flex:1 0 86px;padding:8px 7px;gap:4px;font-size:10px;min-height:58px;text-align:center;line-height:1.3;margin:0}.nav-item.section-start{margin:0}.nav-item.section-start:before{display:none}.nav-item.active,.nav-item.active:hover{box-shadow:inset 0 -3px var(--rose)}.workspace{padding-bottom:80px}.topbar{height:60px}.area-switch>span{display:none}.area-switch select{width:115px}.toast{bottom:90px}.page-footer{padding:20px 24px}.patient-list-head,.patient-row{grid-template-columns:minmax(160px,1.4fr) minmax(100px,1fr) 60px 20px}}
+@media(max-width:620px){main{padding:23px 16px}.topbar{padding:0 16px}.breadcrumbs{font-size:11px}.breadcrumbs span:first-child{padding:0 6px}.area-switch{padding:0 5px;min-height:36px}.area-switch select{font-size:11px;width:95px}.top-actions{gap:0}.demo-banner{font-size:10px;padding:5px 16px}.page-heading{align-items:center;flex-wrap:wrap;gap:14px}.page-heading h1{font-size:27px}.card,.map-card{border-radius:20px}.card-header{padding:18px}.patient-list-card .search-row{padding:16px;gap:10px;flex-wrap:wrap}.patient-total{margin-left:0}.patient-list-head{display:none}.patient-row{padding:18px 16px;grid-template-columns:minmax(0,1fr) 40px 15px;gap:10px}.patient-row-contact,.patient-row-date{display:none}.patient-row-person .avatar{width:34px;height:34px}.patient-row strong{font-size:13px}.patient-row small{font-size:11px}.area-sections{grid-template-columns:1fr}.patient-head h1{font-size:24px}.visit-info h2{font-size:20px}.service-tone{font-size:12px}.tabs{gap:17px}.tab{font-size:13px}.primary,.secondary{font-size:12px;padding:10px 14px}.compare-export>.primary{font-size:14px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.primary:hover,.primary:active,.secondary:hover,.icon-button:hover{transform:none}}
+@media print{.clinic-identity,.area-switch{display:none!important}.workspace{background:#fff}.card,.map-card{box-shadow:none}}
+.photo-plane{margin-inline:auto}
+html:has(.compare-lightbox[open]){overflow:hidden}
+@media(min-width:1101px){
+  main:has(.map-layout){padding-top:18px}.workspace:has(.map-layout) .topbar{height:60px}
+  main:has(.map-layout) .back{margin-bottom:12px}main:has(.map-layout) .patient-head{margin-bottom:14px}
+  main:has(.map-layout) .patient-head .eyebrow{display:none}main:has(.map-layout) .patient-head h1{font-size:24px}
+  main:has(.map-layout) .visit-info{padding:10px 14px;margin-bottom:14px}.visit-info p{margin-bottom:0}
+  main:has(.map-layout) .visit-info h2{font-size:18px}main:has(.map-layout) .tabs{margin-bottom:14px}
+  main:has(.map-layout) .photo-picker{margin-bottom:14px}.photo-stage{height:min(600px,calc(100dvh - 580px));min-height:360px}
+  .map-side .card-body{padding:15px 18px}.map-side .field{margin-bottom:8px}.map-side textarea{min-height:60px}
+}
