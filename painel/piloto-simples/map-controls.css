@@ -1,6 +1,23 @@
 /* Photo controls only: scale the existing image, never reconstruct a face. */
+.map-layout .map-sequence-guide{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;list-style:none;padding:12px 14px;margin:0;background:#fcf9f7;border-bottom:1px solid #eadfe3}
+.map-layout .map-sequence-guide li{display:flex;align-items:center;gap:7px;min-width:0;color:#75656d;font-size:12px;line-height:1.4}
+.map-layout .map-sequence-guide li>span{display:grid;place-items:center;flex:none;width:23px;height:23px;border:1px solid #d7c8cd;border-radius:50%;background:#fff;font-weight:650;font-variant-numeric:tabular-nums}
+.map-layout .map-sequence-guide li[aria-current="step"]{color:#573342;font-weight:600}
+.map-layout .map-sequence-guide li[aria-current="step"]>span{background:#f3dbe2;border-color:#c397a8;color:#573342}
+.map-layout.is-batch:not(.has-selection) .map-inspector{display:none}
+.map-layout .map-batch-navigation{margin:0 0 16px;padding-bottom:12px;border-bottom:1px solid #eadfe3}
+.map-layout .map-batch-navigation-row{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:10px}
+.map-layout .map-batch-navigation-row .secondary{min-width:0;min-height:44px;padding:10px 8px;font-size:13px;white-space:normal}
+.map-layout #map-batch-position{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:#573342;white-space:nowrap}
+.map-layout .map-batch-navigation [data-action="continue-map-batch"]{width:100%;min-height:44px;margin-top:7px;font-size:13px;white-space:normal}
+.map-layout .map-batch-navigation p{margin:5px 0 0;color:#75656d;font-size:12px;line-height:1.5}
+.map-layout .point-entry .map-point-quantity{color:#30262c;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.map-layout .point-entry .map-point-quantity.is-invalid{color:#8b334c}
+.map-layout .point-entry .map-point-draft{color:#754859}
+.map-layout .map-total-preview{margin-top:8px;padding-top:8px;border-top:1px solid #e4d6dc;color:#573342}
+@media(max-width:620px){.map-layout .map-sequence-guide{gap:5px;padding:9px 10px}.map-layout .map-sequence-guide li{gap:5px;font-size:11px}.map-layout .map-sequence-guide li>span{width:21px;height:21px}.map-layout .map-batch-navigation-row{gap:7px}.map-layout.is-focused .map-batch-navigation{margin-bottom:12px}}
 .map-layout .map-batch-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:#fffdfc;border-bottom:1px solid #e7d9df;color:#4f3843}
-.map-layout .map-batch-toolbar button{min-height:42px;border-radius:12px;font-size:12px;line-height:1.35;padding:8px 12px}
+.map-layout .map-batch-toolbar button{min-height:44px;border-radius:12px;font-size:12px;line-height:1.35;padding:8px 12px}
 .map-layout #map-batch-status{font-size:12px;line-height:1.45;font-weight:550;margin-right:auto}
 .map-layout [data-action="save-map-batch"]{background:#e5a9a9;color:#30232b;border:1px solid #d293a0;box-shadow:0 3px 12px #8a4d6415}
 .map-layout .point-entry.pending .number{border-style:dashed;background:#fff3f6;color:#754859}
@@ -136,3 +153,8 @@ body:has(.map-layout.is-focused){overflow:hidden}
 @media(prefers-reduced-motion:reduce){.map-layout .map-marker,.map-layout .map-marker::before,.map-layout .point-entry{transition:none;animation:none}}
 @media(max-width:620px){.map-layout .map-toolbar{padding:10px 12px;gap:10px}.map-layout .map-toolbar>.segmented{width:100%}.map-layout .map-toolbar>.segmented .segment{flex:1;min-width:44px}.map-layout .map-zoom-controls .segment{padding:7px 4px}.map-layout .map-access-toolbar{padding:12px}.map-layout .map-side input,.map-layout .map-side select,.map-layout .map-side textarea{font-size:16px}.map-layout .map-footer{padding:10px 12px}}
 @media print{.map-layout .map-marker,.map-layout .map-marker::before,.map-layout .map-svg{print-color-adjust:exact}.map-layout .map-marker::before{box-shadow:none}.map-layout .map-svg>line,.map-layout .map-svg>path{filter:none}}
+/* Keep touch targets consistent in the expanded phone editor too. */
+@media(max-width:620px){
+ .map-layout.is-focused :is(.map-toolbar .segment,.map-zoom-controls .icon-button,.map-access-toolbar button,.map-footer .subtle,#save-point){min-height:44px}
+ .map-layout.is-focused .map-zoom-controls .icon-button{min-width:44px}
+}

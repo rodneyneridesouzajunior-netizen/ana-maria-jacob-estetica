@@ -14,14 +14,14 @@
  .sp-home :is(.sp-hero-primary,.sp-hero-secondary){min-height:54px;font-size:14px;line-height:1.3;font-weight:650;border-radius:17px;padding:13px 12px;box-shadow:0 2px 2px #fff inset,0 6px 16px #3221270a}
  .sp-home .sp-hero-primary{color:#2b181e;background:var(--amj-phone-rose);border:1px solid #af747a;box-shadow:0 1px 0 #ffe7e3 inset,0 6px 16px #9c5c681c}
  .sp-home .sp-hero-secondary{background:#fff;border-color:#b7a6ab;color:#2b2126}
- .sp-home .amj-day-summary{display:block;order:1;position:relative;isolation:isolate;padding:24px;border:1px solid #6b585a;border-top-color:#b89a75;border-radius:24px;color:#fff;background:linear-gradient(125deg,#382730 0%,#251d24 64%,#211d25 100%);box-shadow:0 1px 0 #ffffff26 inset,0 2px 3px #2719220e,0 12px 28px #38252c24,0 2px 0 #fff;margin:0;overflow:hidden}
+ .sp-home .amj-day-summary{display:block;order:1;position:relative;isolation:isolate;container:amj-home-day / inline-size;padding:24px;border:1px solid #6b585a;border-top-color:#b89a75;border-radius:24px;color:#fff;background:linear-gradient(125deg,#382730 0%,#251d24 64%,#211d25 100%);box-shadow:0 1px 0 #ffffff26 inset,0 2px 3px #2719220e,0 12px 28px #38252c24,0 2px 0 #fff;margin:0;overflow:hidden}
  .sp-home .amj-day-summary::before{content:"";position:absolute;z-index:-1;inset:0;background:radial-gradient(ellipse at 100% 0%,#bf9d7033,transparent 62%);pointer-events:none}
- .sp-home .amj-day-summary-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:24px;font-size:11px;line-height:1.6;color:#f1e6e9;font-weight:550}
+ .sp-home .amj-day-summary-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin-bottom:24px;font-size:11px;line-height:1.6;color:#f1e6e9;font-weight:550}
  .sp-home .amj-day-summary-top>span:first-child{display:flex;gap:8px;align-items:center}
  .sp-home .amj-day-summary-top svg{width:16px;height:16px;color:#dfc590}
  .sp-home .amj-day-count{padding:5px 9px;border:1px solid #9d848d70;border-radius:10px;white-space:nowrap;background:#ffffff08;color:#f9f3f5}
  .sp-home .amj-day-summary h2{font-size:14px;font-weight:500;line-height:1.6;color:#f2e8ed;letter-spacing:0;margin:0 0 6px}
- .sp-home .amj-day-amount{display:block;font-size:clamp(35px,10.8vw,49px);font-weight:650;line-height:1.12;letter-spacing:-.055em;color:#fff;white-space:nowrap}
+ .sp-home .amj-day-amount{display:block;font-size:clamp(35px,10.8vw,49px);font-weight:650;line-height:1.12;letter-spacing:-.055em;color:#fff;overflow-wrap:anywhere}
  .sp-home .amj-day-amount[data-amount-size=medium]{font-size:clamp(28px,8vw,38px)}
  .sp-home .amj-day-amount[data-amount-size=compact]{font-size:clamp(19px,6vw,30px)}
  .sp-home .amj-day-caption{font-size:12px;color:#d8c8d1;line-height:1.6;margin:10px 0 24px}
@@ -53,6 +53,13 @@
  .sp-home .amj-day-summary{padding:21px 18px}.sp-home .amj-day-summary-top{font-size:10px;gap:6px}.sp-home .amj-day-count{padding:5px 7px}
  .sp-home .sp-hero-actions{gap:9px}.sp-home :is(.sp-hero-primary,.sp-hero-secondary){font-size:12px;padding:12px 9px;min-height:54px}
  .sp-home .amj-day-metrics{gap:18px 12px}.sp-home .amj-day-metrics dt{font-size:10px}
+}
+/* A 390px phone has less than 300px inside this card after padding. Two
+   monetary columns there fragment amounts; keep a full row for each metric. */
+@container amj-home-day (max-width:310px){
+ .sp-home .amj-day-metrics{grid-template-columns:minmax(0,1fr);gap:20px}
+ .sp-home .amj-day-metrics>div+div{border-top:1px solid #b2839630;padding-top:16px}
+ .sp-home .amj-day-metrics dt{font-size:12px}
 }
 @media(max-width:850px) and (prefers-reduced-motion:no-preference){
  .sp-home{animation:none}.sp-home .amj-day-summary{animation:amj-phone-reveal 240ms cubic-bezier(.2,.7,.25,1) both}

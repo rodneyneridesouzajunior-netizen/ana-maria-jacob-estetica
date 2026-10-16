@@ -120,6 +120,16 @@
   .sp-home .sp-recent tbody tr:hover{background:#fcfbfa}
 }
 .sp-home :is(.sp-hero-primary,.sp-hero-secondary,.sp-open-button):active{background:#eee4de}
+/* Use the available card width, not the viewport: the sidebar and monthly
+   goal can leave a desktop hero narrower than a tablet. Keep complete values
+   and actions visible instead of compressing adjacent columns. */
+@media screen{
+  .sp-home{container:amj-home / inline-size}
+  .sp-home .sp-hero{container:amj-home-hero / inline-size}
+  .sp-home .sp-home-card{container:amj-home-card / inline-size}
+  .sp-home .sp-card-title h2{overflow-wrap:anywhere}
+  .sp-home .sp-next-person>small{flex-wrap:wrap;overflow-wrap:anywhere}
+}
 @media(prefers-reduced-motion:no-preference){.sp-home{animation:sp-home-enter 180ms ease-out}}
 @keyframes sp-home-enter{from{opacity:.35}to{opacity:1}}
 @media(max-width:1450px){
@@ -154,6 +164,33 @@
   .sp-home .sp-card-footer{padding-inline:20px}.sp-home .sp-procedure-list,.sp-home .sp-revenue-total{padding-inline:20px}
   .sp-home .sp-procedure-note{margin-inline:20px}.sp-home .clinic-home-goal{padding:24px 20px}
   .sp-home .sp-goal-icon{top:26px;right:22px}.sp-home .sp-empty{padding:12px 20px 24px}
+}
+@container amj-home (max-width:1100px) and (min-width:761px){
+  .sp-home .sp-home-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sp-home .sp-procedures{grid-column:1/-1}
+  .sp-home .sp-procedure-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 28px}
+}
+@container amj-home (max-width:760px){
+  .sp-home .sp-home-grid{grid-template-columns:minmax(0,1fr)}
+  .sp-home .sp-procedures{grid-column:auto}
+  .sp-home .sp-procedure-list{display:block}
+}
+@container amj-home-hero (max-width:720px){
+  .sp-home .sp-hero-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 28px}
+  .sp-home .sp-mini-label{min-height:0}
+}
+@container amj-home-hero (max-width:340px){
+  .sp-home .sp-hero-metrics{grid-template-columns:minmax(0,1fr)}
+}
+@container amj-home-card (max-width:380px){
+  .sp-home :is(.sp-next,.sp-recent) .sp-card-title{flex-wrap:wrap;gap:8px 16px}
+  .sp-home :is(.sp-next,.sp-recent) .sp-card-title>div{flex-basis:100%}
+  .sp-home :is(.sp-next,.sp-recent) .sp-card-title>a{justify-content:flex-start}
+}
+@container amj-home-card (max-width:300px){
+  .sp-home .sp-next-row{display:grid;grid-template-columns:54px minmax(0,1fr);align-items:start;gap:12px}
+  .sp-home .sp-next-person{grid-column:2}
+  .sp-home .sp-open-button{grid-column:2;justify-self:start}
 }
 @media(prefers-reduced-motion:reduce){.sp-home,.sp-home *{animation:none!important;transition:none!important}}
 @media print{.sp-home :is(.sp-home-card,.sp-hero){box-shadow:none}.sp-home .sp-recent table{min-width:0}}
