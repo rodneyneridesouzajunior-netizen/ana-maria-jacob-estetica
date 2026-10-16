@@ -94,6 +94,6 @@ test('complete PNG export labels free drawing without a dose and preserves saved
  output.toBlob=callback=>callback(new Blob([output.toBuffer('image/png')],{type:'image/png'}));
  const context=vm.createContext({annotationCheck,fanRays,dirty:false,pending:null,drag:null,photo:()=>({label:'Frontal'}),map:()=>({points,version:4}),visit:()=>({date:'2026-10-15'}),$:()=>image,isConnected:()=>false,document:{createElement:()=>({set width(v){output.width=v;},set height(v){output.height=v;},getContext:()=>spy,toBlob:output.toBlob})},download:(blob,name)=>downloads.push({blob,name}),toast(){}});
  vm.runInContext(exportSource,context);await context.exportMap();assert.equal(downloads.length,1);
- assert(labels.includes('1. Contorno manual · Desenho livre'));assert(labels.includes('2. Ponto existente · Produto informado · 2 U · lote LOTE-TESTE'));assert(!labels.some(label=>label.includes('sem quantidade')||label.includes('null')));
+ assert(labels.includes('1. Contorno manual · Desenho livre · procedimento: Procedimento não informado'));assert(labels.includes('2. Ponto existente · Produto informado · 2 U · lote LOTE-TESTE · procedimento: Procedimento não informado'));assert(!labels.some(label=>label.includes('sem quantidade')||label.includes('null')));
  const reopened=await loadImage(Buffer.from(await downloads[0].blob.arrayBuffer()));assert.equal(reopened.width,500);assert.equal(reopened.height,686);assert.deepEqual(points,before);
 });

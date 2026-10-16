@@ -27,6 +27,18 @@ export function normalizedPoint(clientX, clientY, rect) {
 }
 export const MAX_TRACE_VERTICES = 256;
 export const DEFAULT_FAN_SPREAD = 48;
+/** Absence preserves old visit inheritance; explicit null is never inheritance. */
+export function markingProcedureBinding(point){
+  const keys=['procedureId','procedureVersion','procedureSnapshot'],present=keys.filter(key=>Object.hasOwn(point,key));
+  if(!present.length)return {mode:'inherit',snapshot:null};
+  if(present.length===3&&keys.every(key=>point[key]===null))return {mode:'none',snapshot:null};
+  const snapshot=point.procedureSnapshot,validId=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,179}$/.test(value)&&!['constructor','prototype','__proto__'].includes(value);
+  if(present.length!==3||!validId(point.procedureId)||!Number.isSafeInteger(point.procedureVersion)||point.procedureVersion<1||!snapshot||typeof snapshot!=='object'||Array.isArray(snapshot)||snapshot.id!==point.procedureId||snapshot.version!==point.procedureVersion||typeof snapshot.name!=='string'||!snapshot.name.trim()||snapshot.name.length>120)throw Error('Confira o procedimento e a versão preservada da marcação.');
+  for(const key of ['price','cost'])if(!Number.isSafeInteger(snapshot[key])||snapshot[key]<0||snapshot[key]>100000000)throw Error('Valor do procedimento da marcação inválido.');
+  if(!Number.isSafeInteger(snapshot.duration)||snapshot.duration<5||snapshot.duration>480||snapshot.recordMode!==undefined&&!['injectable','non_injectable','simple'].includes(snapshot.recordMode))throw Error('Registro do procedimento da marcação inválido.');
+  if(snapshot.requiredDocumentIds!==undefined&&(!Array.isArray(snapshot.requiredDocumentIds)||snapshot.requiredDocumentIds.length>20||new Set(snapshot.requiredDocumentIds).size!==snapshot.requiredDocumentIds.length||snapshot.requiredDocumentIds.some(id=>!validId(id)))||snapshot.consentTemplateId!==undefined&&snapshot.consentTemplateId!==''&&!validId(snapshot.consentTemplateId))throw Error('Documentos do procedimento da marcação inválidos.');
+  return {mode:'explicit',snapshot};
+}
 function checkFanSpread(point){
   if(Object.hasOwn(point,'fanSpread')&&(point.kind!=='leque'||!Number.isFinite(point.fanSpread)||point.fanSpread<=0||point.fanSpread>120))throw Error('A abertura do leque deve ser maior que 0 e até 120 graus.');
 }
@@ -55,6 +67,7 @@ export function fanRays(point,aspectRatio=1){
 }
 export function annotationCheck(point) {
   if(!['ponto','linha','leque','traco'].includes(point.kind)) throw Error('Marcação inválida.');
+  markingProcedureBinding(point);
   checkFanSpread(point);
   for(const key of ['x','y',...(['ponto','traco'].includes(point.kind)?[]:['x2','y2'])]) if(!Number.isFinite(point[key])||point[key]<0||point[key]>1) throw Error('Marcação fora da imagem.');
   if(point.kind==='traco'){

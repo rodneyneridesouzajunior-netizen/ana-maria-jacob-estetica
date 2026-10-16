@@ -164,3 +164,10 @@ enabled = true
 # The gateway JWT check is disabled only to use this verified custom flow.
 verify_jwt = false
 entrypoint = "./functions/app-workspace/index.ts"
+
+[functions.documento-paciente]
+enabled = true
+# Individual expiring/revocable capability; no anonymous table/RPC permissions.
+verify_jwt = false
+import_map = "./functions/documento-paciente/deno.json"
+entrypoint = "./functions/documento-paciente/index.ts"

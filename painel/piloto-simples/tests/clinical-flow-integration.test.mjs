@@ -67,6 +67,19 @@ test('app root opens real review service, sends only allowed fields and cancella
  h.w.document.querySelector('[data-cc=cancel]').click();assert.equal(await result,false);assert.equal(h.w.document.querySelector('.cc-modal'),null);assert.equal(h.calls.length,1);
 });
 
+test('app clinical handoff forwards distinct quote items without a legacy item binding',async t=>{
+ const h=app(t),result=h.run("openClinicalCompletion({visitId:'visit',procedureId:'proc',consumptions:[],sessions:1,quoteId:'quote',itemId:'obsolete-item',quoteItems:[{itemId:'item-a',sessions:1},{itemId:'item-b',sessions:2}]})");await tick();
+ assert.equal(h.calls[0].payload.quote_id,'quote');assert.equal(Object.hasOwn(h.calls[0].payload,'item_id'),false);assert.equal(Object.hasOwn(h.calls[0].payload,'quote_items'),false);
+ assert.deepEqual(JSON.parse(JSON.stringify(h.calls[0].payload.quoteItems)),[{itemId:'item-a',sessions:1},{itemId:'item-b',sessions:2}]);
+ h.w.document.querySelector('[data-cc=cancel]').click();assert.equal(await result,false);assert.equal(h.calls.length,1);
+});
+
+test('app clinical handoff preserves the legacy one-item quote contract',async t=>{
+ const h=app(t),result=h.run("openClinicalCompletion({visitId:'visit',procedureId:'proc',consumptions:[],sessions:2,quoteId:'quote',itemId:'item-a'})");await tick();
+ assert.equal(h.calls[0].payload.quote_id,'quote');assert.equal(h.calls[0].payload.item_id,'item-a');assert.equal(h.calls[0].payload.sessions,2);assert.equal(Object.hasOwn(h.calls[0].payload,'quoteItems'),false);
+ h.w.document.querySelector('[data-cc=cancel]').click();assert.equal(await result,false);assert.equal(h.calls.length,1);
+});
+
 test('confirmed clinical conclusion survives failed reread and only rereads when the user retries',async t=>{
  const h=app(t,{failReload:true}),result=h.open();await tick();const form=h.w.document.querySelector('[data-cc-confirm]');form.elements.confirmed.checked=true;form.dispatchEvent(new h.w.Event('submit',{bubbles:true,cancelable:true}));await tick();
  assert.match(h.w.document.querySelector('.cc-modal').textContent,/concluído no servidor/);assert.match(h.w.document.querySelector('.cc-modal').textContent,/não conclua novamente/);assert.equal(h.run('clean()'),false);assert.equal(h.calls.filter(x=>x.action==='concluir_consulta_clinica').length,1);

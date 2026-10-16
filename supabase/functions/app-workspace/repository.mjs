@@ -1,5 +1,6 @@
 import {fail,hash} from './rules.mjs';
 import {historicalPDFPath} from './clinical-document-access.mjs';
+import {capability,digest,canonical,assertIssueIntegrity,paths,BUCKET as CUSTOM_BUCKET} from '../_shared/custom-documents.mjs';
 const BUCKET='app-workspace-media';
 export function createRepository({supabaseUrl,serviceRoleKey,fetchImpl=fetch}){
  const base=supabaseUrl.replace(/\/+$/,''),headers={apikey:serviceRoleKey,Authorization:'Bearer '+serviceRoleKey};
@@ -12,6 +13,8 @@ export function createRepository({supabaseUrl,serviceRoleKey,fetchImpl=fetch}){
    for(const [code,[status,text]]of Object.entries(bookingErrors))if(message===code)fail(code,text,status);
    const clinicalErrors={clinical_configuration_invalid:[422,'Confira seleção, motivo e versão da configuração.'],clinical_professional_missing:[422,'Profissional não encontrada no cadastro.'],clinical_professional_unavailable:[422,'Profissional ou conta não está ativa para esta configuração.'],clinical_procedure_missing:[422,'Versão do procedimento indisponível.'],clinical_policy_mismatch:[422,'Confira a correspondência dos documentos oficiais.'],clinical_completion_invalid:[422,'Confira consulta e declaração da conclusão.'],clinical_professional_changed:[409,'O vínculo da conta profissional mudou. Atualize a revisão.'],clinical_policy_changed:[409,'A política de documentos mudou. Atualize a revisão.'],clinical_documents_incomplete:[422,'Os originais obrigatórios não foram conferidos.'],clinical_document_changed:[409,'Um original mudou ou foi retirado. Confira os documentos novamente.']};
    for(const [code,[status,text]]of Object.entries(clinicalErrors))if(message===code)fail(code,text,status);
+   const customErrors={custom_birth_date_required:[422,'Confira a data de nascimento da paciente.'],custom_adult_required:[422,'Este fluxo exige paciente com 18 anos ou mais; menores precisam de conferência presencial do representante.'],clinical_procedure_versions_conflict:[422,'Há versões conflitantes do mesmo procedimento. Confira a consulta e suas marcações.'],custom_link_unavailable:[404,'Este link está inválido, expirado ou revogado.'],custom_operation_reused:[409,'Esta operação já foi utilizada com outros dados.'],custom_binding_invalid:[422,'Confira documento, paciente e consulta.'],custom_visit_locked:[409,'A consulta está encerrada. Preserve os originais.'],custom_issue_invalid:[422,'Confira a versão e a validade do documento.'],custom_active_issue_exists:[409,'Este documento já possui emissão ativa. Abra o link existente ou revogue antes de reemitir.'],custom_processing:[409,'O recebimento está em processamento. Aguarde e repita a mesma operação.'],custom_claim_expired:[409,'O processamento foi retomado por outra tentativa. Repita a mesma operação.'],custom_identity_mismatch:[409,'A identificação ou a consulta mudou. Solicite conferência à clínica.'],custom_submission_invalid:[422,'Confira a confirmação e as respostas.'],custom_integrity_invalid:[409,'Os arquivos originais não correspondem ao registro.']};
+   for(const [code,[status,text]]of Object.entries(customErrors))if(message===code)fail(code,text,status);
    if(message.includes('revision_conflict')||body?.code==='40001')fail('revision_conflict','Outra alteração foi salva. Atualize antes de tentar novamente.',409);
    if(message.includes('workspace_access_denied')||body?.code==='42501')fail('workspace_access_denied','A sessão ou o acesso à clínica mudou.',403);
    if(message.includes('operation_reused')||body?.code==='23505')fail('operation_reused','Identificador já utilizado com outros dados.',409);
@@ -29,7 +32,7 @@ export function createRepository({supabaseUrl,serviceRoleKey,fetchImpl=fetch}){
   if(typeof signed!=='string'||!signed.startsWith('/object/sign/'+bucket+'/'+encoded+'?'))fail('invalid_document_url','Não foi possível abrir o PDF original.',503);
   return base+'/storage/v1'+signed;
  }
- return {
+ const repository={
   async load(clinic){return (await rows('app_workspaces',filter(clinic)+'&limit=1'))[0]||null;},
   async operation(clinic,id){return (await rows('app_workspace_operations',filter(clinic)+'&operation_id=eq.'+encodeURIComponent(id)+'&limit=1'))[0]||null;},
   async version(clinic,revision){return (await rows('app_workspace_versions',filter(clinic)+'&revision=eq.'+revision+'&limit=1'))[0]||null;},
@@ -51,6 +54,26 @@ export function createRepository({supabaseUrl,serviceRoleKey,fetchImpl=fetch}){
   clinicalSource:args=>rpc('app_workspace_document_source',args),
   clinicalLinks:args=>rpc('app_workspace_document_links_list',args),
   clinicalOperation:args=>rpc('app_workspace_document_operation',args),
+  customIssues:args=>rpc('app_custom_document_issues_list',args),
+  customIssue:args=>rpc('app_custom_document_issue',args),
+  customIssueCreate:args=>rpc('app_custom_document_issue_create',args),
+  customRevoke:args=>rpc('app_custom_document_revoke',args),
+  customPublic:args=>rpc('app_custom_document_public',args),
+  customReserve:args=>rpc('app_custom_document_reserve',args),
+  customFinish:args=>rpc('app_custom_document_finish',args),
+  customRelease:args=>rpc('app_custom_document_release',args),
+  customClinicalSources:args=>rpc('app_custom_document_sources',args),
+  customClinicalSource:args=>rpc('app_custom_document_source',args),
+  customTokenHash:async issue=>digest(await capability(issue,serviceRoleKey)),
+  async customPublicURL(issue){const token=await capability(issue,serviceRoleKey);if(await digest(token)!==issue.token_hash)fail('custom_link_key_changed','A chave do servidor mudou. Preserve o original e emita um novo link após revogar este.',409);return 'https://anamariajacob.com.br/documento/#token='+token;},
+  async customOriginalPDF(issue){const expected=paths(issue);if(!issue.received_at||issue.pdf_path!==expected.pdf_path||issue.signature_path!==expected.signature_path)fail('custom_integrity_invalid','O original não está confirmado.',409);await assertIssueIntegrity(issue);const registry={issue_id:issue.id,snapshot_hash:issue.snapshot_hash,submission_hash:issue.submission_hash,signed_at:issue.signed_at,...expected,signature_sha256:issue.signature_sha256,pdf_sha256:issue.pdf_sha256};if(await digest(canonical(registry))!==issue.registry_sha256)fail('custom_integrity_invalid','O registro do original está divergente.',409);const source={...issue,bucket:CUSTOM_BUCKET,storage_valid:true};await repository.verifyClinicalObject(source,'pdf');await repository.verifyClinicalObject(source,'signature');return{url:await signClinicalPath(CUSTOM_BUCKET,issue.pdf_path),sha256:issue.pdf_sha256,expires_in:120};},
+  async customUpload(path,bytes,mime,expectedHash){
+   if(!/^[a-f0-9-]{36}\/[a-f0-9-]{36}\/(documento\.pdf|assinatura\.json)$/.test(path)||!['application/pdf','application/json'].includes(mime)||await digest(bytes)!==expectedHash)fail('custom_integrity_invalid','Arquivo original inválido.',409);
+   const encoded=path.split('/').map(encodeURIComponent).join('/'),response=await fetchImpl(base+'/storage/v1/object/'+CUSTOM_BUCKET+'/'+encoded,{method:'POST',headers:{...headers,'Content-Type':mime,'x-upsert':'false'},body:bytes,redirect:'error',cache:'no-store',signal:AbortSignal.timeout(25000)});
+   if(response.ok)return;
+   if([400,409].includes(response.status)){const existing=await request('/storage/v1/object/'+CUSTOM_BUCKET+'/'+encoded),value=await existing.arrayBuffer();if(value.byteLength===bytes.byteLength&&await digest(value)===expectedHash)return;fail('custom_content_conflict','O arquivo existente diverge. O original foi preservado.',409);}
+   fail('custom_upload_unconfirmed','O envio do original não foi confirmado. Repita a mesma operação.',503);
+  },
   linkClinical:args=>rpc('app_workspace_link_document',args),
   async openHistoricalClinicalPDF(source){
    const path=historicalPDFPath(source);if(!path)fail('document_not_ready','O PDF histórico não tem um caminho válido registrado.',409);
@@ -69,8 +92,8 @@ export function createRepository({supabaseUrl,serviceRoleKey,fetchImpl=fetch}){
    return {url:await signClinicalPath('fichas-pdf',path),sha256:currentHash,expires_in:120,integrity:'historical_file_only'};
   },
   async verifyClinicalObject(source,kind){
-   const bucket=source.bucket,path=kind==='pdf'?source.pdf_path:source.signature_path,expected=kind==='pdf'?source.pdf_sha256:source.signature_sha256,max=kind==='pdf'?5*1024*1024:500000;
-   if(!source.storage_valid||!['fichas-pdf','documentos-clinicos'].includes(bucket)||typeof path!=='string'||path.includes('..')||!/^[a-f0-9]{64}$/.test(expected||''))fail('document_integrity_invalid','Metadados do original incompletos.');
+   const bucket=source.bucket,path=kind==='pdf'?source.pdf_path:source.signature_path,expected=kind==='pdf'?source.pdf_sha256:source.signature_sha256,max=kind==='pdf'?5*1024*1024:bucket===CUSTOM_BUCKET?1500000:500000;
+   if(!source.storage_valid||!['fichas-pdf','documentos-clinicos',CUSTOM_BUCKET].includes(bucket)||typeof path!=='string'||path.includes('..')||!/^[a-f0-9]{64}$/.test(expected||''))fail('document_integrity_invalid','Metadados do original incompletos.');
    const response=await request('/storage/v1/object/'+bucket+'/'+path.split('/').map(encodeURIComponent).join('/'));
    if(Number(response.headers.get('content-length')||0)>max)fail('document_integrity_invalid','O arquivo original excede o limite de verificação.');
    const reader=response.body?.getReader(),parts=[];let size=0;if(!reader)fail('document_integrity_invalid','O arquivo original está vazio.');
@@ -79,7 +102,7 @@ export function createRepository({supabaseUrl,serviceRoleKey,fetchImpl=fetch}){
    if(!size||await hash(bytes)!==expected)fail('document_integrity_invalid','O arquivo original não corresponde ao hash registrado. Nenhum vínculo foi salvo.',409);
   },
   async signClinical(source){
-   const bucket=source.bucket,path=source.pdf_path;if(!source.storage_valid||!['fichas-pdf','documentos-clinicos'].includes(bucket)||typeof path!=='string'||path.includes('..'))fail('document_integrity_invalid','Caminho de documento inválido.');
+   const bucket=source.bucket,path=source.pdf_path;if(!source.storage_valid||!['fichas-pdf','documentos-clinicos',CUSTOM_BUCKET].includes(bucket)||typeof path!=='string'||path.includes('..'))fail('document_integrity_invalid','Caminho de documento inválido.');
    return signClinicalPath(bucket,path);
   },
   async reserve(args){return photoRow(await rpc('app_workspace_photo_reserve',args));},
@@ -93,5 +116,5 @@ export function createRepository({supabaseUrl,serviceRoleKey,fetchImpl=fetch}){
    fail('upload_unconfirmed','O envio da foto não foi confirmado. Repita a mesma operação e arquivo.',503);
   },
   async sign(path){const encoded=path.split('/').map(encodeURIComponent).join('/'),value=await json('/storage/v1/object/sign/'+BUCKET+'/'+encoded,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({expiresIn:120})});const signed=value.signedURL||value.signedUrl;if(typeof signed!=='string'||!signed.startsWith('/object/sign/'+BUCKET+'/'))fail('invalid_photo_url','Não foi possível abrir a fotografia.',503);return base+'/storage/v1'+signed;},
- };
+ };return repository;
 }

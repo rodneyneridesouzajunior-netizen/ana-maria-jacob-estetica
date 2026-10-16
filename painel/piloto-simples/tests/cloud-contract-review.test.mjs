@@ -30,7 +30,9 @@ function harness(t,{aal='aal2'}={}){
   sign:async path=>PUBLIC_BACKEND.supabaseUrl+'/storage/v1/object/sign/app-workspace-media/'+path+'?token=fictional-test',
  };
  repository.completionContext=async()=>({workspace_revision:row.revision,profile:{id:id(4),professional_id:'amj-principal',user_id:USER,professional_name:'Profissional sintética',professional_snapshot:clone(row.state.clinic.professionals[0]),status:'active',version:1},policy:{id:id(5),status:'active',procedure_id:'review-proc',procedure_version:1,procedure_hash:await hash(stable(row.state.visits[0].procedureSnapshot)),requirements:[]}});
- repository.clinicalLinks=async()=>[];
+ const original={source_kind:'anamnese',source_id:id(6),type:'anamnese',status:'recebido',source_version:'fixture-v1',source_hash:'a'.repeat(64),signature_sha256:'b'.repeat(64),pdf_sha256:'c'.repeat(64),registry_sha256:'d'.repeat(64),source_fingerprint:'e'.repeat(64),identity:{name:'Paciente fictícia de contrato',cpf:'52998224725',birth_date:''},storage_valid:true,archived:false,withdrawn:false};
+ repository.clinicalLinks=async()=>[{id:id(7),source_kind:'anamnese',source_id:original.source_id,source_fingerprint:original.source_fingerprint,source_snapshot:{type:'anamnese'},available:true,current_identity_matches:true,status:'vinculado_recebido',linked_at:now}];
+ repository.clinicalSource=async()=>clone(original);repository.verifyClinicalObject=async(source,kind)=>{assert.equal(source.source_fingerprint,original.source_fingerprint);assert.ok(['pdf','signature'].includes(kind));};
  repository.completionOperation=async p=>clone(clinicalOperations.get(p.p_operation)||null);
  repository.completeClinical=async p=>{const workspace=await repository.commit(p),signature={id:p.p_operation,patient_id:p.p_patient,visit_id:p.p_visit,actor_id:p.p_actor,workspace_revision:workspace.revision,review_hash:p.p_review_hash,signature_method:'authenticated_session_mfa'};const result={workspace,signature,fingerprint:p.p_fingerprint};clinicalOperations.set(p.p_operation,clone(result));return result;};
  const handler=createWorkspaceHandler({repository,now:()=>now,authenticate:async()=>{if(!serverAllowed)throw Object.assign(Error('Revoked'),{status:403});return{authMethod:'supabase_auth',role:'owner',aal:'aal2',clinicId:CLINIC,userId:USER,sessionId:SESSION};},authorize:async(_req,_ctx,scope)=>{authorizations.push(scope);if(!serverAllowed)throw Object.assign(Error('Revoked'),{status:403});}});
@@ -44,7 +46,7 @@ function harness(t,{aal='aal2'}={}){
  return {store,clinical,requests,authorizations,files,clinicalOperations,row:()=>clone(row),drop(action){dropAction=action;},serverDeny(){serverAllowed=false;},sdkAal(value){level=value;},operations};
 }
 function addInitial(s){
- savePatient(s,{id:'review-patient',name:'Paciente fictícia de contrato',cpf:'',phone:'',email:'',birthDate:''},{operationId:'review-patient-op',now,today:day});
+ savePatient(s,{id:'review-patient',name:'Paciente fictícia de contrato',cpf:'52998224725',phone:'',email:'',birthDate:''},{operationId:'review-patient-op',now,today:day});
  saveProcedure(s,op('review-procedure-op',{id:'review-proc',name:'Avaliação fictícia',price:10001,cost:1000,duration:30,recordMode:'simple'}));
  saveProduct(s,op('review-product-op',{id:'review-product',name:'Material fictício',unit:'mL',unitCost:2000}));
  receiveLot(s,op('review-lot-op',{id:'review-lot',productId:'review-product',code:'TESTE',expiry:'2027-10-15',quantity:10,unitCost:2000}));

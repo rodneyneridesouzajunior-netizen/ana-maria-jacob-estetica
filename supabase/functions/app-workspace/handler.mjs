@@ -3,6 +3,8 @@ import {CLINICAL_ACTIONS,createClinicalBridge} from './clinical-bridge.mjs';
 import {SITE_BOOKING_ACTIONS,createSiteBooking} from './site-booking.mjs';
 import {CLINICAL_COMPLETION_ACTIONS,createClinicalCompletion} from './clinical-completion.mjs';
 import {CLINICAL_SETTINGS_ACTIONS,createClinicalSettings} from './clinical-settings.mjs';
+import {CUSTOM_DOCUMENT_ACTIONS,createCustomDocuments} from './custom-documents.mjs';
+import {CustomDocumentError} from '../_shared/custom-documents.mjs';
 const ORIGINS=new Set(['https://anamariajacob.com.br','https://www.anamariajacob.com.br','http://127.0.0.1:8765','http://localhost:8765','http://127.0.0.1:8766','http://localhost:8766']);
 const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'};
 const revision=n=>Number.isSafeInteger(n)&&n>=0;
@@ -14,6 +16,7 @@ export function createWorkspaceHandler({authenticate,authorize,repository,now=()
  const siteBooking=createSiteBooking({repository,authorize,now});
  const completion=createClinicalCompletion({repository,authorize,validateTransition,now});
  const settings=createClinicalSettings({repository,authorize});
+ const customDocuments=createCustomDocuments({repository,authorize,now});
  return async function handle(req){const origin=req.headers.get('origin')||'',cors={'Access-Control-Allow-Origin':ORIGINS.has(origin)?origin:'https://anamariajacob.com.br','Access-Control-Allow-Headers':'authorization, apikey, content-type, x-client-info','Access-Control-Allow-Methods':'POST, OPTIONS',Vary:'Origin','Cache-Control':'no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'};
   const response=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:cors});
   let ctx;try{
@@ -25,7 +28,8 @@ export function createWorkspaceHandler({authenticate,authorize,repository,now=()
    const multipart=(req.headers.get('content-type')||'').startsWith('multipart/form-data');
    const bytes=await limited(req,multipart?11*1024*1024:5*1024*1024);let p;
    try{p=multipart?await new Request(req.url,{method:'POST',headers:{'Content-Type':req.headers.get('content-type')},body:bytes}).formData():JSON.parse(new TextDecoder().decode(bytes));}catch{fail('invalid_payload','Envio inválido.');}
-   const action=multipart?p.get('acao'):p?.acao;if(!['abrir','commit','status_operacao','upload','obterfoto',...CLINICAL_ACTIONS,...SITE_BOOKING_ACTIONS,...CLINICAL_COMPLETION_ACTIONS,...CLINICAL_SETTINGS_ACTIONS].includes(action)||multipart!== (action==='upload'))fail('unsupported_action','Operação não reconhecida.');
+   const action=multipart?p.get('acao'):p?.acao;if(!['abrir','commit','status_operacao','upload','obterfoto',...CLINICAL_ACTIONS,...SITE_BOOKING_ACTIONS,...CLINICAL_COMPLETION_ACTIONS,...CLINICAL_SETTINGS_ACTIONS,...CUSTOM_DOCUMENT_ACTIONS].includes(action)||multipart!== (action==='upload'))fail('unsupported_action','Operação não reconhecida.');
+   if(CUSTOM_DOCUMENT_ACTIONS.includes(action))return response({...fields,...await customDocuments(p,ctx,req)});
    if(SITE_BOOKING_ACTIONS.includes(action))return response({...fields,...await siteBooking(p,ctx,req)});
    if(CLINICAL_COMPLETION_ACTIONS.includes(action))return response({...fields,...await completion(p,ctx,req)});
    if(CLINICAL_SETTINGS_ACTIONS.includes(action))return response({...fields,...await settings(p,ctx,req)});
@@ -59,6 +63,6 @@ export function createWorkspaceHandler({authenticate,authorize,repository,now=()
    const fingerprint=await hash(stable({expected_revision:expected,metadata}));let reserved=await repository.reserve({...actor,p_fingerprint:fingerprint,p_expected:expected,p_photo:id,p_patient:patient,p_visit:visit,p_metadata:metadata});
    if(reserved.status!=='ready'){await repository.upload(metadata.original_path,originalBytes,original.type,sha256);await repository.upload(metadata.preview_path,previewBytes,preview.type,previewHash);reserved=await repository.ready({...actor,p_fingerprint:fingerprint});}
    return response({...fields,photo:publicPhoto(reserved),operation:{id:operationId,kind:'upload',status:'committed'}});
-  }catch(error){const status=error instanceof WorkspaceError?error.status:([401,403].includes(error?.status)?error.status:503);return response({ok:false,codigo:error instanceof WorkspaceError?error.code:status===401?'session_invalid':status===403?'access_denied':'backend_unavailable',erro:error instanceof WorkspaceError?error.message:status===401?'A sessão expirou. Entre novamente.':status===403?'Acesso negado. Confira a conta e o autenticador.':'Não foi possível confirmar a operação. Preserve a mesma chave antes de repetir.'},status);}
+  }catch(error){const known=error instanceof WorkspaceError||error instanceof CustomDocumentError,status=known?error.status:([401,403].includes(error?.status)?error.status:503);return response({ok:false,codigo:known?error.code:status===401?'session_invalid':status===403?'access_denied':'backend_unavailable',erro:known?error.message:status===401?'A sessão expirou. Entre novamente.':status===403?'Acesso negado. Confira a conta e o autenticador.':'Não foi possível confirmar a operação. Preserve a mesma chave antes de repetir.'},status);}
  };
 }

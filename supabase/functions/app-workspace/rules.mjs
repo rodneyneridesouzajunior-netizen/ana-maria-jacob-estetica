@@ -1,6 +1,6 @@
 import {validateBackupState} from '../_shared/app-workspace-domain/backup.mjs';
 import {defaultClinic,validateClinicAppointment} from '../_shared/app-workspace-domain/clinic-domain.mjs';
-import {allocateLotCosts,quoteTotals,validateQuoteItem,stockUnits,visitMarkings,quoteExecutionCosts} from '../_shared/app-workspace-domain/operations-domain.mjs';
+import {allocateLotCosts,quoteTotals,validateQuoteItem,stockUnits,visitMarkings,quoteExecutionCosts,completeVisit} from '../_shared/app-workspace-domain/operations-domain.mjs';
 import {assertQuoteDeliveryTransitions} from './quote-delivery-transitions.mjs';
 import {assertFacialHistoryPreserved} from '../_shared/app-workspace-domain/facial-study-domain.mjs';
 
@@ -82,6 +82,12 @@ export function validateTransition(old,next,{photos=[],now=new Date().toISOStrin
   if(previous?.status==='cancelado'&&!same(previous,v))fail('immutable_visit','Consulta cancelada é preservada.');
   if(previous){if(previous.patientId!==v.patientId)fail('patient_binding_immutable','A paciente da consulta não pode ser trocada.');if(previous.procedureSnapshot&&!same(previous.procedureSnapshot,v.procedureSnapshot))fail('procedure_snapshot_immutable','Preserve a versão do procedimento selecionada na consulta.');for(const p of previous.photos){const n=v.photos.find(x=>x.id===p.id);if(!n||!same(omit(p,['label','phase']),omit(n,['label','phase'])))fail('original_photo_immutable','O arquivo original e seu vínculo são imutáveis.');}for(const [id,m]of Object.entries(previous.maps)){const n=v.maps[id];if(!n)fail('map_removal_forbidden','Preserve o mapa e seu histórico.');if(!same(m,n)){const edit=same(n.history,[...m.history,m.points].slice(-20)),undo=m.history.length>0&&same(n.points,m.history.at(-1))&&same(n.history,m.history.slice(0,-1));if(n.version!==m.version+1||!edit&&!undo)fail('map_version_conflict','A alteração do mapa deve preservar sua versão anterior ou desfazer exatamente o último traçado.',409);}}}
   if(v.procedureSnapshot&&!previous?.procedureSnapshot&&!same(v.procedureSnapshot,get(next,'procedures',v.procedureId)))fail('procedure_snapshot_invalid','A versão selecionada deve corresponder ao catálogo.');
+  for(const [photoId,map]of Object.entries(v.maps||{}))for(const point of map.points){
+   if(!point.procedureId)continue;
+   const priorMap=previous?.maps?.[photoId],priorPoint=priorMap?.points.find(p=>p.id===point.id),binding=p=>p&&({id:p.procedureId,version:p.procedureVersion,snapshot:p.procedureSnapshot});
+   const restored=priorMap?.history?.length&&same(map.points,priorMap.history.at(-1))&&same(map.history,priorMap.history.slice(0,-1));
+   if(!restored&&!same(binding(point),binding(priorPoint))){const catalog=get(next,'procedures',point.procedureId);if(!catalog||catalog.active===false||!same(catalog,point.procedureSnapshot)&&!same(v.procedureSnapshot,point.procedureSnapshot))fail('marking_procedure_invalid','Selecione uma versão ativa e exata do procedimento da marcação.');}
+  }
   for(const photo of v.photos){const p=verified.get(photo.id);if(!p||p.status!=='ready'||p.patient_id!==v.patientId||p.visit_id!==v.id||p.sha256!==photo.sha256||p.width!==photo.width||p.height!==photo.height)fail('photo_binding_invalid','A fotografia não foi enviada/verificada para esta paciente e consulta.');}
   if(v.status==='concluido'&&!previous?.lockedAt){
    if(!v.completionSnapshot||!timestamp(v.completedAt)||v.lockedAt!==v.completedAt||!v.procedureSnapshot||!validId(v.completionOperationId))fail('completion_snapshot_required','Conclusão sem versão clínica preservada.');
@@ -91,8 +97,20 @@ export function validateTransition(old,next,{photos=[],now=new Date().toISOStrin
    for(const x of usage){const lot=get(next,'stockLots',x.lotId),product=get(next,'products',x.productId);if(!lot||!product||product.active===false||x.unitCost!==lot.unitCost||x.productId!==lot.productId||x.unit!==lot.unit||x.lotCode!==lot.code||x.expiry!==lot.expiry||x.productName!==product.name||x.units!==stockUnits(x.quantity)||lot.expiry<today)fail('consumption_lot_invalid','Consumo difere do lote verificado ou o lote está vencido.');totals.set(lot.id,(totals.get(lot.id)||0)+x.units);if(x.photoId||x.pointId){const key=JSON.stringify([x.photoId,x.pointId]),point=required.find(p=>p.photoId===x.photoId&&p.pointId===x.pointId);if(!point||seen.has(key)||stockUnits(point.quantity)!==x.units||point.unit!==x.unit||point.region!==x.region)fail('consumption_marking_invalid','Consumo difere da marcação registrada.');seen.add(key);}else if(typeof x.reason!=='string'||!x.reason.trim())fail('consumption_reason_required','Informe o uso do material sem marcação.');}
    if(required.some(p=>!seen.has(JSON.stringify([p.photoId,p.pointId]))))fail('consumption_marking_missing','Toda marcação com quantidade precisa de lote e consumo.');
    const movements=newly(old,next,'stockMovements').filter(m=>m.visitId===v.id);if(movements.length!==totals.size||[...totals].some(([lot,units])=>!movements.some(m=>m.type==='consumo'&&m.lotId===lot&&m.deltaUnits===-units&&m.operationId===v.completionOperationId)))fail('consumption_movement_missing','Consumo precisa corresponder à baixa do estoque.');
+   if(v.completionSnapshot.procedureExecutions){
+    // Rebuild from the saved draft and the explicit user selections. This checks
+    // every cost allocation and session event, including the multi-procedure case.
+    const expectedState=structuredClone(old),snap=v.completionSnapshot;
+    const consumptions=usage.map(x=>Object.fromEntries(['lotId','quantity','photoId','pointId','reason'].filter(k=>x[k]!==undefined).map(k=>[k,x[k]])));
+    try{completeVisit(expectedState,{operationId:v.completionOperationId,visitId:v.id,procedureId:v.procedureId,consumptions,quoteId:v.quoteId||'',...(v.quoteId?{quoteItems:snap.quoteItems}:{}),today,now:v.completedAt},{documentCheck:()=>true});}catch(error){fail('completion_execution_invalid',error.message);}
+    const expectedVisit=get(expectedState,'visits',v.id);
+    if(!same(expectedVisit,v))fail('completion_execution_invalid','A conclusão diverge da execução preservada dos procedimentos.');
+    for(const key of ['quoteSessionUses','stockMovements','expectedReturns'])if(!same(expectedState[key].filter(x=>x.visitId===v.id),next[key].filter(x=>x.visitId===v.id)))fail('completion_execution_invalid','Sessões, estoque e retornos precisam corresponder à conclusão.');
+    if(!same(get(expectedState,'bills',v.billId),get(next,'bills',v.billId)))fail('completion_execution_invalid','A cobrança diverge da execução dos procedimentos.');
+   }else{
    const snap=v.completionSnapshot,sessions=snap.sessions;if(!Number.isSafeInteger(sessions)||sessions<1||sessions>1000||!v.quoteId&&sessions!==1)fail('invalid_sessions','Quantidade de sessões incompatível.');const expected=usage.reduce((n,x)=>n+x.cost,0)+v.procedureSnapshot.cost*sessions;if(v.actualCost!==expected||snap.actualCost!==expected||!same(snap.consumptions,usage)||!same(snap.procedure,v.procedureSnapshot)||snap.billId!==v.billId||snap.quoteId!==(v.quoteId||null)||snap.service!==v.service)fail('visit_cost_invalid','O custo realizado diverge do registro preservado.');
    if(v.quoteId){const uses=newly(old,next,'quoteSessionUses').filter(u=>u.visitId===v.id),q=get(next,'quotes',v.quoteId),item=q?.items.find(i=>i.id===uses[0]?.itemId);if(uses.length!==1||uses[0].reversedAt||uses[0].sessions!==sessions||uses[0].cost!==v.actualCost||uses[0].operationId!==v.completionOperationId||uses[0].quoteId!==v.quoteId||item?.procedureId!==v.procedureId||v.billId!==q.billId)fail('session_use_invalid','Sessão, procedimento, cobrança e custo devem corresponder.');}else {const b=get(next,'bills',v.billId);if(!b||b.visitId!==v.id||b.quoteId||b.total!==v.procedureSnapshot.price)fail('visit_bill_invalid','Cobrança incompatível com o procedimento da consulta.');}
+   }
    // Only the authenticated completion handler can supply this server-owned Set.
    // A generic snapshot commit never authorizes a professional attestation.
    if(!(clinicalCompletions instanceof Set)||!clinicalCompletions.has(v.id))fail('clinical_signature_unavailable','Revise os documentos e confirme pessoalmente a conclusão no fluxo clínico.');

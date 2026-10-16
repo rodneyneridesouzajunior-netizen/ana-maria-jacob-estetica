@@ -12,13 +12,13 @@ const source=(await fs.readFile(new URL('../app.mjs',import.meta.url),'utf8')).r
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 const sample=(kind='ponto')=>({id:'synthetic-point',kind,x:.3333333333333333,y:.42,...(kind==='ponto'?{}:{x2:.78,y2:.65}),region:'Região de teste',product:'',quantity:null,unit:'sem quantidade',lot:'',notes:''});
 
-function harness(t,{kind='ponto',point=null,status='rascunho',width=800,height=500,batch=false}={}){
+function harness(t,{kind='ponto',point=null,status='rascunho',width=800,height=500,batch=false,procedures=[],visitProcedure=null}={}){
  const dom=new JSDOM('<!doctype html><body><nav id="nav"></nav><select id="area-switch"></select><span id="crumb"></span><span id="date-label"></span><main id="content"></main><div id="toast"></div><dialog id="dialog"><h2 id="dialog-title"></h2><form id="dialog-form"><div id="dialog-fields"></div><p id="dialog-error"></p><button id="cancel-dialog"></button></form><button id="close-dialog"></button></dialog></body>',{url:'https://anamariajacob.com.br/app/#paciente/demo-marina/demo-consulta/mapa'});
  const w=dom.window;w.HTMLDialogElement.prototype.close=function(){this.open=false;};w.matchMedia=()=>({matches:false});w.Element.prototype.setPointerCapture=function(){};
  let context,writes=0;
  context=vm.createContext({...domain,assertVisitEditable,fittedPhotoSize,MAP_ZOOM_LEVELS,structuredClone,crypto:webcrypto,console,document:w.document,window:w,location:w.location,history:w.history,FormData:w.FormData,URL:w.URL,isConnected:()=>true,confirm:()=>true,setTimeout:(fn,delay)=>delay===0?setImmediate(fn):0,clearTimeout(){},commit:async(expected,update)=>{writes++;const next=structuredClone(vm.runInContext('state',context));assert.equal(next.revision,expected);update(next);next.revision=expected+1;return next;}});
  vm.runInContext(source,context);const run=code=>vm.runInContext(code,context);
- const state=domain.seed();state.visits[0].status=status;if(point)state.visits[0].maps['demo-foto'].points=[point];context.fixture=state;context.kind=kind;context.batchMode=batch;
+ const state=domain.seed();state.procedures=structuredClone(procedures);state.visits[0].status=status;if(visitProcedure)Object.assign(state.visits[0],{procedureId:visitProcedure.id,procedureVersion:visitProcedure.version,procedureSnapshot:structuredClone(visitProcedure)});if(point)state.visits[0].maps['demo-foto'].points=[point];context.fixture=state;context.kind=kind;context.batchMode=batch;
  run("state=fixture;patientId='demo-marina';visitId='demo-consulta';photoId='demo-foto';tool=kind;mapBatchMode=batchMode;tab='mapa';document.getElementById('content').innerHTML=mapPage(visit());");
  const doc=w.document,stage=doc.getElementById('photo-stage'),plane=doc.getElementById('photo-plane'),image=doc.getElementById('map-photo');
  Object.defineProperties(image,{complete:{value:true},naturalWidth:{value:1122},naturalHeight:{value:1402}});
@@ -166,7 +166,7 @@ test('export draws thin rose marks clipped to the photo, preserves positions and
  const arc=calls.find(call=>call.method==='arc');assert.equal(arc.args[0],point.x*1122);assert.equal(arc.args[1],point.y*1402);assert.equal(arc.args[2],11*1122/1000);
  assert(calls.some(call=>call.method==='lineTo'&&call.args[1]>1402),'The out-of-frame fan remains geometrically unchanged and is clipped only when drawn');
  assert(calls.some(call=>call.method==='stroke'&&call.color==='#754859'&&Math.abs(call.width-1.5*1122/1000)<1e-12));
- const legend=calls.find(call=>call.method==='text'&&String(call.args[0]).includes('LOTE-SINTETICO'));assert.equal(legend.clipped,false);assert.equal(legend.color,'#30262c');assert.equal(legend.args[0],'1. Região teste · Produto teste · 1.25 mL · lote LOTE-SINTETICO');
+ const legend=calls.find(call=>call.method==='text'&&String(call.args[0]).includes('LOTE-SINTETICO'));assert.equal(legend.clipped,false);assert.equal(legend.color,'#30262c');assert.equal(legend.args[0],'1. Região teste · Produto teste · 1.25 mL · lote LOTE-SINTETICO · procedimento: Avaliação facial');
  assert.equal(h.run('downloads.length'),1);assert.equal(h.writes(),0);assert.equal(JSON.stringify(h.run('state')),before);
 });
 
@@ -304,4 +304,75 @@ test('cancelar gesto de leque conserva lote anterior e dois toques continuam vá
 
 test('desfazer reverte o conjunto inteiro e o próximo conjunto usa a revisão atual do mapa',async t=>{
  const original=sample(),h=harness(t,{batch:true,point:original});tapPhoto(h,.2,.3);tapPhoto(h,.5,.6);h.click('save-map-batch');await tick();assert.equal(h.run('map().points.length'),3);assert.equal(h.run('map().history.length'),1);h.click('undo-map');await tick();assert.deepEqual(structuredClone(h.run('map().points')),[original]);assert.equal(h.run('map().version'),2);assert.equal(h.run('map().history.length'),0);tapPhoto(h,.4,.5);h.click('save-map-batch');await tick();assert.equal(h.writes(),3);assert.equal(h.run('map().points.length'),2);assert.equal(h.run('map().version'),3);
+});
+
+
+const markingProcedure=(id,name,version=1)=>({id,name,version,active:true,recordMode:'injectable',price:25000,cost:5000,duration:30,returnDays:0,returnInterval:0,returnUnit:'days',consentTemplateId:'',requiredDocumentIds:[],category:'Facial',emoji:'',createdAt:'2026-10-15T12:00:00Z',updatedAt:'2026-10-15T12:00:00Z'});
+const procedureOption=(h,id)=>[...h.doc.getElementById('point-procedure').options].find(option=>{try{return JSON.parse(option.value).procedureId===id;}catch{return false;}});
+const bindProcedure=(p,procedure)=>({...p,procedureId:procedure.id,procedureVersion:procedure.version,procedureSnapshot:structuredClone(procedure)});
+
+test('procedimentos por ponto: sequência mantém escolhas e ausência independentes sem sugerir doses ou modificar atendimento',async t=>{
+ const a=markingProcedure('proc-a','Procedimento A'),b=markingProcedure('proc-b','Procedimento B'),h=harness(t,{batch:true,procedures:[a,b]}),visitBefore=h.run('visit().service');
+ tapPhoto(h,.2,.3);tapPhoto(h,.4,.5);tapPhoto(h,.7,.6);const ids=batchIds(h);assert.equal(h.doc.getElementById('point-procedure').value,'');assert.equal(h.doc.querySelector('.map-layout').classList.contains('has-selection'),false);
+ h.click('select-batch-point',ids[0]);h.edit('point-procedure',procedureOption(h,a.id).value);assert.equal(h.doc.getElementById('point-quantity').value,'');assert.equal(h.doc.getElementById('point-product').value,'');h.edit('point-quantity','0,25');h.edit('point-unit','mL');
+ h.click('select-batch-point',ids[1]);assert.equal(h.doc.getElementById('point-procedure').value,'');h.edit('point-procedure',procedureOption(h,b.id).value);h.edit('point-product','Produto B informado');
+ h.click('select-batch-point',ids[0]);assert.equal(JSON.parse(h.doc.getElementById('point-procedure').value).procedureId,a.id);assert.equal(h.doc.getElementById('point-quantity').value,'0,25');h.click('save-map-batch');await tick();
+ const saved=structuredClone(h.run('map().points'));assert.deepEqual(saved.map(p=>p.procedureId),[a.id,b.id,null]);assert.deepEqual(saved[0].procedureSnapshot,a);assert.deepEqual(saved[1].procedureSnapshot,b);assert.equal(saved[0].quantity,.25);assert.equal(saved[1].quantity,null);assert.equal(saved[2].procedureVersion,null);assert.equal(saved[2].procedureSnapshot,null);assert.equal(h.run('map().history.length'),1);assert.equal(h.run('visit().service'),visitBefore);assert.equal(h.run('visit().procedureId'),undefined);assert.equal(h.writes(),1);
+ h.click('select-point',ids[1]);assert.equal(JSON.parse(h.doc.getElementById('point-procedure').value).procedureId,b.id);assert.equal(h.doc.getElementById('point-product').value,'Produto B informado');assert.match(h.doc.getElementById('point-list').textContent,/Procedimento A/);assert.match(h.doc.getElementById('point-list').textContent,/Procedimento B/);assert.match(h.doc.getElementById('point-list').textContent,/Nenhum procedimento definido/);
+});
+
+test('procedimento legado herda atendimento sem materializar campos até a profissional remover explicitamente',async t=>{
+ const original=sample(),h=harness(t,{point:original,procedures:[markingProcedure('a','A')]});h.click('select-point',original.id);assert.equal(h.doc.getElementById('point-procedure').value,'@legacy');assert.match(h.doc.getElementById('point-procedure').selectedOptions[0].textContent,/Avaliação facial/);h.edit('point-notes','Somente observação');await h.submit();
+ const retained=h.run('map().points[0]');assert.equal(Object.hasOwn(retained,'procedureId'),false);assert.equal(Object.hasOwn(retained,'procedureVersion'),false);assert.equal(Object.hasOwn(retained,'procedureSnapshot'),false);
+ h.click('select-point',original.id);h.edit('point-procedure','');await h.submit();const cleared=h.run('map().points[0]');assert.equal(cleared.procedureId,null);assert.equal(cleared.procedureVersion,null);assert.equal(cleared.procedureSnapshot,null);h.click('select-point',original.id);assert.equal(h.doc.getElementById('point-procedure').value,'');assert.match(h.doc.getElementById('point-list').textContent,/Nenhum procedimento definido/);
+});
+
+test('snapshot salvo reabre exatamente mesmo após renomeação ou inativação do catálogo e só muda por escolha explícita',async t=>{
+ const old=markingProcedure('proc-stable','Nome original'),current={...old,name:'Nome novo',version:2},point=bindProcedure(sample(),old),h=harness(t,{point,procedures:[current]});h.click('select-point',point.id);
+ assert.match(h.doc.getElementById('point-procedure').selectedOptions[0].textContent,/Nome original.*versão preservada/);h.edit('point-notes','Conservar versão 1');await h.submit();assert.deepEqual(structuredClone(h.run('map().points[0].procedureSnapshot')),old);
+ h.run('state.procedures[0].active=false');h.click('select-point',point.id);assert.match(h.doc.getElementById('point-procedure').selectedOptions[0].textContent,/Nome original/);h.edit('point-region','Identificação revisada');await h.submit();assert.equal(h.run('map().points[0].procedureVersion'),1);
+ h.run('state.procedures[0].active=true');h.click('select-point',point.id);const option=[...h.doc.getElementById('point-procedure').options].find(o=>{try{return JSON.parse(o.value).procedureVersion===2;}catch{return false;}});h.edit('point-procedure',option.value);await h.submit();assert.equal(h.run('map().points[0].procedureVersion'),2);assert.equal(h.run('map().points[0].procedureSnapshot.name'),'Nome novo');assert.equal(h.run('map().history[0][0].procedureSnapshot.name'),'Nome original');
+});
+
+test('nova seleção desatualizada é recusada sem trocar snapshot nem perder campos do conjunto',async t=>{
+ const p=markingProcedure('proc-selected','Selecionado'),h=harness(t,{batch:true,procedures:[p]});tapPhoto(h,.3,.4);const id=batchIds(h)[0];h.click('select-batch-point',id);const selected=procedureOption(h,p.id).value;h.edit('point-procedure',selected);h.edit('point-notes','Preservar rascunho');h.run('state.procedures[0].version=2;state.procedures[0].name="Atualizado"');h.click('save-map-batch');await tick();
+ assert.equal(h.writes(),0);assert.equal(h.run('dirty'),true);assert.equal(h.doc.getElementById('point-procedure').value,selected);assert.equal(h.doc.getElementById('point-notes').value,'Preservar rascunho');assert.match(h.doc.getElementById('point-error').textContent,/mudou ou foi inativado/);
+ const current=[...h.doc.getElementById('point-procedure').options].find(o=>{try{return JSON.parse(o.value).procedureVersion===2;}catch{return false;}});h.edit('point-procedure',current.value);h.click('save-map-batch');await tick();assert.equal(h.writes(),1);assert.equal(h.run('map().points[0].procedureVersion'),2);
+});
+
+test('procedimento de caneta mantém quantidade nula e seleção fica desabilitada em consulta bloqueada',async t=>{
+ const p=markingProcedure('proc-trace','Referência visual'),h=harness(t,{kind:'traco',procedures:[p]});h.click('new-map-point');h.edit('point-procedure',procedureOption(h,p.id).value);await h.submit();assert.equal(h.run('map().points[0].quantity'),null);assert.equal(h.run('map().points[0].unit'),'sem quantidade');assert.equal(h.run('map().points[0].procedureId'),p.id);
+ const locked=harness(t,{point:bindProcedure(sample(),p),procedures:[p],status:'concluido'});locked.click('select-point','synthetic-point');assert.equal(locked.doc.getElementById('point-procedure').disabled,true);assert.equal(locked.writes(),0);
+});
+
+test('opções e legenda escapam nome do catálogo e não escondem a ausência explícita',async t=>{
+ const p=markingProcedure('proc-markup','<img src=x onerror=alert(1)> & teste'),h=harness(t,{procedures:[p]});h.click('new-map-point');h.edit('point-procedure',procedureOption(h,p.id).value);await h.submit();assert.equal(h.doc.querySelectorAll('#point-procedure img,#point-list img,#point-list [onerror]').length,0);assert.match(h.doc.getElementById('point-list').textContent,/<img src=x onerror=alert\(1\)> & teste/);assert.equal(h.run('map().points[0].procedureSnapshot.name'),p.name);
+});
+
+
+test('procedimento editado durante commit conserva o snapshot novo pendente sem duplicar IDs na segunda gravação',async t=>{
+ const a=markingProcedure('proc-before','Escolha anterior'),b=markingProcedure('proc-after','Escolha mais recente'),h=harness(t,{batch:true,procedures:[a,b]});tapPhoto(h,.3,.4);const id=batchIds(h)[0];h.click('select-batch-point',id);h.edit('point-procedure',procedureOption(h,a.id).value);
+ h.run('globalThis.commitBeforeProcedureTest=commit;globalThis.releaseProcedureCommit=null;commit=async(revision,update)=>{await new Promise(resolve=>{releaseProcedureCommit=resolve});return commitBeforeProcedureTest(revision,update)}');h.click('save-map-batch');h.edit('point-procedure',procedureOption(h,b.id).value);h.run('releaseProcedureCommit()');await tick();
+ assert.equal(h.run('map().points[0].procedureId'),a.id);assert.equal(JSON.parse(h.doc.getElementById('point-procedure').value).procedureId,b.id);assert.equal(h.run('dirty'),true);assert.equal(h.doc.querySelectorAll('[data-marker]').length,1);assert.match(h.doc.getElementById('point-list').textContent,/Escolha mais recente/);
+ h.run('commit=commitBeforeProcedureTest');h.click('save-map-batch');await tick();assert.equal(h.run('map().points.length'),1);assert.equal(h.run('map().points[0].id'),id);assert.deepEqual(structuredClone(h.run('map().points[0].procedureSnapshot')),b);assert.equal(h.run('map().history[1][0].procedureId'),a.id);assert.equal(h.run('dirty'),false);assert.equal(h.writes(),2);
+});
+
+test('conflito CAS conserva procedimentos distintos de todos os itens e permite repetição sem duplicar marcações',async t=>{
+ const a=markingProcedure('proc-cas-a','Procedimento CAS A'),b=markingProcedure('proc-cas-b','Procedimento CAS B'),h=harness(t,{batch:true,procedures:[a,b]});tapPhoto(h,.2,.3);tapPhoto(h,.6,.7);const ids=batchIds(h);h.click('select-batch-point',ids[0]);h.edit('point-procedure',procedureOption(h,a.id).value);h.click('select-batch-point',ids[1]);h.edit('point-procedure',procedureOption(h,b.id).value);
+ h.run('globalThis.commitBeforeCAS=commit;commit=async()=>{throw Error("Conflito CAS de teste")};');h.click('save-map-batch');await tick();assert.equal(h.run('map().points.length'),0);assert.equal(h.run('dirty'),true);h.click('select-batch-point',ids[0]);assert.equal(JSON.parse(h.doc.getElementById('point-procedure').value).procedureId,a.id);h.click('select-batch-point',ids[1]);assert.equal(JSON.parse(h.doc.getElementById('point-procedure').value).procedureId,b.id);
+ h.run('commit=commitBeforeCAS');h.click('save-map-batch');await tick();assert.deepEqual([...h.run('map().points.map(p=>p.id)')],ids);assert.deepEqual([...h.run('map().points.map(p=>p.procedureId)')],[a.id,b.id]);assert.equal(h.run('map().history.length'),1);assert.equal(h.writes(),1);
+});
+
+test('versão deste atendimento permite escolher o snapshot primário exato sem forçar o catálogo novo',async t=>{
+ const old=markingProcedure('primary-procedure','Versão original'),current={...old,name:'Versão atual do catálogo',version:2,price:39000,cost:8000},point=bindProcedure({...sample(),quantity:.2,unit:'mL'},current),h=harness(t,{point,procedures:[current],visitProcedure:old});
+ h.click('select-point',point.id);
+ const select=h.doc.getElementById('point-procedure'),option=[...select.options].find(o=>o.textContent.startsWith('Versão deste atendimento:'));assert.ok(option);assert.deepEqual(JSON.parse(option.value).procedureSnapshot,old);assert.equal(JSON.parse(select.value).procedureVersion,2,'Reopening must not silently downgrade the saved marking');
+ h.edit('point-procedure',option.value);h.edit('point-notes','Escolha explícita da versão desta consulta');await h.submit();assert.equal(h.writes(),1);assert.deepEqual(structuredClone(h.run('map().points[0].procedureSnapshot')),old);assert.equal(h.run('map().points[0].quantity'),.2);assert.equal(h.run('map().points[0].x'),point.x);assert.deepEqual(structuredClone(h.run('map().history[0][0].procedureSnapshot')),current);assert.deepEqual(structuredClone(h.run('visit().procedureSnapshot')),old);
+ h.click('select-point',point.id);assert.match(select.selectedOptions[0].textContent,/Versão deste atendimento:/);assert.equal(JSON.parse(select.value).procedureVersion,1);
+});
+
+test('nova marcação usa versão histórica do atendimento somente com catálogo ativo e snapshot íntegro',async t=>{
+ const old=markingProcedure('active-primary','Original'),current={...old,version:2,name:'Catálogo novo'},h=harness(t,{batch:true,procedures:[current],visitProcedure:old});tapPhoto(h,.3,.4);const id=batchIds(h)[0];h.click('select-batch-point',id);
+ const select=h.doc.getElementById('point-procedure'),option=[...select.options].find(o=>o.textContent.startsWith('Versão deste atendimento:'));assert.equal(select.value,'','A new marking must not assume the visit procedure');h.edit('point-procedure',option.value);h.run('state.procedures[0].active=false');h.click('save-map-batch');await tick();assert.equal(h.writes(),0);assert.match(h.doc.getElementById('point-error').textContent,/inativado/);assert.equal(h.run('dirty'),true);
+ h.run('state.procedures[0].active=true');h.click('save-map-batch');await tick();assert.equal(h.writes(),1);assert.deepEqual(structuredClone(h.run('map().points[0].procedureSnapshot')),old);assert.equal(h.run('map().points[0].quantity'),null);
 });

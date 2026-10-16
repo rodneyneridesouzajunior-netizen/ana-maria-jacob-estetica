@@ -1,3 +1,4 @@
+import {visitProcedureSnapshots} from '../_shared/app-workspace-domain/operations-domain.mjs';
 import {fail,hash,stable,uuid,validId} from './rules.mjs';
 import {validateClinicalPolicy} from './clinical-completion.mjs';
 export const CLINICAL_SETTINGS_ACTIONS=Object.freeze(['listar_configuracao_clinica','configurar_conta_profissional','configurar_documentos_procedimento','status_configuracao_clinica']);
@@ -23,7 +24,7 @@ export function createClinicalSettings({repository,authorize}){
    const prior=await repository.clinicalConfigurationOperation({...actor(ctx),p_operation:p.operation_id,p_kind:'policy'});
    if(prior){if(prior.procedure_id!==p.procedure_id||prior.procedure_version!==p.procedure_version||prior.version!==p.expected_version+1||prior.status!==p.status||prior.reason!==p.reason.trim()||stable(prior.requirements)!==stable(p.requirements))fail('operation_reused','A chave já foi usada com outra configuração.',409);return {configuration:{...prior,replayed:true}};}
    const row=await repository.load(ctx.clinicId),state=row?.state;
-   const procedure=state?.procedures?.find(x=>x.id===p.procedure_id&&x.version===p.procedure_version)||state?.visits?.map(v=>v.procedureSnapshot).find(x=>x?.id===p.procedure_id&&x.version===p.procedure_version);
+   const procedure=state?.procedures?.find(x=>x.id===p.procedure_id&&x.version===p.procedure_version)||state?.visits?.flatMap(v=>visitProcedureSnapshots(v)).find(x=>x?.id===p.procedure_id&&x.version===p.procedure_version);
    if(!procedure)fail('clinical_procedure_missing','A versão do procedimento não foi encontrada.');
    const checked=validateClinicalPolicy({status:'active',procedure_id:procedure.id,procedure_version:procedure.version,requirements:p.requirements},procedure,state.documentTemplates||[]);
    if(!checked.ok)fail(checked.code,checked.message);
