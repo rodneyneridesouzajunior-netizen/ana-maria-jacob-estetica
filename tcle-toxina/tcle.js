@@ -4,8 +4,8 @@ const CONFIG = Object.freeze({
   API_URL: 'https://rjxtxoqprnumouqakxbc.supabase.co/functions/v1/tcle-submit',
   PUBLISHABLE_KEY: 'sb_publishable_Ip14p4tUfYFjwUYaWinMlw_Gf9v0YwT',
   TYPE: 'tcle_toxina_botulinica',
-  TERM_VERSION: '2026-10-15-v2',
-  TERM_SHA256: 'a455dc7d5d0f6bc63afef6b02492b2070665092e79f56bf0d4dbddd07273ea66',
+  TERM_VERSION: '2026-10-15-v3',
+  TERM_SHA256: 'd240d5359473434ab4d48e38ed3b26bc93535fd87d2f55b95cd0cb585835696c',
   WHATSAPP: '5531995844803',
   MAX_SIGNATURE_BYTES: 500_000
 });
@@ -78,7 +78,7 @@ function renderTerm(text) {
 async function loadTerm() {
   const target = document.getElementById('texto-integral');
   try {
-    const response = await fetch('termo-v2.txt', { cache: 'no-store' });
+    const response = await fetch('termo-v3.txt', { cache: 'no-store' });
     if (!response.ok) throw new Error('Não foi possível carregar o texto do termo.');
     const text = normalizeNewlines(await response.text()).trim();
     const hash = await sha256Hex(text);
@@ -407,8 +407,7 @@ function collectData(signedAt) {
       leitura: form.elements.aceite_leitura.checked,
       informacoes_verdadeiras: form.elements.aceite_informacoes.checked,
       decisao_voluntaria: form.elements.aceite_voluntario.checked,
-      revisao_profissional: form.elements.aceite_revisao.checked,
-      tratamento_dados: form.elements.aceite_dados.checked
+      revisao_profissional: form.elements.aceite_revisao.checked
     },
     assinatura_digitada: form.elements.assinatura_digitada.value.trim(),
     assinatura_metodo: state.signatureMethod,

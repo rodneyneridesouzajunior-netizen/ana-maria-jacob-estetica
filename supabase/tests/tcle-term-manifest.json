@@ -1,0 +1,138 @@
+{
+  "currentVersion": "2026-10-15-v3",
+  "normalization": "UTF-8, LF, trim outer whitespace",
+  "documents": [
+    {
+      "slug": "toxina",
+      "type": "tcle_toxina_botulinica",
+      "edgeFunction": "tcle-submit",
+      "versions": {
+        "v1": {
+          "version": "2026-08-18-v1",
+          "path": "tcle-toxina/termo-v1.txt",
+          "sha256": "c4c21544a3e0b7ad9d020ca4e36437dbf7424ff808c1dee7d61542283d33bbf8"
+        },
+        "v2": {
+          "version": "2026-10-15-v2",
+          "path": "tcle-toxina/termo-v2.txt",
+          "sha256": "a455dc7d5d0f6bc63afef6b02492b2070665092e79f56bf0d4dbddd07273ea66"
+        },
+        "v3": {
+          "version": "2026-10-15-v3",
+          "path": "tcle-toxina/termo-v3.txt",
+          "sha256": "d240d5359473434ab4d48e38ed3b26bc93535fd87d2f55b95cd0cb585835696c"
+        }
+      }
+    },
+    {
+      "slug": "preenchimento",
+      "type": "tcle_preenchimento_facial",
+      "edgeFunction": "tcle-preenchimento-submit",
+      "versions": {
+        "v1": {
+          "version": "2026-08-18-v1",
+          "path": "tcle-preenchimento/termo-v1.txt",
+          "sha256": "4e2fae97c2bc890fabe4b52e11324209cf60ad636fbff07993b7d3f7d8d4e8ad"
+        },
+        "v2": {
+          "version": "2026-10-15-v2",
+          "path": "tcle-preenchimento/termo-v2.txt",
+          "sha256": "c08d41af2d0358a064c8cded9b54cf4cd0c32b63b07a953ce25212f87998cab9"
+        },
+        "v3": {
+          "version": "2026-10-15-v3",
+          "path": "tcle-preenchimento/termo-v3.txt",
+          "sha256": "f0fbcda0450d514b44a906162ba89cfa0cb35c2ce00fb19e6bc11ae6d7aad3f1"
+        }
+      }
+    },
+    {
+      "slug": "intradermoterapia",
+      "type": "tcle_intradermoterapia_estetica",
+      "edgeFunction": "tcle-intradermoterapia-submit",
+      "versions": {
+        "v1": {
+          "version": "2026-08-18-v1",
+          "path": "tcle-intradermoterapia/termo-v1.txt",
+          "sha256": "65c38aa1611a53d5602db4307d8353f508dffc6cd6ab7ada320d2db2db925de4"
+        },
+        "v2": {
+          "version": "2026-10-15-v2",
+          "path": "tcle-intradermoterapia/termo-v2.txt",
+          "sha256": "4642ac82b2b796fe5782431f8611f4eaf60f985f9ebc29374b10324d9ed74d86"
+        },
+        "v3": {
+          "version": "2026-10-15-v3",
+          "path": "tcle-intradermoterapia/termo-v3.txt",
+          "sha256": "c6728f12ea050bb68ef2b645f8c142d72c1af0870a53c0006012e2133942fe07"
+        }
+      }
+    },
+    {
+      "slug": "bioestimulador",
+      "type": "tcle_bioestimulador_colageno",
+      "edgeFunction": "tcle-bioestimulador-submit",
+      "versions": {
+        "v1": {
+          "version": "2026-08-18-v1",
+          "path": "tcle-bioestimulador/termo-v1.txt",
+          "sha256": "cf2c0958cc679441b99849ded246d12ee1b9f7aaa102604a441dda1720a66213"
+        },
+        "v2": {
+          "version": "2026-10-15-v2",
+          "path": "tcle-bioestimulador/termo-v2.txt",
+          "sha256": "15cfff64ccb226d459c9dad3ff283ee0d1f41d28899d4285bb2f34bbe3666eca"
+        },
+        "v3": {
+          "version": "2026-10-15-v3",
+          "path": "tcle-bioestimulador/termo-v3.txt",
+          "sha256": "7e1d154cee8870d3d97f7dd36540a24ffb06d7c40edfdf0c5c6a6173913f1ad2"
+        }
+      }
+    },
+    {
+      "slug": "peeling-quimico",
+      "type": "tcle_peeling_quimico",
+      "edgeFunction": "tcle-peeling-quimico-submit",
+      "versions": {
+        "v1": {
+          "version": "2026-08-18-v1",
+          "path": "tcle-peeling-quimico/termo-v1.txt",
+          "sha256": "3f04db1af1f0e984385862abdd0b1b93ae34ebfd49f09587f541c317022b530b"
+        },
+        "v2": {
+          "version": "2026-10-15-v2",
+          "path": "tcle-peeling-quimico/termo-v2.txt",
+          "sha256": "941fbbbfcb0ffc1ccc282f7771a9907f0de6b01f20405e1cade6363d462b0690"
+        },
+        "v3": {
+          "version": "2026-10-15-v3",
+          "path": "tcle-peeling-quimico/termo-v3.txt",
+          "sha256": "9290d84c01b6dd0029021650746fe589dda03005c05f480d9c644238e55daa4b"
+        }
+      }
+    },
+    {
+      "slug": "fios-pdo",
+      "type": "tcle_fios_pdo",
+      "edgeFunction": "tcle-fios-pdo-submit",
+      "versions": {
+        "v1": {
+          "version": "2026-08-18-v1",
+          "path": "tcle-fios-pdo/termo-v1.txt",
+          "sha256": "6a31a13133e29132763e2ded44c6d1a424d64154d0cb883b02628d897924bd24"
+        },
+        "v2": {
+          "version": "2026-10-15-v2",
+          "path": "tcle-fios-pdo/termo-v2.txt",
+          "sha256": "c68e4bf913915671063923e25588720c891b5ffdc2e585469373a1f4a9f568e4"
+        },
+        "v3": {
+          "version": "2026-10-15-v3",
+          "path": "tcle-fios-pdo/termo-v3.txt",
+          "sha256": "bb38be93a473b903a2603815631768fa849d80c118652658426e6d5dbdaf1be8"
+        }
+      }
+    }
+  ]
+}

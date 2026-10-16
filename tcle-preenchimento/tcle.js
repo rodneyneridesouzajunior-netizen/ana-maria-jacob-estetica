@@ -4,8 +4,8 @@ const CONFIG = Object.freeze({
   API_URL: 'https://rjxtxoqprnumouqakxbc.supabase.co/functions/v1/tcle-preenchimento-submit',
   PUBLISHABLE_KEY: 'sb_publishable_Ip14p4tUfYFjwUYaWinMlw_Gf9v0YwT',
   TYPE: 'tcle_preenchimento_facial',
-  TERM_VERSION: '2026-10-15-v2',
-  TERM_SHA256: 'c08d41af2d0358a064c8cded9b54cf4cd0c32b63b07a953ce25212f87998cab9',
+  TERM_VERSION: '2026-10-15-v3',
+  TERM_SHA256: 'f0fbcda0450d514b44a906162ba89cfa0cb35c2ce00fb19e6bc11ae6d7aad3f1',
   WHATSAPP: '5531995844803',
   MAX_SIGNATURE_BYTES: 500_000
 });
@@ -78,7 +78,7 @@ function renderTerm(text) {
 async function loadTerm() {
   const target = document.getElementById('texto-integral');
   try {
-    const response = await fetch('termo-v2.txt', { cache: 'no-store' });
+    const response = await fetch('termo-v3.txt', { cache: 'no-store' });
     if (!response.ok) throw new Error('Não foi possível carregar o texto do termo.');
     const text = normalizeNewlines(await response.text()).trim();
     const hash = await sha256Hex(text);
@@ -431,8 +431,7 @@ function collectData(signedAt) {
       ciencia_hialuronidase_urgencia: form.elements.aceite_hialuronidase.checked,
       informacoes_verdadeiras: form.elements.aceite_informacoes.checked,
       decisao_voluntaria: form.elements.aceite_voluntario.checked,
-      revisao_profissional: form.elements.aceite_revisao.checked,
-      tratamento_dados: form.elements.aceite_dados.checked
+      revisao_profissional: form.elements.aceite_revisao.checked
     },
     assinatura_digitada: form.elements.assinatura_digitada.value.trim(),
     assinatura_metodo: state.signatureMethod,

@@ -7,10 +7,11 @@ import { readLimitedBody, RequestBodyTooLargeError } from "../_shared/read-limit
 import { matchesStoredTcleVersion } from "../_shared/tcle-term-versions.ts";
 
 const TYPE = "tcle_preenchimento_facial";
-const TERM_VERSION = "2026-10-15-v2";
-const TERM_SHA256 = "c08d41af2d0358a064c8cded9b54cf4cd0c32b63b07a953ce25212f87998cab9";
+const TERM_VERSION = "2026-10-15-v3";
+const TERM_SHA256 = "f0fbcda0450d514b44a906162ba89cfa0cb35c2ce00fb19e6bc11ae6d7aad3f1";
 const KNOWN_TERM_HASHES: Readonly<Record<string, string>> = Object.freeze({
   [TERM_VERSION]: TERM_SHA256,
+  "2026-10-15-v2": "c08d41af2d0358a064c8cded9b54cf4cd0c32b63b07a953ce25212f87998cab9",
   "2026-08-18-v1": "4e2fae97c2bc890fabe4b52e11324209cf60ad636fbff07993b7d3f7d8d4e8ad",
 });
 const BUCKET = "documentos-clinicos";
@@ -74,7 +75,7 @@ type ClinicalData = {
     informacoes_verdadeiras: true;
     decisao_voluntaria: true;
     revisao_profissional: true;
-    tratamento_dados: true;
+    tratamento_dados?: true;
   };
   assinatura_digitada: string;
   assinatura_metodo: "desenhada" | "nome_digitado";
@@ -330,6 +331,11 @@ function safeData(
     });
   }
 
+  // Only historical v1/v2 documents contain this separate general declaration.
+  // New submissions must not invent or inherit an acceptance from an anamnesis.
+  const legacyGeneralDeclaration = payload.versao_termo === "2026-08-18-v1" || payload.versao_termo === "2026-10-15-v2";
+  if (legacyGeneralDeclaration ? declarations.tratamento_dados !== true : Object.hasOwn(declarations, "tratamento_dados")) return null;
+
   if (![
     declarations.leitura,
     declarations.risco_vascular,
@@ -337,7 +343,6 @@ function safeData(
     declarations.informacoes_verdadeiras,
     declarations.decisao_voluntaria,
     declarations.revisao_profissional,
-    declarations.tratamento_dados,
   ].every((value) => value === true)) return null;
 
   const yesNoStrict = (value: unknown): "sim" | "nao" | null =>
@@ -412,7 +417,7 @@ function safeData(
       informacoes_verdadeiras: true,
       decisao_voluntaria: true,
       revisao_profissional: true,
-      tratamento_dados: true,
+      ...(legacyGeneralDeclaration ? { tratamento_dados: true as const } : {}),
     },
     assinatura_digitada: typedSignature,
     assinatura_metodo: signatureMethod,
@@ -678,10 +683,12 @@ async function buildCanonicalPdf(
   textBlock("[CONFIRMADO] Leu integralmente e compreendeu finalidade, limitações, alternativas, riscos e sinais de urgência.");
   textBlock("[CONFIRMADO] Compreendeu especificamente o risco vascular, inclusive necrose, cicatriz, perda visual e evento neurológico.");
   textBlock("[CONFIRMADO] Compreendeu que uma complicação pode exigir avaliação imediata, encaminhamento e hialuronidase quando clinicamente indicada.");
-  textBlock("[CONFIRMADO] Declarou que as informações são verdadeiras e que comunicará alterações antes da aplicação.");
+  textBlock(data.declaracoes.tratamento_dados === true ? "[CONFIRMADO] Declarou que as informações são verdadeiras e que comunicará alterações antes da aplicação." : "[CONFIRMADO] Declarou que as respostas específicas deste procedimento são verdadeiras e que comunicará mudanças antes da aplicação.");
   textBlock("[CONFIRMADO] Declarou decisão livre e ciência do direito de recusar ou desistir antes do procedimento.");
   textBlock("[CONFIRMADO] Compreendeu que o documento aguarda revisão e assinatura profissional.");
-  textBlock("[CONFIRMADO] Está ciente do tratamento de dados para as finalidades clínicas e legais descritas.");
+  if (data.declaracoes.tratamento_dados === true) {
+    textBlock("[CONFIRMADO] Está ciente do tratamento de dados para as finalidades clínicas e legais descritas.");
+  }
 
   ensure(145);
   textBlock("Nome digitado como confirmação: " + data.assinatura_digitada, { font: bold, after: 5 });

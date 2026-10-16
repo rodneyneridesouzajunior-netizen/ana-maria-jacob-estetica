@@ -4,8 +4,8 @@ const CONFIG = Object.freeze({
   API_URL: 'https://rjxtxoqprnumouqakxbc.supabase.co/functions/v1/tcle-intradermoterapia-submit',
   PUBLISHABLE_KEY: 'sb_publishable_Ip14p4tUfYFjwUYaWinMlw_Gf9v0YwT',
   TYPE: 'tcle_intradermoterapia_estetica',
-  TERM_VERSION: '2026-10-15-v2',
-  TERM_SHA256: '4642ac82b2b796fe5782431f8611f4eaf60f985f9ebc29374b10324d9ed74d86',
+  TERM_VERSION: '2026-10-15-v3',
+  TERM_SHA256: 'c6728f12ea050bb68ef2b645f8c142d72c1af0870a53c0006012e2133942fe07',
   WHATSAPP: '5531995844803',
   MAX_SIGNATURE_BYTES: 500_000
 });
@@ -75,7 +75,7 @@ function renderTerm(text) {
 async function loadTerm() {
   const target = document.getElementById('texto-integral');
   try {
-    const response = await fetch('termo-v2.txt', { cache: 'no-store' });
+    const response = await fetch('termo-v3.txt', { cache: 'no-store' });
     if (!response.ok) throw new Error('Não foi possível carregar o texto do termo.');
     const text = normalizeNewlines(await response.text()).trim();
     const hash = await sha256Hex(text);
@@ -432,8 +432,7 @@ function collectData(signedAt) {
       riscos_especificos: form.elements.aceite_riscos_especificos.checked,
       informacoes_verdadeiras: form.elements.aceite_informacoes.checked,
       decisao_voluntaria: form.elements.aceite_voluntario.checked,
-      revisao_profissional: form.elements.aceite_revisao.checked,
-      tratamento_dados: form.elements.aceite_dados.checked
+      revisao_profissional: form.elements.aceite_revisao.checked
     },
     assinatura_digitada: form.elements.assinatura_digitada.value.trim(),
     assinatura_metodo: state.signatureMethod,

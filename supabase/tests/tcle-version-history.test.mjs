@@ -25,13 +25,29 @@ const legacyHashes = [
   '6a31a13133e29132763e2ded44c6d1a424d64154d0cb883b02628d897924bd24',
 ];
 const questionCounts = [17, 17, 14, 8, 11, 13];
-const V1 = '2026-08-18-v1', V2 = '2026-10-15-v2';
+// Frozen from the previous release: editing the manifest must not rewrite history.
+const v2Hashes = [
+  'a455dc7d5d0f6bc63afef6b02492b2070665092e79f56bf0d4dbddd07273ea66',
+  'c08d41af2d0358a064c8cded9b54cf4cd0c32b63b07a953ce25212f87998cab9',
+  '4642ac82b2b796fe5782431f8611f4eaf60f985f9ebc29374b10324d9ed74d86',
+  '15cfff64ccb226d459c9dad3ff283ee0d1f41d28899d4285bb2f34bbe3666eca',
+  '941fbbbfcb0ffc1ccc282f7771a9907f0de6b01f20405e1cade6363d462b0690',
+  'c68e4bf913915671063923e25588720c891b5ffdc2e585469373a1f4a9f568e4',
+];
+const V1 = '2026-08-18-v1', V2 = '2026-10-15-v2', V3 = '2026-10-15-v3';
+const legacyVersions = [V1, V2];
+const termSuffix = {[V1]: 'v1', [V2]: 'v2', [V3]: 'v3'};
+const requiredDeclarations = slug => [
+  'leitura', 'informacoes_verdadeiras', 'decisao_voluntaria', 'revisao_profissional',
+  ...(slug === 'preenchimento' ? ['risco_vascular', 'ciencia_hialuronidase_urgencia'] : slug === 'toxina' ? [] : ['riscos_especificos']),
+];
 const normalize = text => text.replace(/\r\n?/g, '\n').trim();
 const digest = text => createHash('sha256').update(text).digest('hex');
 const shared = stripTypeScriptTypes(await readFile(resolve(root, 'supabase/functions/_shared/tcle-term-versions.ts'), 'utf8')).replace(/^export /gm, '');
 const logo = await readFile(resolve(root, 'assets/identidade-visual-transparente-v1.png'));
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Z5CEAAAAASUVORK5CYII=', 'base64');
 const load = path => readFile(resolve(root, path), 'utf8');
+const manifest = JSON.parse(await load('supabase/tests/tcle-term-manifest.json'));
 
 async function harness(slug, previous = null, options = {}) {
   const fn = slug === 'toxina' ? 'tcle-submit' : 'tcle-' + slug + '-submit';
@@ -101,8 +117,9 @@ async function harness(slug, previous = null, options = {}) {
   };
 }
 
-async function payloadFor(slug, config, version = V2) {
-  const text = normalize(await load('tcle-' + slug + '/termo-' + (version === V1 ? 'v1' : 'v2') + '.txt'));
+async function payloadFor(slug, config, version = V3) {
+  assert(termSuffix[version], 'Unknown test fixture version');
+  const text = normalize(await load('tcle-' + slug + '/termo-' + termSuffix[version] + '.txt'));
   const hash = digest(text), id = '00000000-0000-4000-8000-000000000001';
   const signedAt = new Date(Date.now() - 1_000).toISOString();
   const identification = {nome: 'TESTE Paciente Sintetico', nascimento: '1990-01-01', cpf: '52998224725', telefone: '11999990000', email: 'teste@example.invalid', local_assinatura: 'Teste offline', emergencia: {nome: 'TESTE Contato', relacao: 'Teste', telefone: '11999990001'}};
@@ -117,7 +134,7 @@ async function payloadFor(slug, config, version = V2) {
       procedimento: {finalidade: 'exclusivamente estética', regioes: config.regions.length ? [config.regions[0]] : 'Região de teste', modalidades: config.modalities.length ? [config.modalities[0]] : [], objetivo: 'Objetivo de teste', detalhamento_plano_previsto: 'Planejamento de teste', detalhamento_volume_previsto: 'Volume a avaliar pela profissional', status_anamnese: 'Já preenchi'},
       confirmacoes_saude: Array.from(config.questions, (pergunta, index) => ({numero: index + 1, pergunta, resposta: 'nao', detalhe: ''})),
       observacoes_saude: '', imagem: {foto_prontuario: 'nao', divulgacao: 'nao', antes_depois: 'nao', forma_imagem: 'nao_aplicavel', primeiro_nome: 'nao', depoimento: 'nao'}, duvidas: '',
-      declaracoes: {leitura: true, riscos_especificos: true, risco_vascular: true, ciencia_hialuronidase_urgencia: true, informacoes_verdadeiras: true, decisao_voluntaria: true, revisao_profissional: true, tratamento_dados: true},
+      declaracoes: {...Object.fromEntries(requiredDeclarations(slug).map(key => [key, true])), ...(version !== V3 ? {tratamento_dados: true} : {})},
       assinatura_digitada: identification.nome, assinatura_metodo: 'nome_digitado', assinado_em_cliente: signedAt, fuso_horario: 'America/Sao_Paulo',
     },
   };
@@ -126,17 +143,29 @@ async function payloadFor(slug, config, version = V2) {
 const recordFor = (p, overrides = {}) => ({id: '00000000-0000-4000-8000-000000000002', tipo: p.tipo, versao_termo: p.versao_termo, termo_sha256: p.termo_sha256, nome: p.nome, cpf: p.cpf, telefone: p.telefone, status: 'recebido', codigo_verificacao: 'a'.repeat(64), recebido_em: '2026-10-15T20:00:00Z', updated_at: new Date(Date.now() - 5 * 60_000).toISOString(), pdf_path: 'historical/documento.pdf', assinatura_path: 'historical/assinatura.png', ...overrides});
 
 for (const [index, slug] of slugs.entries()) {
-  test(slug + ': immutable v1, minimal editorial v2, all questions and hashes preserved', async () => {
+  test(slug + ': immutable v1/v2, minimal v3 and consistent manifest/front/backend hashes', async () => {
     const v1 = normalize(await load('tcle-' + slug + '/termo-v1.txt'));
     const v2 = normalize(await load('tcle-' + slug + '/termo-v2.txt'));
+    const v3 = normalize(await load('tcle-' + slug + '/termo-v3.txt'));
     assert.equal(digest(v1), legacyHashes[index]);
+    assert.equal(digest(v2), v2Hashes[index]);
     const h = await harness(slug);
-    assert.equal(h.config.version, V2);
-    assert.equal(digest(v2), h.config.hash);
+    assert.equal(h.config.version, V3);
+    assert.equal(digest(v3), h.config.hash);
+    assert.equal(manifest.currentVersion, V3);
+    assert.deepEqual(manifest.documents.map(document => document.slug), slugs);
+    const entry = manifest.documents.find(document => document.slug === slug);
+    assert.equal(entry.type, h.config.type);
+    for (const [version, text] of [[V1, v1], [V2, v2], [V3, v3]]) {
+      const item = entry.versions[termSuffix[version]];
+      assert.equal(item.version, version);
+      assert.equal(item.path, 'tcle-' + slug + '/termo-' + termSuffix[version] + '.txt');
+      assert.equal(item.sha256, digest(text));
+    }
     const front = await load('tcle-' + slug + '/tcle.js');
-    assert(front.includes("TERM_VERSION: '" + V2 + "'"));
+    assert(front.includes("TERM_VERSION: '" + V3 + "'"));
     assert(front.includes(h.config.hash));
-    assert(front.includes("fetch('termo-v2.txt'"));
+    assert(front.includes("fetch('termo-v3.txt'"));
     const questionsLiteral = /const HEALTH_QUESTIONS = Object\.freeze\(([\s\S]+?)\);/.exec(front)[1];
     const questions = vm.runInNewContext(questionsLiteral);
     assert.equal(questions.length, questionCounts[index]);
@@ -151,10 +180,18 @@ for (const [index, slug] of slugs.entries()) {
       if (/^(?:Versão do documento:|Vigência:|As perguntas|\d+\))/.test(paragraph)) continue;
       assert(v2.includes(paragraph), 'Changed protected paragraph: ' + paragraph.slice(0, 100));
     }
+    // v3 only changes the version, adds anamnesis guidance and narrows the final declaration.
+    for (const paragraph of v2.split(/\n\n+/)) {
+      if (/^(?:Versão do documento:|Ao enviar este documento,|Ao assinar(?: e enviar)?,)/.test(paragraph)) continue;
+      assert(v3.includes(paragraph), 'Changed protected v2 paragraph: ' + paragraph.slice(0, 100));
+    }
+    assert(v3.includes('Este termo não comprova o recebimento da anamnese'));
+    assert(v3.includes('questionário específico deste procedimento'));
   });
 
-  test(slug + ': completed v1 returns the original PDF without regeneration or writes', async () => {
-    const base = await harness(slug), p = await payloadFor(slug, base.config, V1);
+  for (const version of legacyVersions) {
+  test(slug + ': completed ' + termSuffix[version] + ' returns original PDF without regeneration or writes', async () => {
+    const base = await harness(slug), p = await payloadFor(slug, base.config, version);
     const previous = recordFor(p), h = await harness(slug, previous);
     const result = await h.run(p);
     assert.equal(result.status, 200);
@@ -167,17 +204,17 @@ for (const [index, slug] of slugs.entries()) {
     assert.equal(h.calls.filter(c => c.method !== 'GET').length, 1, 'Only signing an existing download URL is allowed');
   });
 
-  test(slug + ': old versions cannot create new submissions', async () => {
-    const h = await harness(slug), p = await payloadFor(slug, h.config, V1);
+  test(slug + ': ' + termSuffix[version] + ' cannot create new submissions', async () => {
+    const h = await harness(slug), p = await payloadFor(slug, h.config, version);
     const result = await h.run(p);
     assert.equal(result.status, 409);
     assert.equal(result.body.codigo_erro, 'term_version_mismatch');
     assert.equal(h.calls.filter(c => c.method !== 'GET').length, 0);
   });
 
-  test(slug + ': recovery refuses another owner, type, version, hash or unknown stored version', async () => {
-    const base = await harness(slug), p = await payloadFor(slug, base.config, V1);
-    const current = await payloadFor(slug, base.config, V2);
+  test(slug + ': ' + termSuffix[version] + ' recovery refuses another owner, type, version, hash or unknown stored version', async () => {
+    const base = await harness(slug), p = await payloadFor(slug, base.config, version);
+    const current = await payloadFor(slug, base.config, V3);
     const cases = [
       [recordFor(p), {...p, cpf: '11111111111'}],
       [recordFor(p), {...p, tipo: 'outro_tipo'}],
@@ -194,42 +231,46 @@ for (const [index, slug] of slugs.entries()) {
     }
   });
 
-  test(slug + ': interrupted v1 resumes with original version, hash and PDF content', async () => {
-    const base = await harness(slug), p = await payloadFor(slug, base.config, V1);
+  test(slug + ': interrupted ' + termSuffix[version] + ' resumes with original version, hash and declaration', async () => {
+    const base = await harness(slug), p = await payloadFor(slug, base.config, version);
     for (const status of ['erro', 'processando']) {
       const h = await harness(slug, recordFor(p, {status}));
       const result = await h.run(p);
       assert.equal(result.status, 200, JSON.stringify({result, errors: h.errors}));
-      assert.equal(h.stored().versao_termo, V1);
+      assert.equal(h.stored().versao_termo, version);
       assert.equal(h.stored().termo_sha256, p.termo_sha256);
       assert.equal(h.stored().status, 'recebido');
       const pdf = Array.from(h.uploads.entries()).find(([path]) => path.endsWith('/documento.pdf'))[1];
       assert((await pdfLib.PDFDocument.load(pdf)).getPageCount() > 1);
-      assert(h.pdfTexts.some(text => text.includes(V1)));
-      assert(!h.pdfTexts.some(text => text.includes(V2)));
+      assert(h.pdfTexts.some(text => text.includes(version)));
+      assert(!h.pdfTexts.some(text => text.includes(V3)));
       assert(h.pdfTexts.join(' ').includes(p.termo_sha256));
       assert.equal(h.stored().dados.confirmacoes_saude.length, questionCounts[index]);
+      assert.equal(h.stored().dados.declaracoes.tratamento_dados, true);
+      const allText = h.pdfTexts.join(' ').replace(/\s+/g, ' ');
+      assert(allText.includes('[CONFIRMADO] Está ciente do tratamento de dados'));
+      assert(allText.includes('[CONFIRMADO] Declarou que as informações são verdadeiras'));
+      assert(!allText.includes('[CONFIRMADO] Declarou que as respostas específicas'));
     }
   });
 
-  test(slug + ': new v2 saves the complete questionnaire once in the generated PDF', async () => {
-    const h = await harness(slug), p = await payloadFor(slug, h.config);
-    const result = await h.run(p);
-    assert.equal(result.status, 201, JSON.stringify({result, errors: h.errors}));
-    assert.equal(h.stored().versao_termo, V2);
-    assert.equal(h.stored().termo_sha256, p.termo_sha256);
-    assert.equal(h.stored().dados.confirmacoes_saude.length, questionCounts[index]);
-    const allText = h.pdfTexts.join(' ').replace(/\s+/g, ' ');
-    for (const question of h.config.questions) {
-      // The PDF can wrap a question across multiple drawText calls.
-      assert.equal(allText.split(question).length - 1, 1, 'Question must appear once: ' + question);
+  test(slug + ': interrupted ' + termSuffix[version] + ' cannot silently fabricate its historical data declaration', async () => {
+    const base = await harness(slug), original = await payloadFor(slug, base.config, version);
+    for (const value of [undefined, false, null, 'true']) {
+      const p = structuredClone(original);
+      if (value === undefined) delete p.dados.declaracoes.tratamento_dados;
+      else p.dados.declaracoes.tratamento_dados = value;
+      const previous = recordFor(original, {status: 'erro'}), h = await harness(slug, previous);
+      const result = await h.run(p);
+      assert.equal(result.body.codigo_erro, 'invalid_answers');
+      assert.equal(h.uploads.size, 0);
+      assert.deepEqual(h.stored(), previous);
+      assert.equal(h.calls.filter(c => c.method !== 'GET').length, 0);
     }
-    const pdf = Array.from(h.uploads.entries()).find(([path]) => path.endsWith('/documento.pdf'))[1];
-    assert((await pdfLib.PDFDocument.load(pdf)).getPageCount() > 1);
   });
 
-  test(slug + ': v1 integrity/signature checks and concurrent recovery locks remain enforced', async () => {
-    const base = await harness(slug), p = await payloadFor(slug, base.config, V1);
+  test(slug + ': ' + termSuffix[version] + ' integrity/signature checks and concurrent recovery locks remain enforced', async () => {
+    const base = await harness(slug), p = await payloadFor(slug, base.config, version);
     const mutations = [[{...p, termo_texto: p.termo_texto + 'alterado'}, 'term_integrity_failed'], [{...p, assinatura_sha256: '0'.repeat(64)}, 'hash_mismatch']];
     for (const [payload, code] of mutations) {
       const h = await harness(slug, recordFor(p, {status: 'erro'}));
@@ -244,6 +285,69 @@ for (const [index, slug] of slugs.entries()) {
     assert.equal((await lost.run(p)).body.codigo_erro, 'already_processing');
     assert.equal(lost.uploads.size, 0);
     assert.equal(lost.calls.filter(c => c.method === 'DELETE').length, 0);
+  });
+  }
+
+  test(slug + ': new v3 saves the complete questionnaire once without the removed declaration', async () => {
+    const h = await harness(slug), p = await payloadFor(slug, h.config);
+    const result = await h.run(p);
+    assert.equal(result.status, 201, JSON.stringify({result, errors: h.errors}));
+    assert.equal(h.stored().versao_termo, V3);
+    assert.equal(h.stored().termo_sha256, p.termo_sha256);
+    assert.equal(h.stored().dados.confirmacoes_saude.length, questionCounts[index]);
+    const allText = h.pdfTexts.join(' ').replace(/\s+/g, ' ');
+    assert.equal(Object.hasOwn(h.stored().dados.declaracoes, 'tratamento_dados'), false);
+    assert.equal(allText.includes('[CONFIRMADO] Está ciente do tratamento de dados'), false);
+    assert(allText.includes('[CONFIRMADO] Declarou que as respostas específicas deste procedimento são verdadeiras'));
+    assert.deepEqual(h.stored().dados.imagem, p.dados.imagem);
+    for (const question of h.config.questions) {
+      // The PDF can wrap a question across multiple drawText calls.
+      assert.equal(allText.split(question).length - 1, 1, 'Question must appear once: ' + question);
+    }
+    const pdf = Array.from(h.uploads.entries()).find(([path]) => path.endsWith('/documento.pdf'))[1];
+    assert((await pdfLib.PDFDocument.load(pdf)).getPageCount() > 1);
+  });
+
+  test(slug + ': v3 rejects removed general declaration even when set to true', async () => {
+    for (const value of [true, false, null, 'true']) {
+      const h = await harness(slug), p = await payloadFor(slug, h.config);
+      p.dados.declaracoes.tratamento_dados = value;
+      const result = await h.run(p);
+      assert.equal(result.status, 400);
+      assert.equal(result.body.codigo_erro, 'invalid_answers');
+      assert.equal(h.uploads.size, 0);
+      assert.equal(h.stored(), null);
+      assert.equal(h.calls.filter(c => c.method !== 'GET').length, 0);
+    }
+  });
+
+  test(slug + ': v3 still requires every procedure declaration explicitly', async () => {
+    for (const key of requiredDeclarations(slug)) {
+      for (const value of [undefined, false, 'true']) {
+        const h = await harness(slug), p = await payloadFor(slug, h.config);
+        if (value === undefined) delete p.dados.declaracoes[key];
+        else p.dados.declaracoes[key] = value;
+        const result = await h.run(p);
+        assert.equal(result.body.codigo_erro, 'invalid_answers', key + ': ' + String(value));
+        assert.equal(h.uploads.size, 0);
+        assert.equal(h.stored(), null);
+      }
+    }
+  });
+
+  test(slug + ': v3 clinical photo permission is independent of publishing and refuses contradictory permissions', async () => {
+    const h = await harness(slug), p = await payloadFor(slug, h.config);
+    p.dados.imagem.foto_prontuario = 'sim';
+    assert.equal((await h.run(p)).status, 201);
+    assert.deepEqual(h.stored().dados.imagem, p.dados.imagem);
+    assert.equal(h.stored().dados.imagem.divulgacao, 'nao');
+    for (const [key, value] of [['antes_depois', 'sim'], ['primeiro_nome', 'sim'], ['depoimento', 'sim'], ['forma_imagem', 'rosto_inteiro'], ['foto_prontuario', true]]) {
+      const invalid = await harness(slug), mutation = await payloadFor(slug, invalid.config);
+      mutation.dados.imagem[key] = value;
+      assert.equal((await invalid.run(mutation)).body.codigo_erro, 'invalid_answers', key);
+      assert.equal(invalid.uploads.size, 0);
+      assert.equal(invalid.stored(), null);
+    }
   });
 
   test(slug + ': insert conflict reuses only the same current-version document', async () => {

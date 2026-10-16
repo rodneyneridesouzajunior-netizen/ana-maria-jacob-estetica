@@ -4,8 +4,8 @@ const CONFIG = Object.freeze({
   API_URL: 'https://rjxtxoqprnumouqakxbc.supabase.co/functions/v1/tcle-peeling-quimico-submit',
   PUBLISHABLE_KEY: 'sb_publishable_Ip14p4tUfYFjwUYaWinMlw_Gf9v0YwT',
   TYPE: 'tcle_peeling_quimico',
-  TERM_VERSION: '2026-10-15-v2',
-  TERM_SHA256: '941fbbbfcb0ffc1ccc282f7771a9907f0de6b01f20405e1cade6363d462b0690',
+  TERM_VERSION: '2026-10-15-v3',
+  TERM_SHA256: '9290d84c01b6dd0029021650746fe589dda03005c05f480d9c644238e55daa4b',
   RELEASED: true,
   WHATSAPP: '5531995844803',
   MAX_SIGNATURE_BYTES: 500_000
@@ -73,7 +73,7 @@ function renderTerm(text) {
 async function loadTerm() {
   const target = document.getElementById('texto-integral');
   try {
-    const response = await fetch('termo-v2.txt', { cache: 'no-store' });
+    const response = await fetch('termo-v3.txt', { cache: 'no-store' });
     if (!response.ok) throw new Error('Não foi possível carregar o texto do termo.');
     const text = normalizeNewlines(await response.text()).trim();
     const hash = await sha256Hex(text);
@@ -418,8 +418,7 @@ function collectData(signedAt) {
       riscos_especificos: form.elements.aceite_riscos_especificos.checked,
       informacoes_verdadeiras: form.elements.aceite_informacoes.checked,
       decisao_voluntaria: form.elements.aceite_voluntario.checked,
-      revisao_profissional: form.elements.aceite_revisao.checked,
-      tratamento_dados: form.elements.aceite_dados.checked
+      revisao_profissional: form.elements.aceite_revisao.checked
     },
     assinatura_digitada: form.elements.assinatura_digitada.value.trim(),
     assinatura_metodo: state.signatureMethod,

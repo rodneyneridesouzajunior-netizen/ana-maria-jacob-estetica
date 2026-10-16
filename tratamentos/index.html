@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Guia simples sobre tratamentos estéticos faciais e capilares, aplicação intramuscular, cuidados pós-procedimento e acompanhamento profissional.">
 
   <meta property="og:type" content="website">
@@ -16,12 +16,8 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:image" content="https://anamariajacob.com.br/assets/og.png">
   <link rel="canonical" href="https://anamariajacob.com.br/tratamentos/">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&amp;family=Poppins:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
-
-  <link rel="stylesheet" href="../assets/site.css">
-  <link rel="stylesheet" href="tratamentos.css">
+  <link rel="preload" href="../assets/amj-poppins-20261015.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="tratamentos.css?v=20261015-guia">
   <title>Tratamentos e aplicação intramuscular | Ana Maria Jacob</title>
   <script type="application/ld+json">
     {
@@ -50,8 +46,9 @@
   <header class="site-header">
     <div class="header-inner">
       <a class="header-brand" href="../" aria-label="Ana Maria Jacob Estética — página inicial">
-        <span>Ana Maria Jacob</span>
-        <small>Estética</small>
+        <span class="brand-window" aria-hidden="true"><img src="../assets/marca-amj-transparente-1672.png" width="1672" height="941" alt=""></span>
+        <span class="sr-only">Ana Maria Jacob</span>
+        <small class="sr-only">Estética</small>
       </a>
       <button class="menu-button" type="button" aria-expanded="false" aria-controls="menu-principal">
         <span></span><span></span><span></span>
@@ -62,6 +59,7 @@
         <a class="is-current" href="./" aria-current="page">Tratamentos</a>
         <a href="../#formularios">Formulários</a>
         <a href="../#contato">Contato</a>
+        <a class="nav-team" href="../app/">Entrar</a>
         <a class="nav-cta" href="../agendar/">Solicitar horário</a>
       </nav>
     </div>
@@ -82,10 +80,12 @@
           <a class="hero-social-link" href="https://www.instagram.com/anamariajacob?igsh=MWdva3p4cHNvcm00Zw==" target="_blank" rel="noopener noreferrer"><span>Instagram</span> @anamariajacob</a>
           <p class="guide-disclaimer"><strong>Conteúdo educativo. Informação não é indicação.</strong> O tratamento, a região, o produto e o número de sessões só podem ser definidos depois de uma avaliação individual.</p>
         </div>
-        <div class="guide-brand" aria-label="Identidade visual oficial Ana Maria Jacob Estética">
-          <span class="guide-glow" aria-hidden="true"></span>
-          <img src="../assets/identidade-visual-transparente-v1.png" width="1672" height="941" alt="Ana Maria Jacob Estética">
-          <p>Clareza para escolher com consciência.</p>
+        <div class="guide-visual">
+          <div class="guide-portrait"><img src="../assets/ana-maria-retrato-20261015.jpg" width="1024" height="1280" fetchpriority="high" alt="Ana Maria Costa Jacob Neri, farmacêutica"></div>
+          <div class="guide-brand" aria-label="Identidade visual oficial Ana Maria Jacob Estética">
+            <span class="brand-window"><img src="../assets/marca-amj-transparente-1672.png" width="1672" height="941" alt="Ana Maria Jacob Estética"></span>
+            <p>Clareza para escolher com consciência.</p>
+          </div>
         </div>
       </div>
     </section>
@@ -591,7 +591,7 @@
   <footer class="site-footer treatments-footer">
     <div class="container footer-grid">
       <div class="footer-brand-block">
-        <img src="../assets/identidade-visual-transparente-v1.png" width="1672" height="941" alt="Ana Maria Jacob Estética">
+        <span class="brand-window"><img src="../assets/marca-amj-transparente-1672.png" width="1672" height="941" loading="lazy" alt="Ana Maria Jacob Estética"></span>
         <p>Acolhimento, cuidado e orientação em cada etapa.</p>
       </div>
       <div>

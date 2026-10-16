@@ -7,12 +7,13 @@ import { readLimitedBody, RequestBodyTooLargeError } from "../_shared/read-limit
 import { matchesStoredTcleVersion } from "../_shared/tcle-term-versions.ts";
 
 const TYPE = "tcle_peeling_quimico";
-const TERM_VERSION = "2026-10-15-v2";
+const TERM_VERSION = "2026-10-15-v3";
 const TERM_SHA256 =
-  "941fbbbfcb0ffc1ccc282f7771a9907f0de6b01f20405e1cade6363d462b0690";
+  "9290d84c01b6dd0029021650746fe589dda03005c05f480d9c644238e55daa4b";
 const RELEASED = true;
 const KNOWN_TERM_HASHES: Readonly<Record<string, string>> = Object.freeze({
   [TERM_VERSION]: TERM_SHA256,
+  "2026-10-15-v2": "941fbbbfcb0ffc1ccc282f7771a9907f0de6b01f20405e1cade6363d462b0690",
   "2026-08-18-v1": "3f04db1af1f0e984385862abdd0b1b93ae34ebfd49f09587f541c317022b530b",
 });
 const BUCKET = "documentos-clinicos";
@@ -78,7 +79,7 @@ type ClinicalData = {
     informacoes_verdadeiras: true;
     decisao_voluntaria: true;
     revisao_profissional: true;
-    tratamento_dados: true;
+    tratamento_dados?: true;
   };
   assinatura_digitada: string;
   assinatura_metodo: "desenhada" | "nome_digitado";
@@ -386,6 +387,11 @@ function safeData(
     });
   }
 
+  // Only historical v1/v2 documents contain this separate general declaration.
+  // New submissions must not invent or inherit an acceptance from an anamnesis.
+  const legacyGeneralDeclaration = payload.versao_termo === "2026-08-18-v1" || payload.versao_termo === "2026-10-15-v2";
+  if (legacyGeneralDeclaration ? declarations.tratamento_dados !== true : Object.hasOwn(declarations, "tratamento_dados")) return null;
+
   if (
     ![
       declarations.leitura,
@@ -393,7 +399,6 @@ function safeData(
       declarations.informacoes_verdadeiras,
       declarations.decisao_voluntaria,
       declarations.revisao_profissional,
-      declarations.tratamento_dados,
     ].every((value) => value === true)
   ) return null;
 
@@ -474,7 +479,7 @@ function safeData(
       informacoes_verdadeiras: true,
       decisao_voluntaria: true,
       revisao_profissional: true,
-      tratamento_dados: true,
+      ...(legacyGeneralDeclaration ? { tratamento_dados: true as const } : {}),
     },
     assinatura_digitada: typedSignature,
     assinatura_metodo: signatureMethod,
@@ -871,7 +876,7 @@ async function buildCanonicalPdf(
     "[CONFIRMADO] Compreendeu que peeling produz lesão química controlada e pode causar queimadura, infecção, alteração de pigmentação, cicatriz e lesão ocular.",
   );
   textBlock(
-    "[CONFIRMADO] Declarou que as informações são verdadeiras e que comunicará alterações antes da aplicação.",
+    data.declaracoes.tratamento_dados === true ? "[CONFIRMADO] Declarou que as informações são verdadeiras e que comunicará alterações antes da aplicação." : "[CONFIRMADO] Declarou que as respostas específicas deste procedimento são verdadeiras e que comunicará mudanças antes da aplicação.",
   );
   textBlock(
     "[CONFIRMADO] Declarou decisão livre e ciência do direito de recusar ou desistir antes do procedimento.",
@@ -879,9 +884,11 @@ async function buildCanonicalPdf(
   textBlock(
     "[CONFIRMADO] Compreendeu que o documento aguarda revisão e assinatura profissional.",
   );
-  textBlock(
-    "[CONFIRMADO] Está ciente do tratamento de dados para as finalidades clínicas e legais descritas.",
-  );
+  if (data.declaracoes.tratamento_dados === true) {
+    textBlock(
+      "[CONFIRMADO] Está ciente do tratamento de dados para as finalidades clínicas e legais descritas.",
+    );
+  }
 
   ensure(145);
   textBlock("Nome digitado como confirmação: " + data.assinatura_digitada, {

@@ -4,8 +4,8 @@ const CONFIG = Object.freeze({
   API_URL: 'https://rjxtxoqprnumouqakxbc.supabase.co/functions/v1/tcle-bioestimulador-submit',
   PUBLISHABLE_KEY: 'sb_publishable_Ip14p4tUfYFjwUYaWinMlw_Gf9v0YwT',
   TYPE: 'tcle_bioestimulador_colageno',
-  TERM_VERSION: '2026-10-15-v2',
-  TERM_SHA256: '15cfff64ccb226d459c9dad3ff283ee0d1f41d28899d4285bb2f34bbe3666eca',
+  TERM_VERSION: '2026-10-15-v3',
+  TERM_SHA256: '7e1d154cee8870d3d97f7dd36540a24ffb06d7c40edfdf0c5c6a6173913f1ad2',
   RELEASED: true,
   WHATSAPP: '5531995844803',
   MAX_SIGNATURE_BYTES: 500_000
@@ -70,7 +70,7 @@ function renderTerm(text) {
 async function loadTerm() {
   const target = document.getElementById('texto-integral');
   try {
-    const response = await fetch('termo-v2.txt', { cache: 'no-store' });
+    const response = await fetch('termo-v3.txt', { cache: 'no-store' });
     if (!response.ok) throw new Error('Não foi possível carregar o texto do termo.');
     const text = normalizeNewlines(await response.text()).trim();
     const hash = await sha256Hex(text);
@@ -415,8 +415,7 @@ function collectData(signedAt) {
       riscos_especificos: form.elements.aceite_riscos_especificos.checked,
       informacoes_verdadeiras: form.elements.aceite_informacoes.checked,
       decisao_voluntaria: form.elements.aceite_voluntario.checked,
-      revisao_profissional: form.elements.aceite_revisao.checked,
-      tratamento_dados: form.elements.aceite_dados.checked
+      revisao_profissional: form.elements.aceite_revisao.checked
     },
     assinatura_digitada: form.elements.assinatura_digitada.value.trim(),
     assinatura_metodo: state.signatureMethod,
