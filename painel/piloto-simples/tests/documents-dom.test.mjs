@@ -52,3 +52,39 @@ test('preenchimento DOM aceita zero de escala e decimal com vírgula; erro conse
 test('ações estruturais marcam rascunho e Esc não descarta sem confirmação',t=>{
  const h=harness(t),modal=templateEditor(h.state,null,h.save);modal.querySelector('[data-doc-edit="add-block"]').click();assert.equal(modal.querySelector('form').dataset.unsaved,'true');assert.equal(h.event(modal,'cancel'),false);assert.equal(modal.open,true);modal.querySelector('[data-close]').click();assert.equal(modal.open,true);
 });
+
+test('documento assinado abre leitura dentro do app sem popup nem mutação do original',async t=>{
+ const h=harness(t);saveTemplate(h.state,{id:'read-only',kind:'anamnese',title:'TESTE <seguro>',body:'Texto preservado',questions:[{id:'answer',label:'Pergunta',type:'text'}]});
+ const d=prepareDocument(h.state,{id:'signed-test',templateId:'read-only',patientId:'demo-marina',visitId:'demo-consulta'});
+ d.answers={answer:'Resposta <script> sem execução'};d.status='assinado_demo';
+ d.signature={signerName:'TESTE',signedAt:'2026-10-16T12:00:00Z',contentHash:'a'.repeat(64),strokes:[[{x:.1,y:.2},{x:.3,y:.4}]]};
+ const before=JSON.stringify(d),modal=responseEditor(d,h.state,h.save);
+ assert.equal(modal.open,true);assert.match(modal.textContent,/Visualização somente para leitura/);
+ assert.match(modal.querySelector('.document-readonly').textContent,/Resposta <script> sem execução/);
+ assert.equal(modal.querySelector('.document-readonly script'),null);
+ assert.equal(modal.querySelectorAll('input,textarea,select').length,0);
+ assert.equal(modal.querySelector('polyline').getAttribute('points'),'100,72 300,144');
+ assert.ok(modal.querySelector('[data-preview-download]'));assert.ok(modal.querySelector('[data-preview-print]'));
+ h.event(modal.querySelector('form'),'submit');await tick();
+ assert.equal(h.saves,0);assert.equal(JSON.stringify(d),before);assert.equal(modal.isConnected,false);
+});
+
+test('popup bloqueado conserva a leitura do documento e oferece download alternativo',t=>{
+ const h=harness(t);saveTemplate(h.state,{id:'read-only',kind:'termo',title:'TESTE',body:'Texto preservado',questions:[]});
+ const d=prepareDocument(h.state,{id:'signed-test',templateId:'read-only',patientId:'demo-marina',visitId:'demo-consulta'});d.status='assinado_demo';
+ const prior=Object.getOwnPropertyDescriptor(globalThis,'window');Object.defineProperty(globalThis,'window',{configurable:true,value:{open:()=>null}});
+ t.after(()=>{if(prior)Object.defineProperty(globalThis,'window',prior);else delete globalThis.window;});
+ const modal=responseEditor(d,h.state,h.save);modal.querySelector('[data-preview-print]').click();
+ assert.equal(modal.open,true);assert.match(modal.querySelector('.error').textContent,/Permita a abertura/);
+ assert.match(modal.querySelector('.document-readonly').textContent,/Texto preservado/);assert.ok(modal.querySelector('[data-preview-download]'));
+});
+
+test('relatório financeiro abre leitura sem popup e preserva os valores e o estado',async t=>{
+ const h=harness(t),{mountFinance}=await import('../finance-ui.mjs');
+ const host=h.w.document.createElement('main');host.innerHTML='<div data-finance-period="month" data-finance-today="2026-10-16"></div><button data-fin="print">Relatório / PDF</button>';h.w.document.body.append(host);
+ const {ensureFinance}=await import('../finance-domain.mjs');ensureFinance(h.state);const before=JSON.stringify(h.state),messages=[];
+ mountFinance(host,{getState:()=>h.state,mutate:()=>assert.fail('Leitura não pode gravar'),notify:m=>messages.push(m),rerender:()=>{}});
+ host.querySelector('button').click();await tick();
+ const modal=h.w.document.querySelector('dialog');assert.ok(modal?.open);assert.match(modal.textContent,/Resumo financeiro/);assert.match(modal.textContent,/01\/10\/2026 a 16\/10\/2026/);assert.match(modal.textContent,/recebido líquido/);assert.match(modal.textContent,/Não representa lucro líquido/);
+ assert.ok(modal.querySelector('[data-preview-download]'));assert.equal(JSON.stringify(h.state),before);assert.deepEqual(messages,[]);
+});

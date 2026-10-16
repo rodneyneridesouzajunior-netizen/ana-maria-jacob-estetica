@@ -4,5 +4,8 @@
 .feature-dialog .dialog-top>div,.feature-dialog .dialog-top h2,.document-item,.patient-profile,.audit-row,.model-preview,.notice-item{overflow-wrap:anywhere}
 .feature-actions>button,.feature-dialog .dialog-actions>button{min-width:0;min-height:44px;white-space:normal}
 .feature-dialog .dialog-actions{flex-wrap:wrap}
+.document-readonly{min-width:0;overflow-wrap:anywhere}
+.document-readonly svg{display:block;width:100%;max-width:500px;height:auto}
+.document-readonly .model-preview{max-height:none;overflow:visible}
 .feature-dialog input:not([type=checkbox]):not([type=radio]),.feature-dialog select,.feature-dialog textarea{font-size:16px;min-height:44px;max-width:100%}
 .installment-row,.patient-profile strong{font-size:13px}

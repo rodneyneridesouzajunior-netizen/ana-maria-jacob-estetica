@@ -3,7 +3,7 @@ import {openDocumentDelivery} from './documents-delivery-ui.mjs';
 import {isConnected} from './runtime-store.mjs';
 import {ensureDocuments,saveTemplate,prepareDocument,signaturePayload,signDemoDocument} from './documents-domain.mjs';
 import {templateEditor as editor,documentBody,responseEditor,renderDocumentText} from './documents-editor.mjs';
-import {escapeHTML as e,input,textArea,select,featureDialog,downloadFile,printable} from './feature-ui.mjs';
+import {escapeHTML as e,input,textArea,select,featureDialog,downloadFile,readOnlyPreview} from './feature-ui.mjs';
 const kindName={anamnese:'Anamnese',termo:'Termo',imagem:'Uso de imagem'};
 const normalizeSearch=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR');
 /** Import missing IDs only. Existing clinic versions and issued snapshots are never rewritten. */
@@ -47,7 +47,7 @@ export function mountDocuments(host,{getState,mutate,notify,rerender,visitId}){
  if(action==='new-template'||action==='edit-template')return editor(s,id,save);
  if(action==='prepare'){const visit=s.visits.find(v=>v.id===(b.dataset.visit||visitId));if(!visit)throw Error('Abra uma consulta primeiro.');if(!s.documentTemplates.length)throw Error('Crie um modelo na área Clínica antes de preparar documentos.');return prepareDocumentDialog(s,visit,save);}
  const d=s.documentResponses.find(x=>x.id===id);if(!d)throw Error('Documento não encontrado.');
- if(action==='print')return printable(d.title,documentBody(d,s));
+ if(action==='print')return readOnlyPreview(d.title,documentBody(d,s));
  if(action==='export')return downloadFile(new Blob([JSON.stringify({format:isConnected()?'amj-documento-homologacao-v1':'amj-documento-demo-v1',storage:isConnected()?'clinic-server':'local-browser',document:d},null,2)],{type:'application/json'}),(isConnected()?'documento-homologacao-':'documento-demo-')+d.id+'.json');
  if(isConnected()&&['link','sign'].includes(action))return openDocumentDelivery(d,{getState,notify});
  if(action==='link'){const url=location.href.split('#')[0]+'#documento/'+d.id;await navigator.clipboard.writeText(url);return notify(isConnected()?'Link privado copiado. Abrir exige conta autorizada da clínica; não é um link público de assinatura.':'Link local copiado. Não envia nem disponibiliza o documento pela internet.');}

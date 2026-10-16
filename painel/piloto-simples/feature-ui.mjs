@@ -15,10 +15,9 @@ export function featureDialog({title,html,onSubmit,submitLabel='Salvar',wide=fal
 export function downloadFile(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);}
 // The same-origin assets resolve correctly from local, connected and released app URLs.
 // Callers supply their existing escaped document body; this wrapper does not rewrite it.
-export function printable(title,body){
- const w=window.open('','_blank');if(!w)throw Error('Permita a abertura da janela para imprimir ou salvar em PDF.');
+export function printableHTML(title,body){
  const logo=escapeHTML(new URL('./assets/logo.png',import.meta.url).href),font=escapeHTML(new URL('./assets/Poppins-Regular.ttf',import.meta.url).href);
- w.document.open();w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>${escapeHTML(title)}</title><style>
+ return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>${escapeHTML(title)}</title><style>
  @font-face{font-family:Poppins;src:url("${font}") format("truetype");font-display:swap}
  *{box-sizing:border-box}body{font:14px/1.8 Poppins,"Segoe UI",sans-serif;color:#28232b;background:#fcfbfa;margin:0;padding:24px}
  .report-page{width:100%;max-width:920px;margin:auto;padding:36px;background:#fff;border:1px solid #e9e1e5;border-radius:22px;box-shadow:0 4px 30px #30232b08}
@@ -35,5 +34,21 @@ export function printable(title,body){
  #print:focus-visible,a:focus-visible{outline:3px solid #703046;outline-offset:4px}
  @media(max-width:600px){body{padding:12px}.report-page{padding:22px 18px;border-radius:18px}.report-brand{width:160px}.report-header{margin-bottom:22px}td,th{padding:9px 5px}.print-actions #print{width:100%}}
  @media print{@page{margin:14mm}body{background:#fff;padding:0}.report-page{max-width:none;padding:0;border:0;border-radius:0;box-shadow:none}.print-actions{display:none}.report-header{break-inside:avoid}.note{background:#fff;border-color:#c5a059}thead{display:table-header-group}tr,img,svg{break-inside:avoid}}
- </style></head><body><main class="report-page"><header class="report-header"><span class="report-brand"><img src="${logo}" width="1672" height="941" alt="Ana Maria Jacob — Estética Avançada"></span><h1>${escapeHTML(title)}</h1></header><div class="report-content">${body}</div><p class="note">${isConnected()?'Ambiente conectado em homologação. Exportação para conferência; não comprova assinatura clínica, pagamento ou emissão fiscal.':'Demonstração local com dados fictícios. Sem validade de documento clínico ou fiscal.'}</p><div class="print-actions"><button id="print" type="button">Imprimir / salvar PDF</button></div></main></body></html>`);w.document.close();w.document.getElementById('print').onclick=()=>w.print();return w;
+ </style></head><body><main class="report-page"><header class="report-header"><span class="report-brand"><img src="${logo}" width="1672" height="941" alt="Ana Maria Jacob — Estética Avançada"></span><h1>${escapeHTML(title)}</h1></header><div class="report-content">${body}</div><p class="note">${isConnected()?'Ambiente conectado em homologação. Exportação para conferência; não comprova assinatura clínica, pagamento ou emissão fiscal.':'Demonstração local com dados fictícios. Sem validade de documento clínico ou fiscal.'}</p><div class="print-actions"><button id="print" type="button">Imprimir / salvar PDF</button></div></main></body></html>`;
+}
+export function printable(title,body){
+ const w=window.open('','_blank');if(!w)throw Error('Permita a abertura da janela para imprimir ou salvar em PDF.');
+ w.document.open();w.document.write(printableHTML(title,body));w.document.close();w.document.getElementById('print').onclick=()=>w.print();return w;
+}
+// Reading a saved record must work even when the host cannot display popup windows.
+export function readOnlyPreview(title,body){
+ const modal=featureDialog({title,wide:true,submitLabel:'Fechar',html:'<p class="read-only-note">Visualização somente para leitura. O registro original permanece preservado.</p><div class="document-readonly">'+body+'</div><div class="feature-actions"><button type="button" class="secondary" data-preview-print>Abrir impressão / PDF</button><button type="button" class="secondary" data-preview-download>Baixar documento HTML</button></div><p class="small-label">Se a janela de impressão não abrir, baixe o HTML, abra no navegador e use Imprimir. O arquivo HTML não é um PDF.</p>',onSubmit:()=>{}});
+ modal.querySelector('.dialog-actions [data-close]').remove();
+ modal.querySelector('[data-preview-print]').onclick=()=>{try{printable(title,body);}catch(error){modal.querySelector('.error').textContent=error.message;}};
+ modal.querySelector('[data-preview-download]').onclick=()=>{
+  // No executable code in the exported file; printing uses the browser menu.
+  const html=printableHTML(title,body).replace('<button id="print" type="button">Imprimir / salvar PDF</button>','<p>Use o menu do navegador para imprimir ou salvar como PDF.</p>');
+  downloadFile(new Blob([html],{type:'text/html;charset=utf-8'}),'documento-ana-maria-jacob.html');
+ };
+ return modal;
 }
