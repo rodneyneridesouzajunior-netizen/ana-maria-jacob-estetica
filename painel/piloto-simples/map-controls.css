@@ -21,3 +21,54 @@
 @media(max-width:620px){.map-access-toolbar{align-items:stretch;flex-direction:column;gap:8px;padding:12px}.map-access-toolbar .secondary{width:100%;white-space:normal}.map-toolbar .map-zoom-controls{width:100%;justify-content:space-between;gap:4px}.map-zoom-controls .segmented{flex:1;justify-content:space-evenly}.map-zoom-controls .segment{padding:7px 4px}.map-zoom-controls #zoom-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}.map-position-controls{padding:12px}}
 @media(max-width:360px){.map-zoom-controls .icon-button{display:none}.map-zoom-controls .segment{flex:1}}
 @media print{.map-access-toolbar,.map-position-controls{display:none!important}}
+
+/* Quiet annotation paint. The button is the touch target; its small disc is
+   presentation only. Photo dimensions, normalized positions and transforms stay
+   with the map renderer. Nothing here changes the stored annotation geometry. */
+.map-layout{--map-ink:#30262c;--map-muted:#65545e;--map-rose:#754859;--map-rose-dark:#573342;--map-soft:#f8eef1;--map-edge:#dfcbd2}
+.map-layout .map-marker{width:44px;height:44px;min-width:44px;min-height:44px;isolation:isolate;z-index:1;border:0;border-radius:50%;background:transparent;color:#fff;box-shadow:none;outline:none;font-size:11px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;text-shadow:none}
+.map-layout .map-marker::before{content:'';position:absolute;inset:0;margin:auto;width:22px;height:22px;box-sizing:border-box;z-index:-1;border:1px solid #fff;border-radius:50%;background:var(--map-rose);box-shadow:0 1px 3px #25121e40;pointer-events:none}
+.map-layout .map-marker.selected{z-index:2;background:transparent;color:#fff;outline:none}
+.map-layout .map-marker.selected::before{width:24px;height:24px;background:var(--map-rose-dark);border-color:#fff;box-shadow:0 0 0 1.5px var(--map-rose),0 1px 4px #25121e4d}
+.map-layout .map-marker.pending{background:transparent;color:var(--map-rose-dark);border:0;outline:none}
+.map-layout .map-marker.pending::before{background:#fff9fb;border:1.5px dashed var(--map-rose);box-shadow:0 0 0 1px #fff,0 1px 3px #25121e33}
+.map-layout .map-marker:focus-visible{z-index:3;outline:2px solid #30262c;outline-offset:-1px;box-shadow:0 0 0 1px #fff}
+.map-layout .photo-plane .map-svg{overflow:hidden}
+.map-layout .map-svg>line,.map-layout .map-svg>path{stroke:var(--map-rose);stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 .55px #fff)}
+.map-layout .map-svg>line{stroke-width:1.75px}
+.map-layout .map-svg>path{stroke-width:1.5px;fill:#a3657b0d}
+/* Pending paint uses the renderer's existing draft color; saved colors/data
+   and SVG coordinates remain untouched. */
+.map-layout .map-svg>[stroke="#ddad50"]{stroke-dasharray:4 3;stroke:var(--map-rose-dark)}
+.map-layout .map-toolbar{background:#fffdfc;border-bottom-color:#eadfe3;padding:12px 14px;gap:10px}
+.map-layout .map-toolbar>.segmented{padding:4px;background:#f5eff1;border:1px solid #eadfe3;border-radius:14px}
+.map-layout .map-toolbar>.segmented .segment{min-height:44px;min-width:64px;padding:9px 14px;border-radius:10px;color:var(--map-muted);font-size:13px;font-weight:500}
+.map-layout .map-toolbar>.segmented .segment[aria-pressed="true"]{background:#fff;color:var(--map-rose-dark);font-weight:650;box-shadow:0 1px 4px #41253412,inset 0 -2px var(--map-rose)}
+.map-layout .map-zoom-controls .segmented{background:#f5eff1;padding:3px;border-radius:13px}
+.map-layout .map-zoom-controls .segment{border-radius:10px;color:var(--map-muted);font-size:12px}
+.map-layout .map-zoom-controls .segment[aria-pressed="true"]{background:#eed6dd;color:#4d2d3c;box-shadow:0 1px 3px #4125340d;font-weight:650}
+.map-layout .map-status{padding:10px 16px;background:#fbf6f4;border-bottom:1px solid #eadfe3;color:var(--map-muted);font-size:12px;line-height:1.6}
+.map-layout .map-access-toolbar{background:#fffdfc;border-bottom-color:#eadfe3}
+.map-layout .map-access-toolbar p{font-size:12px;color:var(--map-muted);line-height:1.6}
+.map-layout .map-footer{gap:10px;flex-wrap:wrap;background:#fffdfc;color:var(--map-muted);border-top:1px solid #eadfe3}
+.map-layout .map-footer .subtle,.map-layout .map-side .subtle{min-height:44px;color:var(--map-rose-dark)}
+.map-layout .point-entry{min-height:64px;gap:12px;padding:13px 17px;border-bottom:1px solid #eee5e8;color:var(--map-ink);line-height:1.45}
+.map-layout .point-entry>span:last-child{min-width:0;overflow-wrap:anywhere}
+.map-layout .point-entry .number{width:26px;height:26px;border:1px solid #d3b6c1;background:#fbf5f7;color:var(--map-rose-dark);font-size:12px;font-weight:650;font-variant-numeric:tabular-nums}
+.map-layout .point-entry strong{font-size:14px;font-weight:600;color:var(--map-ink)}
+.map-layout .point-entry small{display:block;margin-top:3px;font-size:12px;line-height:1.5;color:var(--map-muted)}
+.map-layout .point-entry.active{background:var(--map-soft);box-shadow:inset 3px 0 var(--map-rose)}
+.map-layout .point-entry.active .number{background:var(--map-rose);border-color:var(--map-rose);color:#fff}
+.map-layout .point-entry:focus-visible{outline:2px solid var(--map-rose-dark);outline-offset:-3px}
+.map-layout .legend-total{padding:14px 17px;background:#fcf8f6;color:var(--map-ink);font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+.map-layout .map-tip{color:var(--map-muted);font-size:12px;line-height:1.65}
+.map-layout .map-position-controls{background:#fcf9f8;border-color:#e4d6dc}
+.map-layout .map-position-controls summary{min-height:44px;line-height:1.5;display:flex;align-items:center;color:var(--map-ink)}
+.map-layout .map-position-controls summary::before{content:'+';display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;margin-right:8px;color:var(--map-rose);font-size:18px;font-weight:500}
+.map-layout .map-position-controls[open] summary::before{content:'−'}
+.map-layout .map-position-controls summary::-webkit-details-marker{display:none}
+@media(hover:hover){.map-layout .map-marker:not(.pending):hover::before{background:var(--map-rose-dark)}.map-layout .point-entry:not(.active):hover{background:#fcf7f9}}
+@media(prefers-reduced-motion:no-preference){.map-layout .map-marker::before,.map-layout .point-entry{transition:background-color 120ms ease,border-color 120ms ease,box-shadow 120ms ease}}
+@media(prefers-reduced-motion:reduce){.map-layout .map-marker,.map-layout .map-marker::before,.map-layout .point-entry{transition:none;animation:none}}
+@media(max-width:620px){.map-layout .map-toolbar{padding:10px 12px;gap:10px}.map-layout .map-toolbar>.segmented{width:100%}.map-layout .map-toolbar>.segmented .segment{flex:1;min-width:44px}.map-layout .map-zoom-controls .segment{padding:7px 4px}.map-layout .map-access-toolbar{padding:12px}.map-layout .map-side input,.map-layout .map-side select,.map-layout .map-side textarea{font-size:16px}.map-layout .map-footer{padding:10px 12px}}
+@media print{.map-layout .map-marker,.map-layout .map-marker::before,.map-layout .map-svg{print-color-adjust:exact}.map-layout .map-marker::before{box-shadow:none}.map-layout .map-svg>line,.map-layout .map-svg>path{filter:none}}

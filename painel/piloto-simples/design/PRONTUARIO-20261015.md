@@ -110,3 +110,16 @@ Os logs e capturas ficam na pasta de evidências externa ao repositório: `../..
 6. **Entrega de produtos:** domínio e validação estão testados; falta a UI de execução. Entregas sucessivas no mesmo lote exigem commits separados, pois a transição genérica aceita um avanço de versão da entidade por commit.
 7. **Impressão e backup:** impressão do resumo não constitui PDF oficial assinado. O backup existente não restaura o servidor nem inclui automaticamente os documentos oficiais e registros externos de assinatura; esses limites anteriores permanecem.
 8. **Paridade:** não foi comprovada igualdade de todos os módulos, permissões, integrações, notificações ou regras internas do SkinPRO. Nenhuma tela desta entrega deve ser usada como evidência dessa equivalência.
+
+## Complemento: marcações sutis e revisão final
+
+- A paciente com atendimento em andamento recebe o atalho **Marcar rosto**. O caminho completo continua **Prontuários → paciente → atendimento → Fotos e aplicações**.
+- Pontos: selo de 22 px (24 px selecionado), alvo de toque 44 × 44 px; rosé escuro com números brancos. Linhas finas e leques com preenchimento discreto, recortados à foto. A legenda permanece selecionável quando os pontos se sobrepõem.
+- Um segundo ponteiro não desloca nem encerra o gesto iniciado pelo primeiro. Linha e leque acompanham a prévia durante o arraste. Mover agora prepara um rascunho: é necessário **Salvar marcação** para persistir. Cancelar retorna às coordenadas salvas.
+- Exportação conserva foto, coordenadas e legenda em PNG; paleta alinhada à tela, sem desenhar fora da área fotográfica. Não há indicação automática de doses ou regiões anatômicas.
+- Corrigido o rótulo **Margem de contribuição**, sem alterar o cálculo. Exportações HTML de documentos/financeiro possuem viewport, marca oficial transparente, leitura móvel e botão de impressão com 48 px. O catálogo recupera o foco no título após abrir uma seção ou atualizar.
+- Suíte consolidada final: **952/952 testes aprovados**, zero falhas, cancelados ou ignorados (43,85 s; `testes-mapa-final.txt`). Este total substitui o anterior; não deve ser somado aos 876, 948 ou às execuções focais. A revisão final acrescentou regressões para seleção negada durante arraste, perda de captura, interrupção por zoom/controles e preservação do rascunho após a perda normal de captura.
+- CUA local: criou linha e leque sobre imagem fictícia, salvou e recuperou após reload (mapa v5); ajuste por teclado ficou pendente e cancelar manteve 72%/64%. Alvos conservaram 44 px no zoom 10×. Em 320 px, página 305 px e controles visíveis com altura 44 px; em 390 px, página 375 px, sem transbordamento horizontal. PNG baixado e inspecionado. Relatório financeiro em 390 px: página 390 px, marca carregada, botão 48 px.
+- Aceita-se o limite de 300–400 MB informado posteriormente pelo usuário quando recursos o justificarem. Não há meta artificial de peso. Aplicação web carrega mídias conforme necessário; tamanho publicado, instalação/cache e arquivos das pacientes são medidas diferentes.
+
+As validações de celular físico e os limites funcionais descritos acima continuam explícitos. Este complemento não transforma homologação em prontuário clínico validado.

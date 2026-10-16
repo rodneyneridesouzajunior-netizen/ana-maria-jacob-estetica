@@ -27,9 +27,16 @@ test('visão geral organiza dados completos reais da paciente sem mutar estado',
 test('ações e links preservam rotas funcionais de registro, documentos, cadastro e novo atendimento',t=>{
  const d=render(t),open=d.querySelector('[data-visit-id="open"]');
  assert.equal(d.querySelector('.pr-back').getAttribute('href'),'#pacientes');assert.equal(d.querySelector('[data-action="edit-patient"]').dataset.id,'p');assert.ok(d.querySelector('[data-action="new-visit"]'));
- assert.deepEqual([...open.querySelectorAll('a')].map(a=>[a.textContent,a.getAttribute('href')]),[['Continuar atendimento','#paciente/p/open/registro'],['Documentos','#paciente/p/open/documentos'],['Ver prontuário','#paciente/p/open/resumo']]);
+ assert.deepEqual([...open.querySelectorAll('a')].map(a=>[a.textContent,a.getAttribute('href')]),[['Continuar atendimento','#paciente/p/open/registro'],['Marcar rosto','#paciente/p/open/mapa'],['Documentos','#paciente/p/open/documentos'],['Ver prontuário','#paciente/p/open/resumo']]);
  assert.equal(d.querySelector('.pr-anamnesis a').getAttribute('href'),'#paciente/p/open/documentos');assert.ok(d.querySelector('a[href="#orcamentos"]'));assert.match(text(d.querySelector('.pr-profile')),/lista geral/);
  assert.ok(d.querySelector('a[href="#paciente/p/comparacoes"]'));assert.ok(d.querySelector('.pr-returns a[href="#agenda"]'));
+});
+test('Marcar rosto abre só o atendimento editável desta paciente e mantém bloqueados em consulta',t=>{
+ const s=fixture();s.visits.push({id:'locked',patientId:'p',service:'Bloqueado',date:'2026-10-15',status:'rascunho',lockedAt:'2026-10-15T18:00:00Z',photos:[]});
+ const d=render(t,s),links=[...d.querySelectorAll('a')].filter(a=>a.textContent==='Marcar rosto');
+ assert.equal(links.length,1);assert.equal(links[0].getAttribute('href'),'#paciente/p/open/mapa');
+ for(const id of ['done','cancelled','locked']){const card=d.querySelector('[data-visit-id="'+id+'"]');assert.ok(card);assert.equal(card.querySelector('a[href$="/mapa"]'),null);assert.ok(card.querySelector('a[href$="/resumo"]'));assert.ok(card.querySelector('a[href$="/documentos"]'));}
+ assert.equal(d.querySelector('a[href*="other-visit"]'),null);assert.equal(d.querySelector('a[href*="/other/"]'),null);
 });
 test('status em andamento, concluído, cancelado e agendamento são distintos sem contar agenda duas vezes',t=>{
  const d=render(t);assert.equal(d.querySelector('[data-visit-id="open"] .pr-badge').textContent,'Em andamento');assert.equal(d.querySelector('[data-visit-id="done"] .pr-badge').textContent,'Concluído');assert.equal(d.querySelector('[data-visit-id="cancelled"] .pr-badge').textContent,'Cancelado');
