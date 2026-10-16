@@ -41,7 +41,7 @@ test('PDF aceita somente armazenamento autorizado e recusa travessia e alteraç�
 test('originais e formulários ficam legíveis sem HTML de dados e sem afirmação de revisão',async t=>{
  const f=fixture(t);await f.handle.ready;
  assert.match(f.host.textContent,/Paciente <teste>/);assert.equal(f.host.querySelector('teste'),null);
- assert.match(f.host.textContent,/Sem vínculo nesta consulta/);assert.match(f.host.textContent,/Revisão profissional: pendente/);
+ assert.match(f.host.textContent,/Sem vínculo nesta consulta/);assert.match(f.host.textContent,/A confirmação profissional é feita na conclusão do atendimento/);assert.doesNotMatch(f.host.textContent,/Revisão profissional: (pendente|concluída)/);
  assert.equal(f.host.querySelectorAll('.cb-form-links a').length,7);
  for(const a of f.host.querySelectorAll('.cb-form-links a')){assert.equal(new URL(a.href).origin,'https://anamariajacob.com.br');assert.match(a.rel,/noreferrer/);}
  assert.equal(OFFICIAL_CLINICAL_FORMS.some(f=>f.url.endsWith('/anamnese/')),true);

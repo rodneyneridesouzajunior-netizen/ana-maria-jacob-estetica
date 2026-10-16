@@ -1,0 +1,64 @@
+/* AMJ phone opening: own tokens, stronger hierarchy and physical depth. */
+.amj-day-summary{display:none}
+@media(max-width:850px){
+ .sp-home{--amj-phone-ink:#211b20;--amj-phone-muted:#5e5055;--amj-phone-rose:#e5a9a9;--amj-phone-gold:#c5a059;gap:24px}
+ .sp-home .sp-overview{gap:22px}
+ .sp-home .sp-hero{background:transparent;border:0;border-radius:0;box-shadow:none;padding:4px 0 0;gap:22px}
+ .sp-home .sp-hero-heading{display:contents}
+ .sp-home .sp-hero-heading>div:first-child{order:0;flex:auto;min-width:0}
+ .sp-home .sp-hero-date{color:var(--amj-phone-muted);font-size:12px;font-weight:600;line-height:1.6;margin:0 0 12px;letter-spacing:.025em}
+ .sp-home .sp-hero h1{font-size:clamp(29px,7.9vw,36px);font-weight:550;line-height:1.13;letter-spacing:-.045em;max-width:100%;color:var(--amj-phone-ink);margin-bottom:12px}
+ .sp-home .sp-hero-heading p:not(.sp-hero-date){font-size:14px;color:var(--amj-phone-muted);line-height:1.6;margin:0;max-width:36ch}
+ .sp-home .sp-hero .sp-hero-body{display:none}
+ .sp-home .sp-hero-actions{order:2;display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%}
+ .sp-home :is(.sp-hero-primary,.sp-hero-secondary){min-height:54px;font-size:14px;line-height:1.3;font-weight:650;border-radius:17px;padding:13px 12px;box-shadow:0 2px 2px #fff inset,0 6px 16px #3221270a}
+ .sp-home .sp-hero-primary{color:#2b181e;background:var(--amj-phone-rose);border:1px solid #af747a;box-shadow:0 1px 0 #ffe7e3 inset,0 6px 16px #9c5c681c}
+ .sp-home .sp-hero-secondary{background:#fff;border-color:#b7a6ab;color:#2b2126}
+ .sp-home .amj-day-summary{display:block;order:1;position:relative;isolation:isolate;padding:24px;border:1px solid #6b585a;border-top-color:#b89a75;border-radius:24px;color:#fff;background:linear-gradient(125deg,#382730 0%,#251d24 64%,#211d25 100%);box-shadow:0 1px 0 #ffffff26 inset,0 2px 3px #2719220e,0 12px 28px #38252c24,0 2px 0 #fff;margin:0;overflow:hidden}
+ .sp-home .amj-day-summary::before{content:"";position:absolute;z-index:-1;inset:0;background:radial-gradient(ellipse at 100% 0%,#bf9d7033,transparent 62%);pointer-events:none}
+ .sp-home .amj-day-summary-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:24px;font-size:11px;line-height:1.6;color:#f1e6e9;font-weight:550}
+ .sp-home .amj-day-summary-top>span:first-child{display:flex;gap:8px;align-items:center}
+ .sp-home .amj-day-summary-top svg{width:16px;height:16px;color:#dfc590}
+ .sp-home .amj-day-count{padding:5px 9px;border:1px solid #9d848d70;border-radius:10px;white-space:nowrap;background:#ffffff08;color:#f9f3f5}
+ .sp-home .amj-day-summary h2{font-size:14px;font-weight:500;line-height:1.6;color:#f2e8ed;letter-spacing:0;margin:0 0 6px}
+ .sp-home .amj-day-amount{display:block;font-size:clamp(35px,10.8vw,49px);font-weight:650;line-height:1.12;letter-spacing:-.055em;color:#fff;white-space:nowrap}
+ .sp-home .amj-day-amount[data-amount-size=medium]{font-size:clamp(28px,8vw,38px)}
+ .sp-home .amj-day-amount[data-amount-size=compact]{font-size:clamp(19px,6vw,30px)}
+ .sp-home .amj-day-caption{font-size:12px;color:#d8c8d1;line-height:1.6;margin:10px 0 24px}
+ .sp-home .amj-day-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 18px;padding-top:22px;border-top:1px solid #d1af723b;margin:0}
+ .sp-home .amj-day-metrics>div{min-width:0}
+ .sp-home .amj-day-metrics dt{font-size:11px;font-weight:450;line-height:1.55;color:#e0d1d9;margin-bottom:6px}
+ .sp-home .amj-day-metrics dd{font-size:clamp(18px,5.2vw,23px);font-weight:600;line-height:1.25;letter-spacing:-.025em;color:#fff;margin:0;overflow-wrap:anywhere}
+ .sp-home .amj-day-definitions{margin-top:22px;padding-top:8px;border-top:1px solid #ffffff12;color:#eadde5}
+ .sp-home .amj-day-definitions summary{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:40px;font-size:11px;line-height:1.5;cursor:pointer;list-style:none}
+ .sp-home .amj-day-definitions summary::-webkit-details-marker{display:none}
+ .sp-home .amj-day-definitions summary svg{width:14px;height:14px;color:#dfc590}
+ .sp-home .amj-day-definitions[open] summary svg{transform:rotate(45deg)}
+ .sp-home .amj-day-definitions p{font-size:12px;line-height:1.7;color:#f0e6ec;margin:5px 0 6px}
+ .sp-home .amj-day-definitions summary:focus-visible{outline-color:#efbed0;outline-width:3px;outline-offset:3px}
+ .sp-home :is(.sp-home-card,.clinic-home-goal){border-radius:23px;border-color:#e4d9d4;box-shadow:0 1px 0 #fff inset,0 3px 5px #30222a03,0 10px 28px #30222a07}
+ .sp-home .clinic-home-goal{background:linear-gradient(140deg,#fff,#fcf8f4);padding:25px;gap:14px}
+ .sp-home .clinic-home-goal h2,.sp-home .sp-card-title h2{font-size:25px;font-weight:550;letter-spacing:-.04em;color:var(--amj-phone-ink)}
+ .sp-home .clinic-home-goal .clinic-goal-value{font-size:38px;font-weight:600;letter-spacing:-.045em;color:var(--amj-phone-ink)}
+ .sp-home .clinic-home-goal progress{height:8px;background:#eadfd9;accent-color:#754b58;box-shadow:0 1px 3px #271a2120 inset}
+ .sp-home .clinic-home-goal progress::-webkit-progress-value{background:linear-gradient(90deg,#80505d,#a56676)}
+ .sp-home .clinic-home-goal progress::-moz-progress-bar{background:#80505d}
+ .sp-home .sp-next-time{background:#f7f2ee;border-color:#ddcfc4;box-shadow:0 1px 0 white inset,0 3px 8px #32232905}
+ .sp-home .sp-next-time strong{font-size:20px;font-weight:650;color:#302329}
+ .sp-home .sp-next-person>strong{font-size:15px;font-weight:600;color:#211b20}
+ .sp-home .sp-card-footer{min-height:56px;font-size:14px}
+ .sp-home .sp-open-button{border-color:#c8b5bc;box-shadow:0 2px 8px #2c1d2410}
+}
+@media(max-width:360px){
+ .sp-home .amj-day-summary{padding:21px 18px}.sp-home .amj-day-summary-top{font-size:10px;gap:6px}.sp-home .amj-day-count{padding:5px 7px}
+ .sp-home .sp-hero-actions{gap:9px}.sp-home :is(.sp-hero-primary,.sp-hero-secondary){font-size:12px;padding:12px 9px;min-height:54px}
+ .sp-home .amj-day-metrics{gap:18px 12px}.sp-home .amj-day-metrics dt{font-size:10px}
+}
+@media(max-width:850px) and (prefers-reduced-motion:no-preference){
+ .sp-home{animation:none}.sp-home .amj-day-summary{animation:amj-phone-reveal 240ms cubic-bezier(.2,.7,.25,1) both}
+ .sp-home .sp-goal-wrap{animation:amj-phone-reveal 260ms 40ms cubic-bezier(.2,.7,.25,1) both}
+ .sp-home :is(.sp-hero-primary,.sp-hero-secondary,.sp-open-button){transition:transform 160ms ease,box-shadow 160ms ease,background-color 160ms ease}
+ .sp-home :is(.sp-hero-primary,.sp-hero-secondary,.sp-open-button):active{transform:translateY(1px);box-shadow:0 1px 3px #2c1d241a}
+ @keyframes amj-phone-reveal{from{opacity:.4;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+}
+@media(prefers-reduced-motion:reduce){.sp-home .amj-day-summary,.sp-home .sp-goal-wrap{animation:none;transform:none}}

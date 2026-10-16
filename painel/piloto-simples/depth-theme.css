@@ -1,0 +1,63 @@
+/* AMJ depth system. Surfaces remain warm/light; movement never affects photo maps. */
+:root{
+ --amj-depth-border:#e0d4ce;
+ --amj-depth-card:0 1px 0 #fff inset,0 2px 3px #35222d04,0 9px 24px #35222d09,0 1px 2px #35222d05;
+ --amj-depth-raised:0 1px 0 #fff inset,0 4px 8px #35222d08,0 16px 36px #35222d14;
+ --amj-depth-button:0 1px 0 #ffffffa6 inset,0 2px 3px #35222d09,0 5px 12px #35222d0b;
+ --amj-depth-pressed:0 1px 3px #35222d1a inset,0 1px 2px #35222d05;
+ --ui-shadow:var(--amj-depth-card);
+}
+.app :is(.card,.map-card,.patient-card,.area-directory-card,.cb-record,.clinic-home-goal,.sp-home-card){border-color:var(--amj-depth-border);box-shadow:var(--amj-depth-card)}
+.app :is(.card,.map-card):focus-within{box-shadow:var(--amj-depth-card)}
+.app :is(.card-header,.sp-card-title){background:linear-gradient(180deg,#ffffff70,transparent)}
+.app :is(.primary,.secondary,.icon-button,.sp-open-button),.connected-card .primary,dialog :is(.primary,.secondary){box-shadow:var(--amj-depth-button)}
+.app .primary,.connected-card .primary,dialog .primary{background:linear-gradient(180deg,#edb8b4,#e2a3a7);border-color:#ae737b;color:#271b20}
+.app :is(.secondary,.icon-button),dialog .secondary{background:linear-gradient(180deg,#fff,#fcf9f7);border-color:#aa999f;color:#2e252a}
+.app .nav-item.active{box-shadow:0 1px 0 #fff8 inset,0 3px 8px #83546112}
+.app :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea),dialog :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea),.connected-card input{
+ border-color:#9a888e;background-color:#fff;box-shadow:0 1px 2px #35222d0b inset,0 1px 0 #fff;min-width:0
+}
+.app .area-switch select{background:transparent;box-shadow:none}
+.app :is(input,select,textarea):focus-visible,dialog :is(input,select,textarea):focus-visible{outline:3px solid #865362;outline-offset:3px}
+.app :is(.primary,.secondary,.icon-button):focus-visible,.app .nav-item:focus-visible,dialog :is(.primary,.secondary):focus-visible{outline:3px solid #865362;outline-offset:4px}
+.connected-card{border-color:var(--amj-depth-border);box-shadow:var(--amj-depth-raised);background:linear-gradient(145deg,#fff,#fcfaf8)}
+dialog{border:1px solid #d3bdb2;background:#fffcfa;box-shadow:0 1px 0 #fff inset,0 8px 24px #2d1c2426,0 32px 100px #21172138}
+dialog::backdrop{background:#23182070;backdrop-filter:blur(5px)}
+.app :is(.primary,.secondary,.danger,.icon-button):disabled,.connected-card .primary:disabled,dialog :is(.primary,.secondary):disabled{box-shadow:none;transform:none;background:#eeeae5;color:#6a655f;border-color:#c9c0b6}
+@media(hover:hover){
+ .app :is(.area-directory-card,.patient-card):hover{border-color:#c5a059;box-shadow:var(--amj-depth-raised)}
+ .app .primary:not(:disabled):hover,.connected-card .primary:not(:disabled):hover,dialog .primary:not(:disabled):hover{background:linear-gradient(180deg,#e5abab,#d89a9f);border-color:#945d69;box-shadow:0 1px 0 #fff8 inset,0 7px 16px #80535f21;color:#271b20}
+ .app :is(.secondary,.icon-button):not(:disabled):hover,dialog .secondary:not(:disabled):hover{background:#fff;border-color:#886773;box-shadow:0 1px 0 #fff inset,0 5px 13px #35222d12}
+}
+.app :is(.primary,.secondary,.icon-button):not(:disabled):active,.connected-card .primary:not(:disabled):active,dialog :is(.primary,.secondary):not(:disabled):active{box-shadow:var(--amj-depth-pressed);background:#e4d1d0}
+@media(prefers-reduced-motion:no-preference){
+ .app :is(.primary,.secondary,.icon-button,.area-directory-card),.connected-card .primary,dialog :is(.primary,.secondary){transition:box-shadow 160ms ease,background-color 160ms ease,border-color 160ms ease,transform 160ms ease}
+ .app :is(.primary,.secondary,.icon-button):not(:disabled):active,.connected-card .primary:not(:disabled):active,dialog :is(.primary,.secondary):not(:disabled):active{transform:translateY(1px)}
+}
+@media(max-width:850px){
+ html{scroll-padding-bottom:calc(128px + env(safe-area-inset-bottom,0px))}
+ .app .workspace{padding-bottom:calc(118px + env(safe-area-inset-bottom,0px))}
+ .app main :is(input,select,textarea,button,a,[tabindex]){scroll-margin-bottom:calc(128px + env(safe-area-inset-bottom,0px))}
+ .app .sidebar{
+  position:fixed;z-index:40;top:auto;bottom:max(12px,env(safe-area-inset-bottom,0px));left:50%;right:auto;
+  width:calc(100% - 24px);max-width:560px;height:76px;transform:translateX(-50%);padding:6px;
+  border:1px solid #d8c9c2;border-top-color:#fff;border-radius:26px;overflow:visible;
+  background:#fffdfbf5;box-shadow:0 1px 0 #fff inset,0 1px 3px #38212b10,0 10px 24px #38212b24,0 18px 46px #38212b1a;
+  backdrop-filter:blur(16px) saturate(110%);-webkit-backdrop-filter:blur(16px) saturate(110%)
+ }
+ .app .sidebar nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:center;gap:3px;height:100%;overflow:visible}
+ .app .sidebar .nav-item{min-width:0;width:100%;height:62px;min-height:62px;flex:none;justify-content:center;gap:5px;margin:0;padding:8px 2px;color:#63545c;font-size:10px;line-height:1.2;font-weight:600;border:1px solid transparent;border-radius:19px;box-shadow:none;transform:none}
+ .app .sidebar .nav-item svg.icon{width:23px;height:23px;stroke-width:1.7}
+ .app .sidebar .nav-item.active,.app .sidebar .nav-item.active:hover{background:linear-gradient(145deg,#f4cbc5,#e2a1aa);border-color:#ce9e9c;border-top-color:#fff0eb;color:#341d29;transform:translateY(-7px);box-shadow:0 1px 0 #fff9 inset,0 3px 4px #8b4f6312,0 8px 14px #8b4f632c;font-size:10px;font-weight:750}
+ .app .sidebar .nav-item.active svg.icon{width:26px;height:26px;stroke-width:1.85}
+ .app .sidebar .nav-item:focus-visible{outline:3px solid #794858;outline-offset:3px}
+ .app .sidebar .nav-item:not(.active):active{background:#f5e8e9;color:#341d29;box-shadow:0 1px 3px #75485518 inset}
+ .toast{bottom:calc(110px + env(safe-area-inset-bottom,0px))}
+}
+@media(max-width:360px){.app .sidebar{width:calc(100% - 16px);padding-inline:4px;border-radius:24px}.app .sidebar nav{gap:1px}.app .sidebar .nav-item{font-size:9px}.app .sidebar .nav-item.active{font-size:9px}}
+@media(max-width:850px) and (prefers-reduced-motion:no-preference){.app .sidebar .nav-item{transition:transform 180ms cubic-bezier(.2,.65,.25,1),box-shadow 180ms ease,background-color 180ms ease}}
+@media(prefers-reduced-motion:reduce){.app *,.connected-card *,dialog *{transition:none!important;animation:none!important;scroll-behavior:auto!important}.app :is(.primary,.secondary,.icon-button):active,.connected-card .primary:active,dialog :is(.primary,.secondary):active{transform:none}}
+@media print{.app .sidebar{display:none!important}.app :is(.card,.map-card,.patient-card,.area-directory-card,.cb-record,.clinic-home-goal,.sp-home-card),.connected-card,dialog{box-shadow:none}.app .workspace{padding-bottom:0}}
+
+/* The official transparent mark keeps its shape; improve its on-screen contrast. */
+.app .mobile-brand img{filter:brightness(.76) saturate(1.15)}

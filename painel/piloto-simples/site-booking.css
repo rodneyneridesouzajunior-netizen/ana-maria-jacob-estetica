@@ -1,0 +1,6 @@
+[data-sb-form]{padding:24px;margin-block:20px;border:1px solid #d8cbc1;border-radius:20px;background:#fff;box-shadow:0 4px 30px rgba(0,0,0,.025)}
+[data-sb-form] h3{font-size:20px;color:#1a1a1a}[data-sb-form]>p{line-height:1.6;color:#59504c}[data-sb-form] .field-grid{gap:18px;margin-block:22px}
+[data-sb-form] .field-grid>label{display:grid;gap:8px;font-size:14px;font-weight:550;color:#312a27;min-width:0}[data-sb-form] input:not([type=checkbox]),[data-sb-form] select,[data-sb-filter]{width:100%;min-width:0;min-height:48px;padding:10px 12px;border:1px solid #9b8e85;border-radius:12px;background:#fff;color:#1a1a1a;font-size:16px}
+[data-sb-form]>label{display:flex;gap:10px;align-items:flex-start;margin-block:16px;line-height:1.5;font-size:14px;color:#312a27}[data-sb-form]>label input[type=checkbox]{width:20px;height:20px;min-height:20px;flex:0 0 20px;margin:1px 0;accent-color:#935867}
+[data-sb-form] .toolbar{flex-wrap:wrap;gap:12px;margin-top:20px}[data-sb-form] button{white-space:normal;min-height:48px}[data-sb-recovery]{line-height:1.6}
+@media(max-width:600px){[data-sb-form]{padding:18px}[data-sb-form] .field-grid{grid-template-columns:1fr;gap:16px}[data-sb-form] .toolbar>button{width:100%}[data-sb-filter]{max-width:100%}}

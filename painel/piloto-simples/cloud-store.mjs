@@ -208,7 +208,7 @@ export function createCloudStore({session,fetchImpl=globalThis.fetch,timeoutMs=2
       check(turn);return {state:value,photos,scope:'clinica-servidor',clinicId:snapshotClinic};
     }finally{busy=false;}
   }
-  return {load,commit,getPhoto,readSnapshot,resolvePending,refreshAfterConflict,isBusy:()=>busy,hasPending:()=>!!pending,hasConflict:()=>!!pending?.rejected,
+  return {load,commit,getPhoto,readSnapshot,getClinicId:()=>{assertOpen();return clinicId;},resolvePending,refreshAfterConflict,isBusy:()=>busy,hasPending:()=>!!pending,hasConflict:()=>!!pending?.rejected,
     restoreSnapshot:async()=>{throw fail('restore_unavailable','Restauração no servidor exige conferência do histórico e ainda não está disponível nesta versão.');},
     dispose(){closed=true;unsubscribe?.();invalidate('closed');}};
 }

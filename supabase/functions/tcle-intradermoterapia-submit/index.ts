@@ -4,9 +4,15 @@ import type { PDFFont, PDFPage } from "pdf-lib";
 import { consumePublicFormRateLimit } from "../_shared/public-form-rate-limit.ts";
 import { readLimitedBody, RequestBodyTooLargeError } from "../_shared/read-limited-body.ts";
 
+import { matchesStoredTcleVersion } from "../_shared/tcle-term-versions.ts";
+
 const TYPE = "tcle_intradermoterapia_estetica";
-const TERM_VERSION = "2026-08-18-v1";
-const TERM_SHA256 = "65c38aa1611a53d5602db4307d8353f508dffc6cd6ab7ada320d2db2db925de4";
+const TERM_VERSION = "2026-10-15-v2";
+const TERM_SHA256 = "4642ac82b2b796fe5782431f8611f4eaf60f985f9ebc29374b10324d9ed74d86";
+const KNOWN_TERM_HASHES: Readonly<Record<string, string>> = Object.freeze({
+  [TERM_VERSION]: TERM_SHA256,
+  "2026-08-18-v1": "65c38aa1611a53d5602db4307d8353f508dffc6cd6ab7ada320d2db2db925de4",
+});
 const BUCKET = "documentos-clinicos";
 const MAX_BODY_BYTES = 1_500_000;
 const MAX_PDF_BYTES = 4_000_000;
@@ -461,6 +467,8 @@ async function buildCanonicalPdf(
   code: string,
   receivedAt: string,
   termText: string,
+  termVersion: string,
+  termHash: string,
 ): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   pdf.setTitle("TCLE - Intradermoterapia Estética - " + data.identificacao.nome);
@@ -601,7 +609,7 @@ async function buildCanonicalPdf(
   textBlock("INTRADERMOTERAPIA ESTÉTICA", {
     font: bold, size: 11, lineHeight: 15, after: 4, align: "center",
   });
-  textBlock("Versão " + TERM_VERSION + " · Código " + code, {
+  textBlock("Versão " + termVersion + " · Código " + code, {
     size: 7.7, lineHeight: 10, after: 12, color: colorMuted, align: "center",
   });
   textBlock("CÓPIA DO ENVIO DO PACIENTE — AGUARDANDO REVISÃO E ASSINATURA PROFISSIONAL", {
@@ -630,8 +638,8 @@ async function buildCanonicalPdf(
     font: bold, size: 14, lineHeight: 18, after: 7, color: colorGold,
   });
   textBlock(
-    "Documento gerado no servidor e vinculado ao termo " + TERM_VERSION +
-      " (SHA-256 " + TERM_SHA256 + "). Recebido em " + formatServerDate(receivedAt) + ".",
+    "Documento gerado no servidor e vinculado ao termo " + termVersion +
+      " (SHA-256 " + termHash + "). Recebido em " + formatServerDate(receivedAt) + ".",
     { size: 7.7, lineHeight: 10.5, after: 10, color: colorMuted },
   );
 
@@ -760,7 +768,7 @@ async function buildCanonicalPdf(
       start: { x: margin, y: 36 }, end: { x: pageWidth - margin, y: 36 },
       thickness: 0.5, color: rgb(232 / 255, 220 / 255, 205 / 255),
     });
-    current.drawText(pdfText("Ana Maria Jacob Estética · " + TERM_VERSION + " · " + code.slice(0, 16)), {
+    current.drawText(pdfText("Ana Maria Jacob Estética · " + termVersion + " · " + code.slice(0, 16)), {
       x: margin, y: 22, size: 6.8, font: regular, color: colorMuted,
     });
     const label = "Página " + (index + 1) + " de " + pages.length;
@@ -786,7 +794,7 @@ async function signedPdfUrl(path: string): Promise<string | null> {
 
 async function existing(idempotencyKey: string): Promise<JsonRecord | null> {
   const response = await admin(
-    "/rest/v1/documentos_clinicos?select=id,tipo,versao_termo,nome,cpf,telefone,status,codigo_verificacao,recebido_em,updated_at,pdf_path,assinatura_path&idempotency_key=eq." +
+    "/rest/v1/documentos_clinicos?select=id,tipo,versao_termo,termo_sha256,nome,cpf,telefone,status,codigo_verificacao,recebido_em,updated_at,pdf_path,assinatura_path&idempotency_key=eq." +
       encodeURIComponent(idempotencyKey) + "&limit=1",
   );
   if (!response.ok) throw new Error("idempotency_lookup_failed");
@@ -872,7 +880,7 @@ Deno.serve(async (req: Request) => {
   let recovery: JsonRecord | null = null;
   try {
     const previous = await existing(idempotencyKey);
-    if (previous && (previous.tipo !== TYPE || previous.versao_termo !== TERM_VERSION)) {
+    if (previous && !matchesStoredTcleVersion(previous, payload, TYPE, KNOWN_TERM_HASHES)) {
       return fail(req, "invalid_idempotency", "Atualize a página e tente novamente.", 409);
     }
     if (previous && !matchesExistingOwner(previous, payload)) {
@@ -904,11 +912,16 @@ Deno.serve(async (req: Request) => {
     return fail(req, "temporary_error", "O serviço está temporariamente indisponível. Tente novamente.", 503);
   }
 
-  if (payload.tipo !== TYPE || payload.versao_termo !== TERM_VERSION || payload.termo_sha256 !== TERM_SHA256) {
+  // Interrupted historical submissions retain their original immutable version.
+  // Without an existing matching record only the current version is accepted.
+  const termVersion = recovery ? String(recovery.versao_termo) : TERM_VERSION;
+  const termHash = KNOWN_TERM_HASHES[termVersion];
+
+  if (payload.tipo !== TYPE || payload.versao_termo !== termVersion || payload.termo_sha256 !== termHash) {
     return fail(req, "term_version_mismatch", "A versão do termo mudou. Atualize a página e leia novamente.", 409);
   }
   const termText = normalizeTerm(payload.termo_texto);
-  if (!termText || await sha256(termText) !== TERM_SHA256) {
+  if (!termText || await sha256(termText) !== termHash) {
     return fail(req, "term_integrity_failed", "O texto integral do termo não pôde ser validado. Atualize a página.", 409);
   }
 
@@ -939,7 +952,7 @@ Deno.serve(async (req: Request) => {
     return fail(req, "hash_mismatch", "A integridade da assinatura não pôde ser confirmada.");
   }
 
-  const expectedClientCode = await sha256(idempotencyKey + "|" + TYPE + "|" + TERM_VERSION + "|" + TERM_SHA256);
+  const expectedClientCode = await sha256(idempotencyKey + "|" + TYPE + "|" + termVersion + "|" + termHash);
   if (!validHash(payload.codigo_verificacao) || payload.codigo_verificacao !== expectedClientCode) {
     return fail(req, "invalid_code", "O código do documento não pôde ser validado.");
   }
@@ -968,8 +981,8 @@ Deno.serve(async (req: Request) => {
   const verificationSeed = JSON.stringify({
     idempotency_key: idempotencyKey,
     tipo: TYPE,
-    versao_termo: TERM_VERSION,
-    termo_sha256: TERM_SHA256,
+    versao_termo: termVersion,
+    termo_sha256: termHash,
     nome,
     cpf,
     telefone,
@@ -982,7 +995,7 @@ Deno.serve(async (req: Request) => {
   const expectedCode = await hmacSha256(verificationSeed);
   let pdf: Uint8Array;
   try {
-    pdf = await buildCanonicalPdf(data, signature, expectedCode, serverReceivedAt, termText);
+    pdf = await buildCanonicalPdf(data, signature, expectedCode, serverReceivedAt, termText, termVersion, termHash);
   } catch (error) {
     console.error("TCLE canonical PDF generation failed", String(error));
     return fail(req, "pdf_generation_failed", "Não foi possível preparar a cópia digital agora. Tente novamente.", 503);
@@ -994,8 +1007,8 @@ Deno.serve(async (req: Request) => {
   const canonical = JSON.stringify({
     idempotency_key: idempotencyKey,
     tipo: TYPE,
-    versao_termo: TERM_VERSION,
-    termo_sha256: TERM_SHA256,
+    versao_termo: termVersion,
+    termo_sha256: termHash,
     nome,
     cpf,
     telefone,
@@ -1012,8 +1025,8 @@ Deno.serve(async (req: Request) => {
   const row = {
     idempotency_key: idempotencyKey,
     tipo: TYPE,
-    versao_termo: TERM_VERSION,
-    termo_sha256: TERM_SHA256,
+    versao_termo: termVersion,
+    termo_sha256: termHash,
     nome,
     cpf,
     telefone,
@@ -1067,7 +1080,7 @@ Deno.serve(async (req: Request) => {
       if (!inserted.ok) {
         if (inserted.status === 409) {
           const previous = await existing(idempotencyKey);
-          if (previous && (previous.tipo !== TYPE || previous.versao_termo !== TERM_VERSION)) {
+          if (previous && !matchesStoredTcleVersion(previous, payload, TYPE, KNOWN_TERM_HASHES)) {
             return fail(req, "invalid_idempotency", "Atualize a página e tente novamente.", 409);
           }
           if (previous && !matchesExistingOwner(previous, payload)) {

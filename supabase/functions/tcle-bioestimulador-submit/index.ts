@@ -4,11 +4,17 @@ import type { PDFFont, PDFPage } from "pdf-lib";
 import { consumePublicFormRateLimit } from "../_shared/public-form-rate-limit.ts";
 import { readLimitedBody, RequestBodyTooLargeError } from "../_shared/read-limited-body.ts";
 
+import { matchesStoredTcleVersion } from "../_shared/tcle-term-versions.ts";
+
 const TYPE = "tcle_bioestimulador_colageno";
-const TERM_VERSION = "2026-08-18-v1";
+const TERM_VERSION = "2026-10-15-v2";
 const TERM_SHA256 =
-  "cf2c0958cc679441b99849ded246d12ee1b9f7aaa102604a441dda1720a66213";
+  "15cfff64ccb226d459c9dad3ff283ee0d1f41d28899d4285bb2f34bbe3666eca";
 const RELEASED = true;
+const KNOWN_TERM_HASHES: Readonly<Record<string, string>> = Object.freeze({
+  [TERM_VERSION]: TERM_SHA256,
+  "2026-08-18-v1": "cf2c0958cc679441b99849ded246d12ee1b9f7aaa102604a441dda1720a66213",
+});
 const BUCKET = "documentos-clinicos";
 const MAX_BODY_BYTES = 1_500_000;
 const MAX_PDF_BYTES = 4_000_000;
@@ -515,6 +521,8 @@ async function buildCanonicalPdf(
   code: string,
   receivedAt: string,
   termText: string,
+  termVersion: string,
+  termHash: string,
 ): Promise<Uint8Array> {
   const pdf = await PDFDocument.create();
   pdf.setTitle(
@@ -692,7 +700,7 @@ async function buildCanonicalPdf(
     after: 4,
     align: "center",
   });
-  textBlock("Versão " + TERM_VERSION + " · Código " + code, {
+  textBlock("Versão " + termVersion + " · Código " + code, {
     size: 7.7,
     lineHeight: 10,
     after: 12,
@@ -752,8 +760,8 @@ async function buildCanonicalPdf(
     color: colorGold,
   });
   textBlock(
-    "Documento gerado no servidor e vinculado ao termo " + TERM_VERSION +
-      " (SHA-256 " + TERM_SHA256 + "). Recebido em " +
+    "Documento gerado no servidor e vinculado ao termo " + termVersion +
+      " (SHA-256 " + termHash + "). Recebido em " +
       formatServerDate(receivedAt) + ".",
     { size: 7.7, lineHeight: 10.5, after: 10, color: colorMuted },
   );
@@ -1024,7 +1032,7 @@ async function buildCanonicalPdf(
     });
     current.drawText(
       pdfText(
-        "Ana Maria Jacob Estética · " + TERM_VERSION + " · " +
+        "Ana Maria Jacob Estética · " + termVersion + " · " +
           code.slice(0, 16),
       ),
       {
@@ -1061,7 +1069,7 @@ async function signedPdfUrl(path: string): Promise<string | null> {
 
 async function existing(idempotencyKey: string): Promise<JsonRecord | null> {
   const response = await admin(
-    "/rest/v1/documentos_clinicos?select=id,tipo,versao_termo,nome,cpf,telefone,status,codigo_verificacao,recebido_em,updated_at,pdf_path,assinatura_path&idempotency_key=eq." +
+    "/rest/v1/documentos_clinicos?select=id,tipo,versao_termo,termo_sha256,nome,cpf,telefone,status,codigo_verificacao,recebido_em,updated_at,pdf_path,assinatura_path&idempotency_key=eq." +
       encodeURIComponent(idempotencyKey) + "&limit=1",
   );
   if (!response.ok) throw new Error("idempotency_lookup_failed");
@@ -1208,7 +1216,7 @@ Deno.serve(async (req: Request) => {
     const previous = await existing(idempotencyKey);
     if (
       previous &&
-      (previous.tipo !== TYPE || previous.versao_termo !== TERM_VERSION)
+      !matchesStoredTcleVersion(previous, payload, TYPE, KNOWN_TERM_HASHES)
     ) {
       return fail(
         req,
@@ -1262,9 +1270,14 @@ Deno.serve(async (req: Request) => {
     );
   }
 
+  // Interrupted historical submissions retain their original immutable version.
+  // Without an existing matching record only the current version is accepted.
+  const termVersion = recovery ? String(recovery.versao_termo) : TERM_VERSION;
+  const termHash = KNOWN_TERM_HASHES[termVersion];
+
   if (
-    payload.tipo !== TYPE || payload.versao_termo !== TERM_VERSION ||
-    payload.termo_sha256 !== TERM_SHA256
+    payload.tipo !== TYPE || payload.versao_termo !== termVersion ||
+    payload.termo_sha256 !== termHash
   ) {
     return fail(
       req,
@@ -1274,7 +1287,7 @@ Deno.serve(async (req: Request) => {
     );
   }
   const termText = normalizeTerm(payload.termo_texto);
-  if (!termText || await sha256(termText) !== TERM_SHA256) {
+  if (!termText || await sha256(termText) !== termHash) {
     return fail(
       req,
       "term_integrity_failed",
@@ -1349,7 +1362,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const expectedClientCode = await sha256(
-    idempotencyKey + "|" + TYPE + "|" + TERM_VERSION + "|" + TERM_SHA256,
+    idempotencyKey + "|" + TYPE + "|" + termVersion + "|" + termHash,
   );
   if (
     !validHash(payload.codigo_verificacao) ||
@@ -1394,8 +1407,8 @@ Deno.serve(async (req: Request) => {
   const verificationSeed = JSON.stringify({
     idempotency_key: idempotencyKey,
     tipo: TYPE,
-    versao_termo: TERM_VERSION,
-    termo_sha256: TERM_SHA256,
+    versao_termo: termVersion,
+    termo_sha256: termHash,
     nome,
     cpf,
     telefone,
@@ -1414,6 +1427,8 @@ Deno.serve(async (req: Request) => {
       expectedCode,
       serverReceivedAt,
       termText,
+      termVersion,
+      termHash,
     );
   } catch (error) {
     console.error("TCLE canonical PDF generation failed", String(error));
@@ -1436,8 +1451,8 @@ Deno.serve(async (req: Request) => {
   const canonical = JSON.stringify({
     idempotency_key: idempotencyKey,
     tipo: TYPE,
-    versao_termo: TERM_VERSION,
-    termo_sha256: TERM_SHA256,
+    versao_termo: termVersion,
+    termo_sha256: termHash,
     nome,
     cpf,
     telefone,
@@ -1454,8 +1469,8 @@ Deno.serve(async (req: Request) => {
   const row = {
     idempotency_key: idempotencyKey,
     tipo: TYPE,
-    versao_termo: TERM_VERSION,
-    termo_sha256: TERM_SHA256,
+    versao_termo: termVersion,
+    termo_sha256: termHash,
     nome,
     cpf,
     telefone,
@@ -1523,7 +1538,7 @@ Deno.serve(async (req: Request) => {
           const previous = await existing(idempotencyKey);
           if (
             previous &&
-            (previous.tipo !== TYPE || previous.versao_termo !== TERM_VERSION)
+            !matchesStoredTcleVersion(previous, payload, TYPE, KNOWN_TERM_HASHES)
           ) {
             return fail(
               req,

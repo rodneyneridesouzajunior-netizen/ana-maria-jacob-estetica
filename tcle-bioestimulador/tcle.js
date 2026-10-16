@@ -4,8 +4,8 @@ const CONFIG = Object.freeze({
   API_URL: 'https://rjxtxoqprnumouqakxbc.supabase.co/functions/v1/tcle-bioestimulador-submit',
   PUBLISHABLE_KEY: 'sb_publishable_Ip14p4tUfYFjwUYaWinMlw_Gf9v0YwT',
   TYPE: 'tcle_bioestimulador_colageno',
-  TERM_VERSION: '2026-08-18-v1',
-  TERM_SHA256: 'cf2c0958cc679441b99849ded246d12ee1b9f7aaa102604a441dda1720a66213',
+  TERM_VERSION: '2026-10-15-v2',
+  TERM_SHA256: '15cfff64ccb226d459c9dad3ff283ee0d1f41d28899d4285bb2f34bbe3666eca',
   RELEASED: true,
   WHATSAPP: '5531995844803',
   MAX_SIGNATURE_BYTES: 500_000
@@ -70,7 +70,7 @@ function renderTerm(text) {
 async function loadTerm() {
   const target = document.getElementById('texto-integral');
   try {
-    const response = await fetch('termo-v1.txt', { cache: 'no-store' });
+    const response = await fetch('termo-v2.txt', { cache: 'no-store' });
     if (!response.ok) throw new Error('Não foi possível carregar o texto do termo.');
     const text = normalizeNewlines(await response.text()).trim();
     const hash = await sha256Hex(text);

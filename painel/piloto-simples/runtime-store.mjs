@@ -7,3 +7,5 @@ export const commit=(...args)=>provider.commit(...args);
 export const getPhoto=(...args)=>provider.getPhoto(...args);
 export const readSnapshot=(...args)=>provider.readSnapshot(...args);
 export const restoreSnapshot=(...args)=>provider.restoreSnapshot(...args);
+
+export const getClinicId=()=>provider.getClinicId?.()||null;

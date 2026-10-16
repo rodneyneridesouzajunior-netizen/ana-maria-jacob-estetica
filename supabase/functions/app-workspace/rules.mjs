@@ -31,7 +31,7 @@ function validateShape(s){
  for(const q of s.quotes){const totals=quoteTotals(q.items,q.discountBps);for(const key of ['margin','loss'])if(q[key]!==totals[key])fail('quote_totals_invalid','Resumo financeiro do orçamento inconsistente.');for(const item of q.items){const line=validateQuoteItem(item);for(const key of ['subtotal','cost','discount','total'])if(item[key]!==line[key])fail('quote_totals_invalid','Total de item inconsistente.');}}
 }
 function versioned(old,next,label){for(const p of old){const n=next.find(x=>x.id===p.id);if(!n)fail('record_removal_forbidden',`${label}: use inativação ou cancelamento.`);if(!same(p,n)&&n.version!==(p.version||1)+1)fail('entity_version_conflict',`${label}: versão não avançou exatamente uma vez.`,409);}}
-export function validateTransition(old,next,{photos=[],now=new Date().toISOString()}={}){
+export function validateTransition(old,next,{photos=[],now=new Date().toISOString(),clinicalCompletions=new Set()}={}){
  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date(now));
  validateShape(next);if(next.revision!==old.revision)fail('revision_conflict','A revisão enviada difere da versão lida.',409);
  try{assertFacialHistoryPreserved(old,next);}catch(error){fail('immutable_facial_history',error.message);}
@@ -83,7 +83,9 @@ export function validateTransition(old,next,{photos=[],now=new Date().toISOStrin
    const movements=newly(old,next,'stockMovements').filter(m=>m.visitId===v.id);if(movements.length!==totals.size||[...totals].some(([lot,units])=>!movements.some(m=>m.type==='consumo'&&m.lotId===lot&&m.deltaUnits===-units&&m.operationId===v.completionOperationId)))fail('consumption_movement_missing','Consumo precisa corresponder à baixa do estoque.');
    const snap=v.completionSnapshot,sessions=snap.sessions;if(!Number.isSafeInteger(sessions)||sessions<1||sessions>1000||!v.quoteId&&sessions!==1)fail('invalid_sessions','Quantidade de sessões incompatível.');const expected=usage.reduce((n,x)=>n+x.cost,0)+v.procedureSnapshot.cost*sessions;if(v.actualCost!==expected||snap.actualCost!==expected||!same(snap.consumptions,usage)||!same(snap.procedure,v.procedureSnapshot)||snap.billId!==v.billId||snap.quoteId!==(v.quoteId||null)||snap.service!==v.service)fail('visit_cost_invalid','O custo realizado diverge do registro preservado.');
    if(v.quoteId){const uses=newly(old,next,'quoteSessionUses').filter(u=>u.visitId===v.id),q=get(next,'quotes',v.quoteId),item=q?.items.find(i=>i.id===uses[0]?.itemId);if(uses.length!==1||uses[0].reversedAt||uses[0].sessions!==sessions||uses[0].cost!==v.actualCost||uses[0].operationId!==v.completionOperationId||uses[0].quoteId!==v.quoteId||item?.procedureId!==v.procedureId||v.billId!==q.billId)fail('session_use_invalid','Sessão, procedimento, cobrança e custo devem corresponder.');}else {const b=get(next,'bills',v.billId);if(!b||b.visitId!==v.id||b.quoteId||b.total!==v.procedureSnapshot.price)fail('visit_bill_invalid','Cobrança incompatível com o procedimento da consulta.');}
-   if((v.procedureSnapshot.requiredDocumentIds||[]).length||v.procedureSnapshot.consentTemplateId)fail('clinical_signature_unavailable','Conclua os documentos no fluxo clínico oficial antes de finalizar.');
+   // Only the authenticated completion handler can supply this server-owned Set.
+   // A generic snapshot commit never authorizes a professional attestation.
+   if(!(clinicalCompletions instanceof Set)||!clinicalCompletions.has(v.id))fail('clinical_signature_unavailable','Revise os documentos e confirme pessoalmente a conclusão no fluxo clínico.');
   }
  }
  for(const u of newly(old,next,'quoteSessionUses'))if(get(old,'visits',u.visitId)?.status==='concluido'||get(next,'visits',u.visitId)?.quoteId!==u.quoteId||u.reversedAt)fail('session_use_invalid','Evento de sessão precisa corresponder à nova conclusão.');

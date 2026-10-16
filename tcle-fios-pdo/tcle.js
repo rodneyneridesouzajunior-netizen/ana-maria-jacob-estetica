@@ -4,8 +4,8 @@ const CONFIG = Object.freeze({
   API_URL: 'https://rjxtxoqprnumouqakxbc.supabase.co/functions/v1/tcle-fios-pdo-submit',
   PUBLISHABLE_KEY: 'sb_publishable_Ip14p4tUfYFjwUYaWinMlw_Gf9v0YwT',
   TYPE: 'tcle_fios_pdo',
-  TERM_VERSION: '2026-08-18-v1',
-  TERM_SHA256: '6a31a13133e29132763e2ded44c6d1a424d64154d0cb883b02628d897924bd24',
+  TERM_VERSION: '2026-10-15-v2',
+  TERM_SHA256: 'c68e4bf913915671063923e25588720c891b5ffdc2e585469373a1f4a9f568e4',
   RELEASED: true,
   WHATSAPP: '5531995844803',
   MAX_SIGNATURE_BYTES: 500_000
@@ -75,7 +75,7 @@ function renderTerm(text) {
 async function loadTerm() {
   const target = document.getElementById('texto-integral');
   try {
-    const response = await fetch('termo-v1.txt', { cache: 'no-store' });
+    const response = await fetch('termo-v2.txt', { cache: 'no-store' });
     if (!response.ok) throw new Error('Não foi possível carregar o texto do termo.');
     const text = normalizeNewlines(await response.text()).trim();
     const hash = await sha256Hex(text);

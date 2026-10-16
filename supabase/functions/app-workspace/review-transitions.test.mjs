@@ -7,6 +7,7 @@ import {comparisonPhotos} from '../../../painel/piloto-simples/compare.mjs';
 
 const day='2026-10-15',now=day+'T18:00:00.000Z';
 const validateTransition=(old,next,options={})=>transition(old,next,{now,...options});
+const clinicalCompletion={clinicalCompletions:new Set(['review-visit'])};
 const op=(operationId,data={})=>({operationId,data,today:day,now});
 function fixture(){
  const state=emptyState();
@@ -25,23 +26,23 @@ test('review: legitimate completion keeps exact cents, original snapshot and sto
  assert.equal(next.visits[0].actualCost,1400);
  assert.equal(next.stockLots[0].balanceUnits,98000);
  assert.equal(next.bills[0].total,10000);
- assert.doesNotThrow(()=>validateTransition(old,next));
+ assert.doesNotThrow(()=>validateTransition(old,next,clinicalCompletion));
 });
 test('review: completion cannot keep consumed inventory available',()=>{
  const old=fixture(),next=completed(old);
  next.stockLots=structuredClone(old.stockLots);next.stockMovements=structuredClone(old.stockMovements);
- assert.throws(()=>validateTransition(old,next),'Consumed stock without an inventory movement must be rejected.');
+ assert.throws(()=>validateTransition(old,next,clinicalCompletion),'Consumed stock without an inventory movement must be rejected.');
 });
 test('review: completion cannot fabricate price independently of selected procedure',()=>{
  const old=fixture(),next=completed(old);next.bills[0].total=1;
- assert.throws(()=>validateTransition(old,next),'A one-cent bill cannot replace the selected procedure price.');
+ assert.throws(()=>validateTransition(old,next,clinicalCompletion),'A one-cent bill cannot replace the selected procedure price.');
 });
 test('review: matching totals do not authorize rewriting the selected procedure snapshot',()=>{
  const old=fixture(),next=completed(old),v=next.visits[0];
  v.procedureSnapshot.cost=v.completionSnapshot.procedure.cost=0;
  v.actualCost=v.completionSnapshot.actualCost=400;
  next.bills[0].cost=next.bills[0].actualCost=400;
- assert.throws(()=>validateTransition(old,next),'Recalculating forged totals must not make a modified procedure snapshot valid.');
+ assert.throws(()=>validateTransition(old,next,clinicalCompletion),'Recalculating forged totals must not make a modified procedure snapshot valid.');
 });
 test('review: consumption cost must come from its immutable lot, not the client',()=>{
  const old=fixture(),next=completed(old),v=next.visits[0];
@@ -49,7 +50,7 @@ test('review: consumption cost must come from its immutable lot, not the client'
  v.completionSnapshot.consumptions=structuredClone(v.consumptions);
  v.actualCost=v.completionSnapshot.actualCost=1000;
  next.bills[0].cost=next.bills[0].actualCost=1000;
- assert.throws(()=>validateTransition(old,next),'The lot costs 2,000 cents per mL even when the client sends zero.');
+ assert.throws(()=>validateTransition(old,next,clinicalCompletion),'The lot costs 2,000 cents per mL even when the client sends zero.');
 });
 test('review: snapshot cannot be forged in a prior draft commit to bypass completion checks',()=>{
  const old=fixture(),next=structuredClone(old);next.visits[0].procedureSnapshot.cost=0;
@@ -61,12 +62,12 @@ test('review: an initial visit snapshot must match a real catalog version',()=>{
 });
 test('review: a completed visit cannot acquire a duplicate second bill',()=>{
  const old=fixture(),next=completed(old);next.bills.push({...next.bills[0],id:'review-duplicate-bill',total:1});
- assert.throws(()=>validateTransition(old,next),'The bill-to-visit link must be reciprocal and unique.');
+ assert.throws(()=>validateTransition(old,next,clinicalCompletion),'The bill-to-visit link must be reciprocal and unique.');
 });
 test('review: a backdated client completion cannot consume a currently expired lot',()=>{
  const old=fixture(),historicalDay='2026-10-13';old.visits[0].date=historicalDay;old.stockLots[0].expiry='2026-10-14';
  const next=structuredClone(old);completeVisit(next,{...op('review-backdated-complete'),today:historicalDay,now:historicalDay+'T18:00:00.000Z',visitId:'review-visit',procedureId:'review-proc',consumptions:[{lotId:'review-lot',quantity:.2,reason:'Material fictício'}]});
- assert.throws(()=>validateTransition(old,next,{now}),'Expiry of a new inventory consumption must be checked against the server date.');
+ assert.throws(()=>validateTransition(old,next,{...clinicalCompletion,now}),'Expiry of a new inventory consumption must be checked against the server date.');
 });
 test('review: draft quote edits must preserve the previous commercial version',()=>{
  const old=fixture(),data={id:'review-quote',patientId:'review-patient',title:'Original',validUntil:'',items:[{id:'review-line',procedureId:'review-proc',sessions:1,unitPrice:10000,unitCost:1000}]};
@@ -87,3 +88,5 @@ test('review: an existing expected return can be cancelled but cannot disappear'
  const removed=structuredClone(old);removed.expectedReturns=[];assert.throws(()=>validateTransition(old,removed),'Use a preserved cancelled return instead of erasing the pending return.');
  const cancelled=structuredClone(old);cancelled.expectedReturns[0].status='cancelado';assert.doesNotThrow(()=>validateTransition(old,cancelled));
 });
+
+test('review: an otherwise valid completion requires the private server authorization set',()=>{const old=fixture(),next=completed(old);assert.throws(()=>validateTransition(old,next),{code:'clinical_signature_unavailable'});assert.throws(()=>validateTransition(old,next,{clinicalCompletions:['review-visit']}));assert.doesNotThrow(()=>validateTransition(old,next,clinicalCompletion));});

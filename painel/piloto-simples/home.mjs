@@ -15,10 +15,16 @@ const icon=name=>`<svg viewBox="0 0 20 20" aria-hidden="true">${icons[name]||ico
 export function homeData(state,now=new Date()){
   const today=dateKey(now),month=today.slice(0,7),clock=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
   const financial=financeReport({...state},{period:'month',today});
+  const daily=financeReport({...state},{period:'today',today}),dailyBills=state.bills.filter(bill=>bill.date===today&&!bill.cancelledAt);
+  const knownDailyCosts=dailyBills.length>0&&dailyBills.every(bill=>Number.isSafeInteger(bill.cost)&&bill.cost>=0);
+  const dailyContribution=knownDailyCosts?daily.billed-daily.variableCost:null;
   const series=Array.from({length:6},(_,i)=>{const day=new Date(now.getFullYear(),now.getMonth()-5+i,1),key=dateKey(day).slice(0,7),report=financeReport({...state},key===month?{period:'month',today}:key);return{key,label:day.toLocaleDateString('pt-BR',{month:'short'}).replace('.',''),total:report.billed,received:report.received,grossReceived:report.grossReceived,reversed:report.reversed};});
   const groups=new Map();for(const visit of state.visits){const name=visit.service||'Atendimento sem nome';groups.set(name,(groups.get(name)||0)+1);}
   return{
     today,month,series,
+    billedToday:daily.billed,receivedToday:daily.received,billCountToday:dailyBills.length,
+    ticketToday:dailyBills.length?Math.round(daily.billed/dailyBills.length):null,
+    contributionToday:dailyContribution,contributionMarginToday:dailyContribution!==null&&daily.billed>0?dailyContribution/daily.billed:null,
     billedMonth:financial.billed,
     receivedMonth:financial.received,grossReceivedMonth:financial.grossReceived,reversedMonth:financial.reversed,
     outstanding:financial.outstanding,
@@ -48,6 +54,13 @@ function serviceTone(service){
 const statusText={rascunho:'Rascunho',concluido:'Concluído',cancelado:'Cancelado'};
 const statusTone=status=>status==='concluido'?'complete':status==='cancelado'?'cancelled':'draft';
 
+function mobileDaySummary(data){
+  const billed=money(data.billedToday),amountSize=billed.length>18?'compact':billed.length>14?'medium':'normal';
+  const margin=data.contributionMarginToday===null?'—':new Intl.NumberFormat('pt-BR',{style:'percent',maximumFractionDigits:1}).format(data.contributionMarginToday);
+  const details=[['Recebido hoje',money(data.receivedToday)],['Ticket por cobrança',data.ticketToday===null?'—':money(data.ticketToday)],['Contribuição',data.contributionToday===null?'—':money(data.contributionToday)],['Margem sobre custos',margin]];
+  return `<section class="amj-day-summary" aria-labelledby="amj-day-summary-title"><div class="amj-day-summary-top"><span>${icon('wallet')} Movimento de hoje</span><span class="amj-day-count">${data.todayCount} na agenda</span></div><h2 id="amj-day-summary-title">Faturamento de hoje</h2><strong class="amj-day-amount amount" data-amount-size="${amountSize}">${billed}</strong><p class="amj-day-caption">${data.billCountToday} ${data.billCountToday===1?'cobrança registrada':'cobranças registradas'}</p><dl class="amj-day-metrics">${details.map(([label,value])=>`<div><dt>${label}</dt><dd class="amount">${value}</dd></div>`).join('')}</dl><details class="amj-day-definitions"><summary>Entenda os valores ${icon('plus')}</summary><p>Faturamento é o valor cobrado; recebido desconta os estornos do dia. Ticket é a média por cobrança. Contribuição e margem consideram apenas os custos registrados nas cobranças, antes de despesas fixas e tributos. Não representam lucro líquido. “—” indica ausência de base para calcular.</p></details></section>`;
+}
+
 function upcomingRows(state,items){
   return items.length?items.map((item,index)=>`<article class="sp-next-row ${index===0?'sp-next-first':''}" data-service-tone="${serviceTone(item.service)}"><div class="sp-next-time"><strong>${esc(item.time)}</strong><span>${shortDate(item.date)}</span></div><div class="sp-next-person"><strong>${esc(patientName(state,item.patientId))}</strong><span>${esc(item.service)}</span><small><i aria-hidden="true"></i>${item.status==='confirmado'?'Confirmado':'A confirmar'} · ${esc(item.duration)} min</small></div><button type="button" class="sp-open-button" data-action="attend" data-id="${esc(item.id)}" aria-label="Abrir atendimento de ${esc(patientName(state,item.patientId))}">${icon('arrow')}</button></article>`).join(''):`<div class="sp-empty"><span class="sp-empty-symbol" aria-hidden="true">${icon('calendar')}</span><strong>Seu próximo horário começa aqui.</strong><p>Nenhum atendimento futuro agendado.</p><button type="button" data-action="new-appointment" class="sp-inline-action">Agendar atendimento ${icon('arrow')}</button></div>`;
 }
@@ -64,6 +77,7 @@ export function renderHome(state,now=new Date()){
     <div class="sp-overview">
       <section class="sp-hero" aria-labelledby="sp-home-title">
         <div class="sp-hero-heading"><div><p class="sp-hero-date">${icon('calendar')}${esc(now.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'}))}</p><h1 id="sp-home-title">${greeting}, Ana Maria Jacob.</h1><p>Seu atendimento e sua gestão, no mesmo lugar.</p></div><div class="sp-hero-actions"><a class="sp-hero-primary" href="#agenda">${icon('calendar')} Abrir agenda</a><button type="button" class="sp-hero-secondary" data-action="new-appointment">${icon('plus')} Agendar atendimento</button></div></div>
+        ${mobileDaySummary(data)}
         <div class="sp-hero-body"><div class="sp-billed"><span class="sp-hero-value-label">Faturamento de ${esc(monthLabel)}</span><strong class="sp-hero-value amount">${money(data.billedMonth)}</strong><small>Cobranças registradas no mês até hoje</small></div><div class="sp-hero-metrics">${metrics.map(metric=>`<div><span class="sp-mini-label">${icon(metric.icon)}${metric.label}</span><strong class="amount">${metric.value}</strong></div>`).join('')}</div></div>
       </section>
       <div class="sp-goal-wrap"><span class="sp-goal-icon" aria-hidden="true">${icon('target')}</span>${renderGoalCard(state,{month:data.month,today:data.today})}</div>

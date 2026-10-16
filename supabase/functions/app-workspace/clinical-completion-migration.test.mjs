@@ -1,0 +1,43 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';
+import {createClinicalSqlFixture,clinicalId as id} from './clinical-sql-fixture.mjs';
+import {CLINICAL_DECLARATION,CLINICAL_DECLARATION_VERSION} from './clinical-completion.mjs';
+async function fixture(){
+ const f=await createClinicalSqlFixture();
+ await f.db.exec("alter table clinic_members add column display_name text default 'Conta sintética';");
+ await f.db.exec(await readFile(new URL('../../migrations/20261015235931_app_workspace_clinical_completion.sql',import.meta.url),'utf8'));
+ const state={...f.state,clinic:{professionals:[{id:'amj-principal',name:'Profissional fictícia',role:'profissional',active:true,canAttend:true}]},procedures:[{id:'proc',name:'Avaliação fictícia',version:1,requiredDocumentIds:['template'],consentTemplateId:''}],documentTemplates:[{id:'template',kind:'anamnese',title:'Anamnese'}]};
+ state.visits[0]={...state.visits[0],professionalId:'amj-principal',procedureId:'proc',procedureVersion:1,procedureSnapshot:state.procedures[0]};
+ await f.db.query('update app_workspaces set state=$1 where clinic_id=$2',[state,f.clinic]);
+ const args=()=>[f.clinic,f.actor,f.session];
+ const profile=async(o={})=>(await f.db.query('select app_workspace_configure_clinical_profile($1,$2,$3,$4,$5,$6,$7,$8,$9) result',[...args(),o.operation||id('7'),'amj-principal',o.member||f.actor,o.version??0,o.status||'active','Configuração explícita sintética'])).rows[0].result;
+ const requirements=[{template_id:'template',source_type:'anamnese'}];
+ const policy=async(o={})=>(await f.db.query('select app_workspace_configure_clinical_policy($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) result',[...args(),o.operation||id('8'),'proc',1,'a'.repeat(64),o.requirements||requirements,o.version??0,o.status||'active','Política sintética explícita'])).rows[0].result;
+ await profile();await policy();await f.link();const source=await f.source();
+ const documents=[{template_id:'template',link_id:id('6'),source_kind:'anamnese',source_id:f.sourceId,source_type:'anamnese',source_version:source.source_version,source_fingerprint:source.source_fingerprint,pdf_sha256:source.pdf_sha256,signature_sha256:source.signature_sha256}];
+ const next=structuredClone(state);next.revision=2;Object.assign(next.visits[0],{status:'concluido',lockedAt:'2026-10-15T21:00:00Z',completedAt:'2026-10-15T21:00:00Z',completionOperationId:id('9')});
+ const complete=async(o={})=>(await f.db.query('select app_workspace_complete_clinical($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) result',[...args(),o.operation||id('9'),o.fingerprint||'f'.repeat(64),o.expected??1,'patient','visit',o.profile||id('7'),o.policy||id('8'),o.documents||documents,'b'.repeat(64),CLINICAL_DECLARATION_VERSION,CLINICAL_DECLARATION,o.state||next,'c'.repeat(64)])).rows[0].result;
+ return {...f,state,next,profile,policy,complete,documents};
+}
+test('clinical completion SQL: signature, operational state and revision commit atomically and replay once',async()=>{const f=await fixture();try{await f.db.exec('set role service_role');const a=await f.complete();assert.equal(a.signature.actor_id,f.actor);assert.equal(a.signature.signature_method,'authenticated_session_mfa');assert.equal(a.signature.workspace_revision,2);assert.equal(a.workspace.state.visits[0].status,'concluido');assert.equal((await f.complete()).replayed,true);await assert.rejects(f.complete({fingerprint:'e'.repeat(64)}),/operation_reused/);assert.equal((await f.db.query('select count(*)::int n from app_workspace_clinical_signatures')).rows[0].n,1);assert.equal((await f.db.query('select count(*)::int n from app_workspace_versions')).rows[0].n,2);}finally{await f.close();}});
+test('clinical completion SQL: another personal account, revocation and modified professional profile are rejected',async()=>{for(const change of ['account','revoked','profile']){const f=await fixture();try{if(change==='account'){await f.db.query('insert into auth.users values($1)',[id('a')]);await f.db.query("insert into clinic_members(clinic_id,user_id,role,status) values($1,$2,'owner','active')",[f.clinic,id('a')]);await f.profile({member:id('a'),operation:id('b'),version:1});}else if(change==='revoked')await f.profile({status:'revoked',operation:id('b'),version:1});else await f.db.query("update app_workspaces set state=jsonb_set(state,'{clinic,professionals,0,name}','\"Outra profissional\"') where clinic_id=$1",[f.clinic]);await assert.rejects(f.complete(),/clinical_professional_changed/);assert.equal((await f.db.query('select count(*)::int n from app_workspace_clinical_signatures')).rows[0].n,0);assert.equal((await f.db.query('select revision from app_workspaces')).rows[0].revision,1);}finally{await f.close();}}});
+test('clinical completion SQL: missing, withdrawn and altered original cannot finalize or consume revision',async()=>{for(const change of ['missing','withdrawn','changed','identity']){const f=await fixture();try{if(change==='withdrawn')await f.db.exec('update anamneses set consentimento_retirado_em=now()');if(change==='changed')await f.db.exec("update anamneses set pdf_sha256=repeat('a',64)");if(change==='identity')await f.db.exec("update anamneses set nome='Pessoa diferente'");await assert.rejects(f.complete(change==='missing'?{documents:[]}:{}),/clinical_document/);assert.equal((await f.db.query('select revision from app_workspaces')).rows[0].revision,1);assert.equal((await f.db.query('select count(*)::int n from app_workspace_clinical_signatures')).rows[0].n,0);}finally{await f.close();}}});
+test('clinical completion SQL: versioned settings preserve old records and reject stale updates',async()=>{const f=await fixture();try{assert.equal((await f.profile()).replayed,true);await assert.rejects(f.profile({operation:id('a')}),/revision_conflict/);await assert.rejects(f.policy({operation:id('a'),version:1,requirements:[{template_id:'template',source_type:'tcle_fios_pdo'}]}),/clinical_policy_mismatch/);await f.policy({operation:id('a'),version:1,status:'revoked'});await assert.rejects(f.complete(),/clinical_policy_changed/);assert.equal((await f.db.query('select count(*)::int n from app_workspace_clinical_policies')).rows[0].n,2);await f.db.exec('set role service_role');await assert.rejects(f.db.exec('delete from app_workspace_clinical_profiles'),/permission denied/);await assert.rejects(f.db.exec("update app_workspace_clinical_policies set status='active'"),/permission denied/);}finally{await f.close();}});
+test('clinical completion SQL: browser roles cannot read, configure or sign and service sees bounded settings',async()=>{const f=await fixture();try{const settings=(await f.db.query('select app_workspace_clinical_settings($1,$2,$3) result',[f.clinic,f.actor,f.session])).rows[0].result;assert.equal(settings.members.length,1);assert.equal(settings.profiles[0].user_id,f.actor);assert.equal(settings.profiles[0].fingerprint,undefined);for(const role of ['anon','authenticated']){await f.db.exec('set role '+role);await assert.rejects(f.db.exec('select * from app_workspace_clinical_signatures'),/permission denied/);await assert.rejects(f.complete(),/permission denied/);await assert.rejects(f.profile(),/permission denied/);await f.db.exec('reset role');}}finally{await f.close();}});
+test('clinical completion SQL: unavailable professional-only accounts cannot be offered or bound, and role changes revoke completion',async()=>{
+ const f=await fixture();try{
+  const member=id('a');
+  await f.db.query('insert into auth.users values($1)',[member]);
+  await f.db.query("insert into clinic_members(clinic_id,user_id,role,status,display_name) values($1,$2,'professional','active','Conta sem acesso ao workspace')",[f.clinic,member]);
+  await f.db.exec('set role service_role');
+  const settings=(await f.db.query('select app_workspace_clinical_settings($1,$2,$3) result',[f.clinic,f.actor,f.session])).rows[0].result;
+  assert.deepEqual(settings.members.map(m=>m.user_id),[f.actor]);
+  await assert.rejects(f.profile({member,operation:id('b'),version:1}),/clinical_professional_unavailable/);
+  assert.equal((await f.db.query('select count(*)::int n from app_workspace_clinical_profiles')).rows[0].n,1);
+  await f.db.exec('reset role');
+  await f.db.query("update clinic_members set role='professional' where clinic_id=$1 and user_id=$2",[f.clinic,f.actor]);
+  await f.db.exec('set role service_role');
+  await assert.rejects(f.complete(),/workspace_access_denied/);
+  assert.equal((await f.db.query('select count(*)::int n from app_workspace_clinical_signatures')).rows[0].n,0);
+  assert.equal((await f.db.query('select revision from app_workspaces')).rows[0].revision,1);
+ }finally{await f.close();}
+});

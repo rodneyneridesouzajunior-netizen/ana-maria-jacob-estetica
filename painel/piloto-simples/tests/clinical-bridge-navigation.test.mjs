@@ -24,6 +24,6 @@ test('Todos os módulos mantém os oito percursos e a barra mobile marca só qua
  for(const area of areas)assert.ok(doc.querySelector(`.area-directory a[href="#${area.id}"]`));
 });
 test('rascunho e gravação incerta do vínculo impedem abandonar a consulta',t=>{
- const h=setup(t);h.run('clinicalBridgeHandle={hasUncertain:()=>true,isDirty:()=>true,isBusy:()=>false};');assert.equal(h.run('clean()'),false);assert.match(h.dom.window.document.getElementById('toast').textContent,/gravação do vínculo/);
+ const h=setup(t);h.run('clinicalBridgeHandle={hasUncertain:()=>true,isDirty:()=>true,isBusy:()=>false};');assert.equal(h.run('clean()'),false);assert.match(h.dom.window.document.getElementById('toast').textContent,/gravação pendente/);
  h.run('clinicalBridgeHandle={hasUncertain:()=>false,isDirty:()=>true,isBusy:()=>false,discard:()=>{throw Error("não deve descartar sem confirmação");}};');assert.equal(h.run('clean()'),false);
 });

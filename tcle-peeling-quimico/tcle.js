@@ -4,8 +4,8 @@ const CONFIG = Object.freeze({
   API_URL: 'https://rjxtxoqprnumouqakxbc.supabase.co/functions/v1/tcle-peeling-quimico-submit',
   PUBLISHABLE_KEY: 'sb_publishable_Ip14p4tUfYFjwUYaWinMlw_Gf9v0YwT',
   TYPE: 'tcle_peeling_quimico',
-  TERM_VERSION: '2026-08-18-v1',
-  TERM_SHA256: '3f04db1af1f0e984385862abdd0b1b93ae34ebfd49f09587f541c317022b530b',
+  TERM_VERSION: '2026-10-15-v2',
+  TERM_SHA256: '941fbbbfcb0ffc1ccc282f7771a9907f0de6b01f20405e1cade6363d462b0690',
   RELEASED: true,
   WHATSAPP: '5531995844803',
   MAX_SIGNATURE_BYTES: 500_000
@@ -73,7 +73,7 @@ function renderTerm(text) {
 async function loadTerm() {
   const target = document.getElementById('texto-integral');
   try {
-    const response = await fetch('termo-v1.txt', { cache: 'no-store' });
+    const response = await fetch('termo-v2.txt', { cache: 'no-store' });
     if (!response.ok) throw new Error('Não foi possível carregar o texto do termo.');
     const text = normalizeNewlines(await response.text()).trim();
     const hash = await sha256Hex(text);
