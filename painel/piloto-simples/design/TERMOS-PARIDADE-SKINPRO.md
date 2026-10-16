@@ -1,6 +1,6 @@
 # Anamnese e consentimentos — requisitos comparados
 
-Registro de 15/10/2026. **Paridade funcional com o Skin Pro: PENDENTE.** Este documento organiza a continuidade autorizada; não declara os termos concluídos nem implementa novos módulos.
+Atualização de 16/10/2026. **Paridade integral com o Skin Pro: NÃO COMPROVADA.** O percurso técnico de documentos individuais foi implementado e testado com dados sintéticos. A biblioteca própria entregue contém quatro modelos; isso não significa onze modelos equivalentes, revisão clínica dos textos ou homologação em aparelhos reais. A publicação e sua conferência são registradas separadamente pelo responsável pelo release.
 
 O objetivo é oferecer os percursos de edição, envio, leitura, assinatura e consulta do original com a identidade Ana Maria Jacob. A comparação é de comportamento observado e código disponível, sem copiar o design ou presumir acesso ao código interno do Skin Pro. Não constitui revisão clínica ou jurídica dos textos.
 
@@ -38,22 +38,38 @@ As evidências locais do Skin Pro estão em `skinpro-analise/revisao-item-a-item
 
 Fontes locais: `consentimentos-modelos.txt`, `consentimento-bloco-editor.txt`, `clinica-modelos.txt`, `anamnese-etapa-dados.txt`, `anamnese-pergunta-editor.txt` e `atendimento-documentos.txt`. As duas observações ao vivo acima foram relatadas pelo agente principal nesta rodada; não são apresentadas como novos testes independentes deste documento.
 
+## Escopo efetivamente implementado nesta entrega
+
+A biblioteca `document-library.mjs` oferece **quatro modelos próprios**, derivados dos documentos existentes da clínica, para importação explícita e revisão no editor. Nenhum modelo foi importado automaticamente para a conta real, nem assinado em nome da paciente ou da profissional durante os testes.
+
+| Modelo próprio | Tipo | Escopo entregue |
+| --- | --- | --- |
+| Ficha de anamnese geral | `anamnese` | 68 perguntas no catálogo do modelo, condições de exibição e autorização geral separada na confirmação pública. O número inclui perguntas condicionais; não significa 68 respostas sempre exigidas. |
+| Consentimento — Toxina botulínica | `termo` | Modelo versionado, perguntas e consentimentos específicos, sem repetir a autorização geral de dados nem converter a escolha de imagem em requisito do procedimento. |
+| Consentimento — Preenchimento com ácido hialurônico | `termo` | Modelo versionado de preenchimento; não equivale automaticamente a modelos separados de lábios, full face ou rinomodelação. |
+| Autorização independente de uso de imagem | `imagem` | Documento separado, escolha explícita entre uso para tratamento, publicação ou não autorizado; recusa preservada no original. Não satisfaz TCLE nem anamnese na conclusão. |
+
+O percurso implementado é: preparar o documento no atendimento → emitir o link individual com MFA → paciente ler/responder/assinar/confirmar → servidor receber e preservar os originais → equipe reabrir PDF e conferir → profissional confirmar pessoalmente a conclusão quando todos os requisitos forem atendidos. A emissão fica presa ao modelo, versão, snapshot, paciente e consulta. A paciente não precisa das credenciais da equipe.
+
+A página pública é `/documento/`, servida pela Edge `documento-paciente`. O token fica no fragmento do link e é enviado no corpo da requisição; não é uma sessão da clínica. Há prazo de validade, revogação e retomada de submissão já confirmada após falha/recarga. **Retomar não inventa assinatura:** só conclui a operação e os traços já reservados, sem aceitar novo conteúdo ou outra chave.
+
 ## Comparação com o código da Ana
 
-| Requisito | CÓDIGO localizado | LACUNA / PENDENTE | NÃO TESTADO nesta rodada |
-| --- | --- | --- | --- |
-| Editar modelos, perguntas, etapas e blocos | `documents-domain.mjs` valida tipos de pergunta, condições, etapas, blocos, versões e snapshots; `documents-editor.mjs` fornece o editor. | Ainda não há paridade completa do percurso editor → link público → assinatura operacional do modelo personalizado. O editor existente publica/salva por ação explícita; não presumir o salvamento imediato observado no Skin Pro. | Edição simultânea em dois aparelhos e todos os tipos de pergunta no celular. |
-| Preservar versões anteriores | `saveTemplate` acrescenta versão; `prepareDocument` captura snapshot; respostas assinadas de demonstração não são reescritas. Os seis formulários oficiais têm catálogo histórico v1/v2/v3. | Fazer a emissão pública de modelos personalizados preservar o mesmo snapshot do começo ao fim. | Compatibilidade de futuros modelos públicos ainda não implementados. |
-| Link público individual para paciente | `documents-ui.mjs` copia link privado do documento, que exige acesso da clínica. `clinical-bridge-ui.mjs` disponibiliza rotas públicas dos formulários oficiais existentes. | **PENDENTE:** emitir/recuperar link individual de um documento preparado no app, vinculado à paciente, à consulta e à versão do modelo. Link privado ou rota geral do site não atende esse requisito. | Entrega de um novo link individual e abertura externa no celular sem conta da equipe. |
-| Assinatura operacional de modelo personalizado | `documents-ui.mjs` desabilita a assinatura de demonstração no ambiente conectado. Os formulários oficiais possuem fluxos próprios de submissão e geração de PDF. | **PENDENTE:** assinatura pública versionada dos modelos criados no app. Não habilitar `signDemoDocument` como solução operacional. | Assinatura real de paciente, envio e recuperação de um modelo personalizado. |
-| Consentimentos específicos sem duplicação geral | A v3 dos seis formulários remove `aceite_dados`/`tratamento_dados`; mantém privacidade informativa, respostas específicas, leitura, decisão e assinatura. `anamnese/index.html` possui a declaração geral. | Garantir a mesma separação em novos modelos e no editor. Textos novos necessitam revisão da profissional; não copiar automaticamente o bloco geral do Skin Pro. | Equivalência semântica integral entre todos os textos da Ana e os onze modelos do Skin Pro. |
-| Anamnese exigida na conclusão | `clinical-completion.mjs` confere documentos descritos pela política do procedimento; `procedureDocumentIds` agrega `requiredDocumentIds` e `consentTemplateId`. | **PENDENTE:** tornar anamnese um requisito de conclusão que não desapareça com catálogo/política sem documento geral. O código lido não estabelece essa invariante universal. | Regra global de conclusão do Skin Pro. Não inferir a regra a partir da tela Documentos. |
-| Compatibilidade do catálogo com documentos | Há snapshots de procedimento, configuração explícita de política e conferência da versão/hash antes da conclusão. | Padronizar catálogo e políticas para exigir anamnese e o termo específico aplicável. O backend atual aceita como fontes de conclusão anamnese, TCLE de toxina e TCLE de preenchimento; as quatro pré-avaliações não substituem TCLE. | Configuração completa do catálogo real da clínica e adequação profissional de cada associação. |
-| Recebimento, vínculo e revisão separados | `clinical-bridge.mjs`, `clinical-bridge-service.mjs` e `clinical-bridge-ui.mjs` consultam originais, conferem identidade/fingerprint e mantêm vínculo auditado. A conclusão exige declaração da conta profissional configurada. | Integrar futuros documentos personalizados nesse mesmo contrato sem promover rascunho a recebido ou recebido a autorizado. | Recebimento de todos os futuros modelos e sua conclusão clínica em produção. |
-| Consulta do PDF e histórico | Originais modernos são verificados antes de abrir; o novo acesso histórico usa `pdf_path` armazenado, sem mudar o status legado. `historical_file_only` identifica hash calculado na leitura atual. | Manter esse comportamento ao ampliar modelos; nunca reconstruir documento antigo com texto ou assinatura atuais. | Conferência visual/conteúdo de cada PDF legado real. |
-| Autorização de imagem | Os seis formulários públicos mantêm escolhas independentes. O domínio de modelos inclui `kind: 'imagem'`, mas a assinatura operacional personalizada permanece bloqueada. | **PENDENTE:** percurso público do modelo independente de imagem, quando aplicável, com finalidade/escopo e controle de revogação definidos. | Publicação efetiva com autorização, revogação e todos os estados do modelo separado. |
+| Requisito | Implementação verificada em código/testes | Limite ou pendência real |
+| --- | --- | --- |
+| Editor e biblioteca | Editor de perguntas, condições, etapas, blocos e versões; quatro modelos próprios para seleção explícita. | Não há inventário integral dos onze modelos com conteúdo equivalente. Editor salva por ação explícita; não se afirma o mesmo autosave do Skin Pro. |
+| Versões e emissão | Emissão captura snapshot persistido e vínculo paciente/consulta. Modelo posterior não modifica link ou original anterior. Repetição recupera a mesma emissão. | Configuração e revisão dos modelos da conta real dependem da equipe; não foram inferidas por nomes. |
+| Link individual público | Emitir, listar emissões, recuperar link válido, revogar e reabrir PDF privado sob MFA. Paciente acessa apenas o documento correspondente. | Entrega efetiva a uma paciente e abertura em celular físico ainda precisam de homologação. |
+| Assinatura e PDF personalizados | Validação de respostas/decisões/nome/traços no servidor; assinatura preservada como JSON canônico e desenhada em vetor no PDF real. Arquivos em bucket privado com hashes conferidos. | Assinatura eletrônica declaratória; não é ICP-Brasil, biometria ou comprovação automática de autoria/habilitação. Nenhuma assinatura real foi executada no ensaio. |
+| Falha, recarga e retomada | UUID e payload preservados; confirmação incerta não cria outra emissão/assinatura. Retomada pública usa somente submissão previamente confirmada e reservada; lease impede dois escritores. | Sem confirmação reservada não há retomada automática nem aceite presumido. |
+| Declarações sem repetição | Termos próprios não carregam o aceite geral nem o bloco de imagem da anamnese; formulários oficiais v3 mantêm seus contratos históricos. | Conteúdo clínico e adequação de cada texto precisam de revisão profissional. Os formulários oficiais não foram reescritos por este lote. |
+| Anamnese universal | Backend e transação SQL exigem uma anamnese recebida/elegível mesmo quando catálogo e políticas não trazem documento geral. Aceita original oficial vinculado ou anamnese própria do contexto exato. | Não foi inventado prazo de validade clínico para reaproveitamento. Informação alterada ou retirada exige nova conferência. |
+| Procedimentos por marcação | Cada vínculo explícito preserva ID/versão/snapshot; ausência mantém herança legada, `null` significa nenhum. Conclusão reúne todos os procedimentos e suas políticas/termos, deduplicando requisitos. | Quantidade sem procedimento não permite concluir. Versões divergentes do mesmo procedimento exigem escolha explícita; opção da versão preservada do atendimento resolve catálogo atualizado sem alterar histórico. |
+| Custos, sessões e conclusão | Vários itens de orçamento explícitos, sessão por procedimento, custo material atribuído ao ponto e preço independente do número de pontos. Estoque, cobrança, assinatura profissional e revisão são confirmados no mesmo fluxo transacional. | As prévias não aprovam clinicamente procedimentos. Orçamento compartilhado não é rateado como receita de um atendimento nem apresentado como lucro líquido. |
+| Originais e revogação | Fonte própria exige template/tipo, paciente/consulta, integridade, recebido e ausência de revogação. Revogar bloqueia uso futuro e acesso público, preservando PDF/recibo privado. | Recebimento não equivale à revisão profissional. Pré-avaliações e autorização de imagem não substituem TCLE. |
+| Histórico oficial | Preservados v1/v2/v3 e acesso somente de leitura ao PDF legado com caminho registrado. | Leitura histórica não promove documento a recebido, assinado ou autorizado. Conteúdo de cada original real não foi revisado neste lote. |
 
-Referências no repositório: [documentos](../documents-ui.mjs), [domínio dos documentos](../documents-domain.mjs), [editor](../documents-editor.mjs), [ponte dos originais](./CLINICAL-BRIDGE.md), [conclusão clínica](../../../supabase/functions/app-workspace/clinical-completion.mjs), [versionamento dos seis termos](../../../supabase/tests/TCLE-VERSIONING.md).
+Referências: [biblioteca própria](../document-library.mjs), [contrato público](./PUBLIC-DOCUMENTS-API.md), [documentos](../documents-ui.mjs), [editor](../documents-editor.mjs), [ponte dos originais](./CLINICAL-BRIDGE.md), [conclusão clínica](../../../supabase/functions/app-workspace/clinical-completion.mjs), [versionamento dos seis termos](../../../supabase/tests/TCLE-VERSIONING.md).
 
 ## Inventário dos 11 modelos observados
 
@@ -61,8 +77,8 @@ Os nomes abaixo identificam itens do inventário. A existência de um item no Sk
 
 | Modelo observado | Situação no código da Ana | Estado de paridade |
 | --- | --- | --- |
-| Toxina Botulínica | Formulário oficial `/tcle-toxina/`, versões v1/v2/v3. | **PENDENTE:** integrar ao percurso de emissão por modelo/paciente/consulta e conferir todos os campos/estados. |
-| Ácido Hialurônico | Formulário de preenchimento facial `/tcle-preenchimento/`, versões v1/v2/v3. | **PENDENTE:** comparação detalhada do conteúdo aplicável e do percurso público individual. |
+| Toxina Botulínica | Formulário oficial `/tcle-toxina/` v1/v2/v3 e novo modelo próprio com emissão individual. | Percurso técnico implementado; comparação integral dos campos/estados e homologação profissional ainda pendentes. |
+| Ácido Hialurônico | Formulário oficial `/tcle-preenchimento/` v1/v2/v3 e novo modelo próprio com emissão individual. | Percurso técnico implementado; equivalência de conteúdo e homologação profissional ainda pendentes. |
 | Preenchimento Labial | Não localizado formulário operacional separado neste inventário. | **PENDENTE:** definir necessidade de modelo específico; não presumir equivalência automática com preenchimento facial. |
 | Preenchimento Facial Full Face | Não localizado formulário operacional separado neste inventário. | **PENDENTE:** mesma definição profissional e de modelo específico. |
 | Rinomodelação | Não localizado formulário operacional separado neste inventário. | **PENDENTE:** confirmar aplicabilidade e conteúdo específico. |
@@ -71,13 +87,13 @@ Os nomes abaixo identificam itens do inventário. A existência de um item no Sk
 | Fios Silhouette | Não localizado formulário operacional separado neste inventário. | **PENDENTE:** aplicabilidade, modelo e percurso. |
 | Hialuronidase | Não localizado formulário operacional separado neste inventário. | **PENDENTE:** aplicabilidade, modelo e percurso. |
 | Lipoescultura Cirúrgica de Pescoço | Não localizado formulário operacional separado neste inventário. | **PENDENTE:** não habilitar por mera presença no catálogo de referência. |
-| Uso de Imagem | Escolhas independentes nos formulários; tipo de modelo `imagem` no app. | **PENDENTE:** documento público independente com assinatura operacional e estados de autorização. |
+| Uso de Imagem | Novo modelo próprio independente com emissão/assinatura, recusa e revogação; escolhas anteriores preservadas. | Percurso técnico implementado; publicação real, aplicação do escopo e homologação profissional não foram testadas. |
 
 Também existem pré-avaliações de intradermoterapia e peeling químico na Ana. Elas não apareceram entre os onze itens do seletor consultado. Isso não comprova ausência desses recursos em outras áreas ou configurações do Skin Pro.
 
-## Critérios de aceite para a próxima implementação
+## Critérios de aceite e alcance da prova
 
-Estes critérios são requisitos, não entregas já concluídas. Não removem os bloqueios atuais de assinatura operacional personalizada.
+Os critérios permanecem como referência de homologação. AC-01, AC-02, AC-04, AC-05, AC-07, AC-09, AC-10 e AC-11 têm cobertura automatizada com dados sintéticos no escopo técnico descrito acima. AC-03/AC-06 têm cobertura de DOM, recarga, resposta tardia e falha, mas não substituem teste físico em notebook/celular. AC-08 depende também da definição profissional de atualização da anamnese. AC-12 e a equivalência clínica dos textos continuam pendentes de revisão humana. A coluna de prova abaixo expressa o critério completo, não afirma que todo ensaio real já ocorreu.
 
 | ID | Critério verificável | Prova mínima exigida |
 | --- | --- | --- |
@@ -94,18 +110,20 @@ Estes critérios são requisitos, não entregas já concluídas. Não removem os
 | AC-11 | Conta da equipe mantém MFA/escopo da clínica; resposta antiga não abre arquivo após logout ou troca de paciente/consulta. O link público possui contrato de acesso próprio, sem reutilizar sessão administrativa. | Testes de AAL1, clínica diferente, IDs trocados, URL fora do armazenamento autorizado, logout durante abertura e resposta de outro contexto. |
 | AC-12 | Marca e layout da Ana permanecem consistentes no app, página pública e PDF. A disponibilidade de um modelo não afirma aprovação do conteúdo ou habilitação do procedimento. | Revisão visual no notebook e celular real; conferência do documento completo pela profissional antes de liberar cada modelo operacional. |
 
-## Ordem de continuidade
+## Continuidade após implementação
 
-1. Fechar o contrato de documento público versionado aproveitando os componentes e as garantias já existentes; não habilitar a assinatura de demonstração no servidor.
-2. Implementar a invariante de anamnese na conclusão e sua relação com catálogo/políticas, preservando consulta e histórico existentes.
-3. Homologar um percurso completo com modelo e paciente fictícios: emitir, abrir no celular, responder, assinar no ensaio autorizado, receber, reabrir original e vincular. A aprovação de cada texto pela profissional é uma entrega separada da aprovação técnica.
-4. Ampliar somente para os modelos aplicáveis à clínica, mantendo versões anteriores e os mesmos testes de integridade, recebimento e contexto.
+1. Conferir publicação das duas migrations e das duas Edge Functions com o bundle de domínio gerado; manter o histórico e os originais existentes.
+2. Homologar no notebook e em celular físico o percurso com paciente fictícia: preparar, emitir, abrir, responder, confirmar/assinar pessoalmente, receber, interromper/retomar quando aplicável e reabrir o mesmo PDF.
+3. A profissional revisa os quatro textos próprios e configura explicitamente quais modelos e políticas atendem aos procedimentos da clínica. Cadastro de conta e conclusão pessoal não devem ser feitos em nome dela pelo agente.
+4. Ampliar apenas os modelos aplicáveis à clínica, depois de conferir conteúdo, escopo e capacidade de atendimento. Os oito itens do inventário observado que não correspondem aos três tipos específicos cobertos acima não foram implementados como novos modelos neste lote; a anamnese geral é o quarto modelo próprio e não integra aquele seletor de onze.
 
-## Verificação disponível e pendências
+## Verificação desta entrega e limites
 
-- A revisão de código do acesso a PDF histórico nesta rodada executou **45 testes locais aprovados** de cliente, handler, repositório, DOM e cenários adversariais. Usou dados sintéticos e rede/banco simulados; não foi assinatura real nem prova de implantação.
-- O histórico dos seis termos possui testes de compatibilidade v1/v2/v3 e manifesto de hashes. Consulte `supabase/tests/TCLE-VERSIONING.md` e os resultados do lote correspondente; este documento não executou novamente toda a suíte dos termos.
-- **PENDENTE:** assinatura pública operacional dos modelos personalizados, emissão individual ligada ao atendimento, invariante universal de anamnese na conclusão, ampliação/homologação dos modelos aplicáveis e teste integral em notebook/celular com persistência real.
-- **NÃO TESTADO:** assinatura e recebimento final do Skin Pro nesta comparação, conclusão do atendimento de referência com documentos pendentes, conteúdo integral dos onze modelos e equivalência clínica/jurídica dos textos.
+- Suíte integrada registrada: **1.090 testes aprovados**, sem falhas, cancelamentos ou skips, abrangendo app, integração, backend, fotos/marcações, histórico dos termos e documentos personalizados. Log: `skinpro-analise/revisao-item-a-item-20261015/testes-multiprocedimentos-documentos.txt`, na raiz do workspace.
+- SQL de mapas: **8 testes aprovados** em rodada separada, sem sobreposição; log `testes-multiprocedimentos-sql-mapa.txt` no mesmo diretório. Depois foi acrescentado um teste de divisão exata de centavos entre dois itens do mesmo procedimento; o arquivo `marking-procedures.test.mjs` passou com 6/6. Não somar novamente os testes focalizados à suíte geral.
+- Os ensaios de documentos exercitam PostgreSQL/PGlite com migrations reais, RPC sob `service_role`, RLS/permissões, renderização de PDF real, bytes/hashes, reenvio e retomada. Auth/armazenamento externos são fixtures; isso **não é prova de assinatura de paciente real, de publicação ou de uso em dois aparelhos físicos**.
+- O fluxo público personalizado nesta entrega exige paciente adulta com data de nascimento válida. Representante legal/menores não foi implementado. O PDF recusa caracteres não suportados antes de reservar o envio, permitindo corrigir o texto sem prender uma operação incompleta.
+- **PENDENTE DE HOMOLOGAÇÃO:** revisão profissional dos modelos/políticas, teste físico em notebook/celular, atendimento real com conta pessoal da profissional e comprovação da publicação pelo responsável pelo release.
+- **NÃO COMPROVADO:** paridade integral com os onze modelos do Skin Pro, equivalência de conteúdo clínico/jurídico, funcionamento de todos os estados daquele sistema e ausência absoluta de erros.
 
-Nenhuma alteração de formulário, autorização, assinatura, registro de paciente, migração ou publicação foi realizada para produzir este documento.
+Esta atualização registra implementação e testes. Não altera textos clínicos, assinaturas, autorizações ou registros de pacientes, nem comprova publicação por si só.
