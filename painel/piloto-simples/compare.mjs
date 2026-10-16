@@ -1,6 +1,7 @@
 const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const dateLabel=value=>String(value).split('-').reverse().join('/');
 const keyFor=(visitId,photoId)=>JSON.stringify([visitId,photoId]);
+export const COMPARISON_LAYOUTS=Object.freeze({fullhd:{width:1920,height:1080,label:'Horizontal · 1920 × 1080'},feed:{width:1080,height:1350,label:'Feed vertical · 1080 × 1350'},story:{width:1080,height:1920,label:'Stories · 1080 × 1920'}});
 
 export function comparisonPhotos(state,patientId){
   if(!state.patients.some(patient=>patient.id===patientId))throw Error('Paciente não encontrada.');
@@ -42,17 +43,34 @@ function contain(ctx,image,x,y,width,height){
   ctx.drawImage(image,x+(width-w)/2,y+(height-h)/2,w,h);
 }
 
-export async function buildComparisonImage(pair,readPhoto,{format='png',testImagesConfirmed=false,metadata=null}={}){
+export async function buildComparisonImage(pair,readPhoto,{format='png',layout='fullhd',testImagesConfirmed=false,metadata=null}={}){
   if(!testImagesConfirmed)throw Error('Confirme que são imagens fictícias/de teste antes de exportar.');
   if(!['png','jpeg'].includes(format))throw Error('Formato de exportação inválido.');
+  if(!Object.hasOwn(COMPARISON_LAYOUTS,layout))throw Error('Tamanho de exportação inválido.');
   if(!pair?.before?.patientId||pair.before.patientId!==pair?.after?.patientId)throw Error('A composição deve conter fotos da mesma paciente.');
   const opened=[];
   try{
     const before=await bitmapFromSource(await readPhoto(pair.before,true));opened.push(before);
     const after=await bitmapFromSource(await readPhoto(pair.after,true));opened.push(after);
     const logo=await bitmapFromSource('assets/logo.png');opened.push(logo);
-    const canvas=document.createElement('canvas');canvas.width=1920;canvas.height=1080;
+    const canvas=document.createElement('canvas');const dimensions=COMPARISON_LAYOUTS[layout];canvas.width=dimensions.width;canvas.height=dimensions.height;
     const ctx=canvas.getContext('2d');if(!ctx)throw Error('O navegador não conseguiu preparar a imagem.');
+    if(layout!=='fullhd'){
+      const {width,height}=dimensions,margin=42,gap=24,panelWidth=(width-margin*2-gap)/2,photoY=290,photoHeight=height-480;
+      ctx.fillStyle='#fcfbfa';ctx.fillRect(0,0,width,height);contain(ctx,logo,(width-350)/2,22,350,140);
+      ctx.fillStyle='#28232b';ctx.font='500 32px sans-serif';ctx.fillText('Antes e depois',margin,205,width-margin*2);
+      ctx.fillStyle='#9b405b';ctx.font='500 21px sans-serif';ctx.fillText('TESTE · SEM RESULTADO CLÍNICO',margin,240,width-margin*2);
+      for(const [index,item,image,label]of[[0,pair.before,before,'ANTES'],[1,pair.after,after,'DEPOIS']]){
+        const x=margin+index*(panelWidth+gap);ctx.fillStyle='#703046';ctx.font='600 25px sans-serif';ctx.fillText(label,x,278);
+        ctx.fillStyle='#f3e9ed';ctx.fillRect(x,photoY,panelWidth,photoHeight);contain(ctx,image,x,photoY,panelWidth,photoHeight);
+        ctx.strokeStyle='#c5a059';ctx.lineWidth=1;ctx.strokeRect(x,photoY,panelWidth,photoHeight);
+        // Overlay the transparent clinic mark on the exported copy only.
+        ctx.globalAlpha=.85;contain(ctx,logo,x+panelWidth-165,photoY+photoHeight-96,155,86);ctx.globalAlpha=1;
+        ctx.fillStyle='#665e68';ctx.font='20px sans-serif';ctx.fillText(dateLabel(index===0?(metadata?.beforeDate||item.date):(metadata?.afterDate||item.date)),x,photoY+photoHeight+36,panelWidth);
+      }
+      ctx.fillStyle='#28232b';ctx.font='500 23px sans-serif';ctx.fillText('ANA MARIA JACOB',margin,height-90,width-margin*2);
+      ctx.fillStyle='#665e68';ctx.font='19px sans-serif';ctx.fillText('Fotos inteiras, sem retoque. Composição de demonstração.',margin,height-54,width-margin*2);
+    }else{
     ctx.fillStyle='#f8f3f5';ctx.fillRect(0,0,1920,1080);contain(ctx,logo,60,15,320,110);
     ctx.fillStyle='#28232b';ctx.font='600 36px sans-serif';ctx.fillText(metadata?.title||'Comparação fotográfica',450,65,1400);
     ctx.fillStyle='#9b405b';ctx.font='600 23px sans-serif';ctx.fillText('PILOTO — DADOS FICTÍCIOS',450,105);
@@ -67,6 +85,7 @@ export async function buildComparisonImage(pair,readPhoto,{format='png',testImag
     }
     ctx.fillStyle='#703046';ctx.font='600 23px sans-serif';ctx.fillText('TESTE · SEM RESULTADO CLÍNICO',60,1005);
     ctx.fillStyle='#665e68';ctx.font='20px sans-serif';ctx.fillText(metadata?'Fotos sem retoque ou recorte. Datas informadas e consultas de origem identificadas acima.':'Fotos sem retoque ou recorte; dimensões ajustadas à composição. Datas referentes às consultas.',60,1045);
+    }
     const mime=format==='jpeg'?'image/jpeg':'image/png';
     return await new Promise((resolve,reject)=>canvas.toBlob(blob=>blob&&blob.type===mime?resolve(blob):reject(Error('Não foi possível gerar o formato selecionado.')),mime,format==='jpeg'?0.95:undefined));
   }finally{for(const bitmap of opened)bitmap.close();}
@@ -81,6 +100,8 @@ export function mountComparison(root,{state,patientId,readPhoto,selection={},onS
   const find=selector=>root.querySelector(selector),all=selector=>root.querySelectorAll(selector);
   const beforeSelect=find('#compare-before'),afterSelect=find('#compare-after'),stage=find('.compare-stage'),images=find('.compare-images'),empty=find('.compare-empty'),status=find('.compare-status'),confirmation=find('[data-compare-confirm]'),exportButton=find('[data-compare-export]'),expandButton=find('[data-compare-expand]'),dialog=find('.compare-lightbox');
   const saveButton=find('[data-compare-save]'),formatSelect=find('[data-compare-format]'),position=find('#compare-position');
+  const layoutLabel=root.ownerDocument?.createElement('label');let exportLayout='fullhd';
+  if(layoutLabel){layoutLabel.className='field';layoutLabel.textContent='Tamanho da composição';const sizes=root.ownerDocument.createElement('select');sizes.setAttribute('aria-label','Tamanho da composição');for(const [value,item]of Object.entries(COMPARISON_LAYOUTS)){const option=root.ownerDocument.createElement('option');option.value=value;option.textContent=item.label;sizes.append(option);}sizes.addEventListener('change',()=>{if(!exporting&&!saving)exportLayout=sizes.value;});layoutLabel.append(sizes);exportButton.before(layoutLabel);}
   const currentSelection=()=>({before:beforeKey,after:afterKey,mode,split,format});
   const publishSelection=()=>onSelection(currentSelection());
   const refreshExport=()=>{exportButton.disabled=!pair||!confirmation.checked||exporting||saving;saveButton.disabled=!pair||typeof onSave!=='function'||exporting||saving;exportButton.textContent='Gerar '+format.toUpperCase()+' lado a lado';};
@@ -123,11 +144,11 @@ export function mountComparison(root,{state,patientId,readPhoto,selection={},onS
   exportButton.addEventListener('click',async()=>{
     if(disposed||exporting||saving||!confirmation.checked)return;
     try{
-      const selected=resolveComparison(state,patientId,beforeKey,afterKey);exporting=true;refreshExport();setLocked(true);status.textContent='Gerando imagem Full HD de teste a partir dos arquivos originais…';
-      const blob=await buildComparisonImage(selected,readPhoto,{format,testImagesConfirmed:true,metadata});if(disposed||!root.isConnected)return;
+      const selected=resolveComparison(state,patientId,beforeKey,afterKey),layout=exportLayout;exporting=true;refreshExport();setLocked(true);if(layoutLabel)layoutLabel.querySelector('select').disabled=true;status.textContent='Gerando composição de teste com a marca da Ana a partir dos arquivos originais…';
+      const blob=await buildComparisonImage(selected,readPhoto,{format,layout,testImagesConfirmed:true,metadata});if(disposed||!root.isConnected)return;
       const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=`comparacao-teste-${selected.before.date}-${selected.after.date}.${format==='jpeg'?'jpg':'png'}`;link.click();setTimeout(()=>URL.revokeObjectURL(url),5000);
-      status.textContent=format.toUpperCase()+' de teste gerado em 1920 × 1080. Os arquivos originais e as marcações foram preservados.';
-    }catch(error){status.textContent=error.message;}finally{exporting=false;setLocked(false);refreshExport();}
+      const size=COMPARISON_LAYOUTS[layout];status.textContent=format.toUpperCase()+' de teste gerado em '+size.width+' × '+size.height+'. Marca da Ana incluída; originais preservados. O arquivo foi baixado, não publicado no Instagram.';
+    }catch(error){status.textContent=error.message;}finally{exporting=false;setLocked(false);if(layoutLabel)layoutLabel.querySelector('select').disabled=false;refreshExport();}
   });
   find('.compare-selection').hidden=hideSelection;saveButton.hidden=hideSave;
   applyView();void showPair();

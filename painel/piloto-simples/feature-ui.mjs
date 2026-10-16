@@ -1,16 +1,17 @@
 import {isConnected} from './runtime-store.mjs';
+import {requestActionCode} from './action-confirmation.mjs';
 export const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export const brl=value=>new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format((value||0)/100);
 export function input(label,name,value='',type='text',attrs=''){return `<label class="field">${escapeHTML(label)}<input name="${name}" value="${escapeHTML(value)}" type="${type}" ${attrs}></label>`;}
 export function textArea(label,name,value='',attrs=''){return `<label class="field">${escapeHTML(label)}<textarea name="${name}" ${attrs}>${escapeHTML(value)}</textarea></label>`;}
 export function select(label,name,options,value=''){return `<label class="field">${escapeHTML(label)}<select name="${name}">${options.map(([id,text])=>`<option value="${escapeHTML(id)}" ${id===value?'selected':''}>${escapeHTML(text)}</option>`).join('')}</select></label>`;}
-export function featureDialog({title,html,onSubmit,submitLabel='Salvar',wide=false}){
+export function featureDialog({title,html,onSubmit,submitLabel='Salvar',wide=false,confirmAction=null}){
  const dialog=document.createElement('dialog');dialog.className='feature-dialog'+(wide?' wide':'');const id=crypto.randomUUID();dialog.setAttribute('aria-labelledby',id);
  dialog.innerHTML=`<div class="dialog-top"><h2 id="${id}">${escapeHTML(title)}</h2><button type="button" class="icon-button" data-close aria-label="Fechar janela">×</button></div><form>${html}<p class="error" role="alert"></p><div class="dialog-actions"><button type="button" class="secondary" data-close>Cancelar</button><button class="primary" type="submit">${escapeHTML(submitLabel)}</button></div></form>`;
  document.body.append(dialog);let saving=false;const form=dialog.querySelector('form');const canClose=()=>!saving&&(!form.dataset.unsaved||confirm('Há alterações não salvas neste formulário. Descartar?'));
  form.addEventListener('input',()=>form.dataset.unsaved='true');form.addEventListener('change',()=>form.dataset.unsaved='true');form.addEventListener('pointerdown',e=>{if(e.target.matches('canvas'))form.dataset.unsaved='true';});
  dialog.addEventListener('cancel',e=>{if(!canClose())e.preventDefault();});dialog.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{if(canClose())dialog.close();});dialog.addEventListener('close',()=>dialog.remove(),{once:true});
- form.addEventListener('submit',async e=>{e.preventDefault();if(saving)return;saving=true;const values=new FormData(form),buttons=dialog.querySelectorAll('button');form.inert=true;buttons.forEach(b=>b.disabled=true);try{await onSubmit(values,dialog);delete form.dataset.unsaved;dialog.close();}catch(error){dialog.querySelector('.error').textContent=error.message;}finally{saving=false;form.inert=false;buttons.forEach(b=>b.disabled=false);}});dialog.showModal();return dialog;
+ form.addEventListener('submit',async e=>{e.preventDefault();if(saving)return;saving=true;const values=new FormData(form),buttons=dialog.querySelectorAll('button');form.inert=true;buttons.forEach(b=>b.disabled=true);try{if(confirmAction)await requestActionCode([confirmAction]);await onSubmit(values,dialog);delete form.dataset.unsaved;dialog.close();}catch(error){dialog.querySelector('.error').textContent=error.message;}finally{saving=false;form.inert=false;buttons.forEach(b=>b.disabled=false);}});dialog.showModal();return dialog;
 }
 export function downloadFile(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),10000);}
 // The same-origin assets resolve correctly from local, connected and released app URLs.

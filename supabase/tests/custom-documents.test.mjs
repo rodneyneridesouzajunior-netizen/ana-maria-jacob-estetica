@@ -43,6 +43,18 @@ test('MFA, actor/session and clinic boundaries are required to issue/list',async
  for(const change of [{aal:'aal1'},{role:'professional'},{authMethod:'legacy'}]){const h=createWorkspaceHandler({authenticate:async()=>({...ctx,...change}),authorize:async()=>{},repository});assert.equal((await send(h,{acao:'listar_emissoes_documento',document_id:'x'})).status,403);}
  await assert.rejects(repository.customIssues({p_clinic:clinic,p_actor:actor,p_session:crypto.randomUUID(),p_document:'x'}),e=>e.code==='workspace_access_denied');await assert.rejects(repository.customIssues({p_clinic:crypto.randomUUID(),p_actor:actor,p_session:session,p_document:'x'}),e=>e.code==='workspace_access_denied');
 });
+test('issuance reports missing CPF before reaching SQL, preserving optional CPF in registration',async()=>{
+ const document={id:'doc-cpf-required',patientId:'test-patient',visitId:'test-visit',templateId:'template-termo',templateVersion:1,kind:'termo',status:'rascunho',snapshot:structuredClone(snapshot),answers:{}};
+ state.documentResponses.push(document);const original=state.patients[0].cpf;
+ try {
+  for(const value of ['',undefined,'   ','11111111111']){
+   state.patients[0].cpf=value;await saveState();
+   const result=await send(privateHandler,{acao:'emitir_documento_paciente',document_id:document.id,expected_revision:1,operation_id:crypto.randomUUID()});
+   assert.equal(result.status,422);assert.equal(result.codigo,'custom_identity_required');
+  }
+  assert.equal((await db.query('select count(*)::int n from app_custom_document_issues where document_id=$1',[document.id])).rows[0].n,0);
+ }finally{state.patients[0].cpf=original;await saveState();}
+});
 test('issuance uses persisted snapshot, preserves version and reopens same capability across SQL timestamp normalization',async()=>{
  const e=await emit();const repeated=await send(privateHandler,e.p);assert.equal(repeated.issue.public_url,e.issue.public_url);assert.equal((await send(privateHandler,{...e.p,expires_in_days:8})).status,409);
  const opened=await send(publicHandler,{acao:'abrir',token:e.token});assert.equal(opened.document.patientName,state.patients[0].name);assert.deepEqual(opened.document.snapshot,e.document.snapshot);assert.equal(opened.document.patientId,undefined);assert.equal(JSON.stringify(opened).includes('52998224725'),false);assert.equal(opened.confirmation.general_data_text,undefined);

@@ -1,3 +1,4 @@
+import {prepareWorkspaceChange,applyPreparedWorkspaceChange} from '../action-confirmation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -16,7 +17,7 @@ function harness(t){
  const w=dom.window,events=new Map(),add=w.addEventListener.bind(w),revoked=[],disposed=[];let loads=0,writes=0;
  w.HTMLDialogElement.prototype.close=function(){this.open=false;};
  w.addEventListener=(type,fn,...rest)=>{events.set(type,[...(events.get(type)||[]),fn]);add(type,fn,...rest);};
- const context=vm.createContext({...rules,assertVisitEditable,isConnected:()=>true,structuredClone,crypto:webcrypto,console,document:w.document,window:w,location:w.location,history:w.history,FormData:w.FormData,URL:{revokeObjectURL:url=>revoked.push(url)},confirm:()=>true,setTimeout:()=>0,clearTimeout(){},load:async()=>{loads++;return rules.seed();},commit:async()=>{writes++;return rules.seed();},getPhoto:async()=>null,disposed});
+ const context=vm.createContext({prepareWorkspaceChange,applyPreparedWorkspaceChange,requestActionCode:async()=>{},...rules,assertVisitEditable,isConnected:()=>true,structuredClone,crypto:webcrypto,console,document:w.document,window:w,location:w.location,history:w.history,FormData:w.FormData,URL:{revokeObjectURL:url=>revoked.push(url)},confirm:()=>true,setTimeout:()=>0,clearTimeout(){},load:async()=>{loads++;return rules.seed();},commit:async()=>{writes++;return rules.seed();},getPhoto:async()=>null,disposed});
  vm.runInContext(source,context);const run=code=>vm.runInContext(code,context);
  run("state=seed();patientId='demo-marina';visitId='demo-consulta';photoId='demo-foto';dialogSubmit=()=>{throw Error('private callback must be cleared');};dirty=true;pending={id:'private-pending'};drag={private:true};selectedId='private-point';objectUrls.set('photo','blob:private-photo');comparisonSelections.set('patient',{private:true});patientView.query='PRIVATE-QUERY';facialHandle={dispose:()=>disposed.push('facial')};patientsHandle={dispose:()=>disposed.push('patients')};patientEditor={dispose:()=>disposed.push('patient-editor')};comparisonHandle={dispose:()=>disposed.push('comparison')};integrationHandle={dispose:()=>disposed.push('integration')};agendaDispose=()=>disposed.push('agenda');mapFitObserver={disconnect:()=>disposed.push('resize')};");
  t.after(()=>w.close());

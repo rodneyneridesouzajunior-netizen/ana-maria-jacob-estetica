@@ -1,3 +1,4 @@
+import {prepareWorkspaceChange,applyPreparedWorkspaceChange} from '../action-confirmation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -22,7 +23,7 @@ const fixture=points=>({patients:[{id:'patient',name:'Paciente sintética'}],vis
 function dom(t,html){const value=new JSDOM('<!doctype html><body>'+html);t.after(()=>value.window.close());return value.window.document;}
 function draw(points,width=500,height=500){
  const canvas=createCanvas(width,height+100),ctx=canvas.getContext('2d');ctx.fillStyle='#fcfbfa';ctx.fillRect(0,0,width,height+100);
- const context=vm.createContext({annotationCheck,fanRays});vm.runInContext(exportSource,context);
+ const context=vm.createContext({prepareWorkspaceChange,applyPreparedWorkspaceChange,requestActionCode:async()=>{},annotationCheck,fanRays});vm.runInContext(exportSource,context);
  context.drawExportAnnotations(ctx,points,width,height);
  return{canvas,ctx,pixel:(x,y)=>Array.from(ctx.getImageData(x,y,1,1).data)};
 }
@@ -92,7 +93,7 @@ test('complete PNG export labels free drawing without a dose and preserves saved
  const output=createCanvas(1,1),ctx=output.getContext('2d'),labels=[],downloads=[];
  const spy=new Proxy(ctx,{get(target,key){if(key==='fillText')return(...args)=>{labels.push(String(args[0]));return target.fillText(...args);};const value=target[key];return typeof value==='function'?value.bind(target):value;},set(target,key,value){target[key]=value;return true;}});
  output.toBlob=callback=>callback(new Blob([output.toBuffer('image/png')],{type:'image/png'}));
- const context=vm.createContext({annotationCheck,fanRays,dirty:false,pending:null,drag:null,photo:()=>({label:'Frontal'}),map:()=>({points,version:4}),visit:()=>({date:'2026-10-15'}),$:()=>image,isConnected:()=>false,document:{createElement:()=>({set width(v){output.width=v;},set height(v){output.height=v;},getContext:()=>spy,toBlob:output.toBlob})},download:(blob,name)=>downloads.push({blob,name}),toast(){}});
+ const context=vm.createContext({prepareWorkspaceChange,applyPreparedWorkspaceChange,requestActionCode:async()=>{},annotationCheck,fanRays,dirty:false,pending:null,drag:null,photo:()=>({label:'Frontal'}),map:()=>({points,version:4}),visit:()=>({date:'2026-10-15'}),$:()=>image,isConnected:()=>false,document:{createElement:()=>({set width(v){output.width=v;},set height(v){output.height=v;},getContext:()=>spy,toBlob:output.toBlob})},download:(blob,name)=>downloads.push({blob,name}),toast(){}});
  vm.runInContext(exportSource,context);await context.exportMap();assert.equal(downloads.length,1);
  assert(labels.includes('1. Contorno manual · Desenho livre · procedimento: Procedimento não informado'));assert(labels.includes('2. Ponto existente · Produto informado · 2 U · lote LOTE-TESTE · procedimento: Procedimento não informado'));assert(!labels.some(label=>label.includes('sem quantidade')||label.includes('null')));
  const reopened=await loadImage(Buffer.from(await downloads[0].blob.arrayBuffer()));assert.equal(reopened.width,500);assert.equal(reopened.height,686);assert.deepEqual(points,before);

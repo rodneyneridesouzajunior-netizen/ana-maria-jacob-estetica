@@ -55,17 +55,17 @@ test('PNG e JPEG saem em Full HD, com imagens inteiras e carimbo de teste',async
   const pair=resolveComparison(state(),'ana',key('v1','p1'),key('v2','p3'));
   const bytes=new Uint8Array([7,8,9]),source=new Blob([bytes],{type:'image/jpeg'}),read=async()=>source;
   await assert.rejects(buildComparisonImage(pair,read),/fictícias/);
-  for(const format of ['png','jpeg']){
-    const result=await buildComparisonImage(pair,read,{format,testImagesConfirmed:true});assert.equal(result.type,format==='jpeg'?'image/jpeg':'image/png');
+  for(const [format,layout] of [['png','fullhd'],['jpeg','fullhd'],['png','feed'],['jpeg','story']]){
+    const result=await buildComparisonImage(pair,read,{format,layout,testImagesConfirmed:true});assert.equal(result.type,format==='jpeg'?'image/jpeg':'image/png');
   }
-  assert.deepEqual(canvases.map(c=>[c.width,c.height]),[[1920,1080],[1920,1080]]);
+  assert.deepEqual(canvases.map(c=>[c.width,c.height]),[[1920,1080],[1920,1080],[1080,1350],[1080,1920]]);
   assert.equal(canvases[1].quality,.95);
   // drawImage is called with image + destination only (no source cropping).
   assert.ok(draws.every(args=>args.length===5));
   const photoDraws=draws.filter(args=>args[0].width===1000);
   assert.ok(photoDraws.every(args=>Math.abs(args[3]/args[4]-2/3)<1e-9));
   assert.ok(texts.includes('PILOTO — DADOS FICTÍCIOS'));assert.ok(texts.includes('TESTE · SEM RESULTADO CLÍNICO'));
-  assert.ok(texts.includes('Data da consulta: 01/10/2026'));assert.equal(closed.length,6);
+  assert.ok(texts.includes('Data da consulta: 01/10/2026'));assert.equal(closed.length,12);
   assert.deepEqual(new Uint8Array(await source.arrayBuffer()),bytes);
 });
 

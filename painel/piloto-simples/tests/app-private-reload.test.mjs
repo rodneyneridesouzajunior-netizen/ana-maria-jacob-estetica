@@ -1,3 +1,4 @@
+import {prepareWorkspaceChange,applyPreparedWorkspaceChange} from '../action-confirmation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -21,7 +22,7 @@ function harness(t){
  const w=dom.window,events=new Map(),add=w.addEventListener.bind(w);
  w.HTMLDialogElement.prototype.close=function(){this.open=false;};
  w.addEventListener=(type,fn,...rest)=>{events.set(type,[...(events.get(type)||[]),fn]);add(type,fn,...rest);};
- const context=vm.createContext({...rules,assertVisitEditable,isConnected:()=>true,structuredClone,crypto:webcrypto,console,document:w.document,window:w,location:w.location,history:w.history,FormData:w.FormData,URL:{revokeObjectURL(){}},confirm:()=>true,setTimeout:()=>0,clearTimeout(){},load:async()=>rules.seed(),commit:async()=>{throw Error('No writes expected');},getPhoto:async()=>null});
+ const context=vm.createContext({prepareWorkspaceChange,applyPreparedWorkspaceChange,requestActionCode:async()=>{},...rules,assertVisitEditable,isConnected:()=>true,structuredClone,crypto:webcrypto,console,document:w.document,window:w,location:w.location,history:w.history,FormData:w.FormData,URL:{revokeObjectURL(){}},confirm:()=>true,setTimeout:()=>0,clearTimeout(){},load:async()=>rules.seed(),commit:async()=>{throw Error('No writes expected');},getPhoto:async()=>null});
  vm.runInContext(source,context);
  const run=code=>vm.runInContext(code,context);
  run('state=seed();');

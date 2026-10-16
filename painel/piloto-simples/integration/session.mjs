@@ -1,6 +1,6 @@
 import { IntegrationError } from './errors.mjs';
 
-// The existing AMJAuth controller owns SDK auth and sessionStorage. Clinical
+// The AMJAuth controller owns SDK auth and its session storage adapter. Clinical
 // payloads never enter that storage. Server-side auth remains authoritative.
 export function createSessionBridge(authController, { now = Date.now, onInvalidated = () => {} } = {}) {
   if (!authController?.getNextStep || !authController?.getSession) {
@@ -27,6 +27,7 @@ export function createSessionBridge(authController, { now = Date.now, onInvalida
     for (const listener of listeners) listener(reason);
     onInvalidated(reason);
   };
+  const unsubscribeStorage = authController.subscribeSessionClosed?.(() => invalidate('SIGNED_OUT'));
   const subscription = authController.client?.auth?.onAuthStateChange?.((event, session) => {
     if (destroyed || invalidated) return;
     if (event === 'SIGNED_OUT' || event === 'PASSWORD_RECOVERY' ||
@@ -104,6 +105,6 @@ export function createSessionBridge(authController, { now = Date.now, onInvalida
     requireReady, assertCurrent, invalidate,
     subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); },
     async signOut() { invalidate('SIGNED_OUT'); await authController.signOut(); },
-    destroy() { destroyed = true; invalidate('destroyed'); subscription?.unsubscribe?.(); listeners.clear(); },
+    destroy() { destroyed = true; invalidate('destroyed'); unsubscribeStorage?.(); subscription?.unsubscribe?.(); listeners.clear(); },
   });
 }

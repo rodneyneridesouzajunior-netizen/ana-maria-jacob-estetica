@@ -1,4 +1,5 @@
 import { createClinicIntegration } from './adapter.mjs';
+import {createClinicAuthStorage,bindClinicAuthStorage} from './auth-storage.mjs';
 import { DEFAULT_CONFIG, validateConfig, assertNetworkAllowed } from './config.mjs';
 import { IntegrationError, errorMessage } from './errors.mjs';
 import {mountPrivateMap} from './map-ui.mjs';
@@ -39,8 +40,9 @@ async function defaultAuth(config) {
     })().catch(error => { authScripts=null; throw error; });
     await authScripts;
   }
-  return globalThis.AMJAuth.createController({ supabaseGlobal:globalThis.supabase, storage:globalThis.sessionStorage,
-    windowLike:globalThis, supabaseUrl:config.supabaseUrl, publishableKey:config.publishableKey });
+  const storage=createClinicAuthStorage();
+  try{return bindClinicAuthStorage(globalThis.AMJAuth.createController({ supabaseGlobal:globalThis.supabase, storage,
+    windowLike:globalThis, supabaseUrl:config.supabaseUrl, publishableKey:config.publishableKey }),storage);}catch(error){storage.dispose();throw error;}
 }
 
 function table(columns, rows, actions = null) {

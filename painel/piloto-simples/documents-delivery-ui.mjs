@@ -1,5 +1,6 @@
 import {getDocumentsService,safeDocumentURL} from './documents-service.mjs';
 import {escapeHTML as e} from './feature-ui.mjs';
+import {requestActionCode} from './action-confirmation.mjs';
 
 const statusLabel={issued:'Aguardando a paciente',processing:'Recebimento em conferência',received:'Recebido · aguardando revisão profissional',revoked:'Link revogado',expired:'Link expirado'};
 /** Emissions are server records, separate from editable clinic drafts. */
@@ -31,7 +32,7 @@ export function openDocumentDelivery(record,{getState,notify=()=>{},service=getD
     if(action==='revoke'){revokeTarget=issue.id;render();dialog.querySelector('[data-delivery=revoke-cancel]')?.focus();return;}
     if(revokeTarget!==issue.id)throw Error('Confira a emissão e confirme a revogação novamente.');
     if(action==='revoke-cancel'){revokeTarget=null;render();dialog.querySelector(`[data-delivery="revoke"][data-id="${issue.id}"]`)?.focus();return;}
-    await service.revoke(issue.id);await refresh();feedback('Link revogado. Histórico preservado.');
+    await requestActionCode(['Revogar o link deste documento']);current();await service.revoke(issue.id);await refresh();feedback('Link revogado. Histórico preservado.');
    }
   });
  });

@@ -1,3 +1,4 @@
+import {prepareWorkspaceChange,applyPreparedWorkspaceChange} from '../action-confirmation.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
@@ -17,7 +18,7 @@ function harness(t){
  const dom=new JSDOM('<!doctype html><body><nav id="nav"></nav><select id="area-switch"></select><span id="crumb"></span><span id="date-label"></span><main id="content"></main><div id="toast"></div><dialog id="dialog"><h2 id="dialog-title"></h2><form id="dialog-form"><div id="dialog-fields"></div><p id="dialog-error"></p><button id="cancel-dialog"></button></form><button id="close-dialog"></button></dialog></body>',{url:'https://anamariajacob.com.br/app/#paciente/demo-marina/demo-consulta/mapa'});
  const w=dom.window,doc=w.document,queued=[];w.HTMLDialogElement.prototype.close=function(){this.open=false;};w.matchMedia=()=>({matches:false});w.scrollTo=()=>{};w.Element.prototype.setPointerCapture=function(){};
  let stored=domain.seed(),calls=0;stored.visits[0].photos.push({...stored.visits[0].photos[0],id:'second-photo',label:'Segunda foto fictícia'});stored.visits[0].maps['second-photo']={version:0,points:[],history:[]};
- const context=vm.createContext({...domain,assertVisitEditable,fittedPhotoSize,MAP_ZOOM_LEVELS,structuredClone,crypto:webcrypto,console,document:doc,window:w,location:w.location,history:w.history,FormData:w.FormData,URL:w.URL,isConnected:()=>true,confirm:()=>true,setTimeout:(fn,delay)=>delay===0?setImmediate(fn):0,clearTimeout(){},load:async()=>structuredClone(stored),commit:(revision,update)=>{calls++;return new Promise((resolve,reject)=>queued.push({revision,update,resolve,reject}));}});
+ const context=vm.createContext({prepareWorkspaceChange,applyPreparedWorkspaceChange,requestActionCode:async()=>{},...domain,assertVisitEditable,fittedPhotoSize,MAP_ZOOM_LEVELS,structuredClone,crypto:webcrypto,console,document:doc,window:w,location:w.location,history:w.history,FormData:w.FormData,URL:w.URL,isConnected:()=>true,confirm:()=>true,setTimeout:(fn,delay)=>delay===0?setImmediate(fn):0,clearTimeout(){},load:async()=>structuredClone(stored),commit:(revision,update)=>{calls++;return new Promise((resolve,reject)=>queued.push({revision,update,resolve,reject}));}});
  vm.runInContext(source,context);const run=code=>vm.runInContext(code,context);context.fixture=structuredClone(stored);
  run("state=fixture;patientId='demo-marina';visitId='demo-consulta';photoId='demo-foto';tab='mapa';route='paciente';document.getElementById('content').innerHTML=mapPage(visit());");
  const stage=doc.getElementById('photo-stage'),plane=doc.getElementById('photo-plane'),image=doc.getElementById('map-photo');
@@ -27,7 +28,7 @@ function harness(t){
  const edit=(id,value)=>{const el=doc.getElementById(id);el.value=value;el.dispatchEvent(new w.Event('input',{bubbles:true}));};
  const click=(action,id)=>doc.querySelector(`[data-action="${action}"]${id?`[data-id="${id}"]`:''}`).click();
  const add=(x=.3,y=.4)=>plane.dispatchEvent(new w.MouseEvent('click',{clientX:x*400,clientY:y*500,detail:1,bubbles:true}));
- const flush=async(error)=>{assert.equal(queued.length,1,'Exactly one transaction must be pending');const op=queued.shift();if(error)op.reject(error);else{try{assert.equal(op.revision,stored.revision);const next=structuredClone(stored);op.update(next);next.revision++;stored=next;op.resolve(structuredClone(stored));}catch(e){op.reject(e);}}await tick();};
+ const flush=async(error)=>{await new Promise(resolve=>setImmediate(resolve));assert.equal(queued.length,1,'Exactly one transaction must be pending');const op=queued.shift();if(error)op.reject(error);else{try{assert.equal(op.revision,stored.revision);const next=structuredClone(stored);op.update(next);next.revision++;stored=next;op.resolve(structuredClone(stored));}catch(e){op.reject(e);}}await tick();};
  return{run,doc,w,add,edit,click,flush,stored:()=>stored,calls:()=>calls,pending:()=>queued.length};
 }
 
