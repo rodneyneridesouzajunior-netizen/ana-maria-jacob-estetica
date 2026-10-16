@@ -14,4 +14,5 @@
 .docs-text-block .model-preview{max-height:none}
 .feature-dialog pre.model-preview{font:inherit;white-space:pre-wrap;overflow-wrap:anywhere}
 .docs-response-step[hidden],.docs-response-step [hidden]{display:none!important}
+@media(max-width:480px){[data-doc-library]>.field-grid{grid-template-columns:1fr}}
 @media(max-width:600px){.docs-step,.docs-block,.docs-response-step{padding:12px}.docs-step .field-grid{grid-template-columns:1fr}.docs-step-nav button{flex:1 1 130px}.docs-step-actions button{flex:1}.docs-step-actions p{width:100%;order:3;text-align:center}}

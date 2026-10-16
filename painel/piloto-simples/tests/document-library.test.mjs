@@ -5,13 +5,16 @@ import {saveTemplate,prepareDocument,validateDocumentVersion,visibleQuestions} f
 import {seed} from '../domain.mjs';
 test('clinic models are separate, versioned and never rewrite an issued snapshot',()=>{
  const s=seed();s.documentTemplates=[];s.documentResponses=[];s.documentHistory=[];
- assert.deepEqual(CLINIC_DOCUMENT_MODELS.map(t=>t.kind),['anamnese','termo','termo','imagem']);
+ assert.equal(CLINIC_DOCUMENT_MODELS.filter(t=>t.kind==='anamnese').length,1);
+ assert.equal(CLINIC_DOCUMENT_MODELS.filter(t=>t.kind==='termo').length,10);
+ assert.equal(CLINIC_DOCUMENT_MODELS.filter(t=>t.kind==='imagem').length,1);
  for(const model of CLINIC_DOCUMENT_MODELS){const v=saveTemplate(s,structuredClone(model));validateDocumentVersion(v);const record=prepareDocument(s,{id:'issued-'+model.id,templateId:model.id,patientId:'demo-marina',visitId:'demo-consulta'}),original=structuredClone(record);saveTemplate(s,{...structuredClone(model),title:'Versão revisada',expectedVersion:1});assert.deepEqual(record,original);assert.equal(s.documentTemplates.at(-1).versions.length,2);}
 });
 test('procedure models exclude repeated general data and image sections',()=>{
  for(const model of CLINIC_DOCUMENT_MODELS.filter(t=>t.kind==='termo')){
-  assert.doesNotMatch(model.body,/PROTEÇÃO DE DADOS PESSOAIS|AUTORIZAÇÃO DE USO DE IMAGEM|Autorizo o tratamento dos meus dados/);
-  assert.match(model.body,/riscos/i);assert.match(model.body,/anamnese obrigatória/);
+  const content=[model.body,...(model.blocks||[]).flatMap(block=>[block.title,block.body])].join('\n');
+  assert.doesNotMatch(content,/PROTEÇÃO DE DADOS PESSOAIS|AUTORIZAÇÃO DE USO DE IMAGEM|Autorizo o tratamento dos meus dados/);
+  assert.match(content,/riscos/i);assert.match(content,/anamnese obrigatória/);
  }
 });
 test('anamnese conditional questions and independent image decisions start unanswered',()=>{

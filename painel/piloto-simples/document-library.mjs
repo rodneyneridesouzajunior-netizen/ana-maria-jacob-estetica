@@ -1,4 +1,6 @@
-// Textos derivados dos documentos oficiais existentes da própria clínica.
+import {ADDITIONAL_PROCEDURE_MODELS} from './document-library-procedures.mjs';
+
+// Modelos próprios: documentos existentes da clínica e termos específicos com fontes registradas.
 // A importação prepara uma nova versão para revisão; não modifica originais emitidos.
 export const CLINIC_DOCUMENT_MODELS = Object.freeze([
   {
@@ -742,5 +744,6 @@ export const CLINIC_DOCUMENT_MODELS = Object.freeze([
         "required": false
       }
     ]
-  }
+  },
+  ...ADDITIONAL_PROCEDURE_MODELS
 ]);
