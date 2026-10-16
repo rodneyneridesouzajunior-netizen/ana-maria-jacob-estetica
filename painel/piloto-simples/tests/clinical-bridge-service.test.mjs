@@ -61,3 +61,10 @@ test('recusas conhecidas do backend preservam seleção e permitem descarte expl
   await assert.rejects(service.retryLink(),e=>e.code==='no_pending_link');service.discardRejectedLink();assert.equal(service.getPendingLink(),null);
  }
 });
+
+test('leitura distingue PDF indisponível, integridade e alteração sem mostrar texto privado do servidor',async t=>{
+ for(const [status,codigo,expected] of [[409,'document_not_ready',/não tem um PDF disponível/],[409,'document_source_changed',/alterado desde a consulta/],[409,'document_integrity_invalid',/conferência de integridade/],[422,'document_integrity_invalid',/conferência de integridade/],[404,'document_file_missing',/não foi encontrado/]]){
+  const s=session(),service=createClinicalBridgeService({session:s,fetchImpl:async()=>Response.json({ok:false,codigo,erro:'PRIVATE PATH /secret.pdf'},{status})});t.after(()=>service.dispose());
+  await assert.rejects(service.openDocument({source_kind:'anamnese',source_id:linkSelection().source_id,expected_source_fingerprint:'a'.repeat(64)}),e=>{assert.equal(e.code,codigo);assert.match(e.message,expected);assert.doesNotMatch(e.message,/PRIVATE|secret/);assert.equal(e.uncertain,false);return true;});assert.equal(s.reason,null);assert.equal(service.getPendingLink(),null);
+ }
+});

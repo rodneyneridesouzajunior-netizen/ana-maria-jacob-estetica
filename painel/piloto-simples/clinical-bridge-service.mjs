@@ -20,6 +20,14 @@ const LINK_REJECTIONS=Object.freeze({
   422:Object.freeze(['invalid_document','invalid_document_binding','document_fingerprint_required','invalid_document_link','document_source_unavailable','document_identity_mismatch','document_binding_invalid','document_link_invalid','invalid_workspace_state','source_not_received','source_archived','source_withdrawn','source_integrity_incomplete','patient_cpf_required','identity_cpf_mismatch','identity_name_mismatch','identity_birth_mismatch']),
 });
 const definitiveLinkRejection=(status,result)=>plain(result)&&result.ok===false&&LINK_REJECTIONS[status]?.includes(result.codigo)===true;
+// Show only known diagnostic copy. Never render a raw server error (which may
+// contain private paths), and do not mistake an unavailable historical PDF for CAS.
+const READ_ERRORS=Object.freeze({
+ document_source_changed:[409,'O documento foi alterado desde a consulta. Atualize a lista e abra novamente.'],
+ document_not_ready:[409,'Este registro ainda não tem um PDF disponível para leitura. Confira o original no painel operacional.'],
+ document_integrity_invalid:[[409,422],'O arquivo não passou na conferência de integridade. O original foi preservado; confira-o no painel operacional.'],
+ document_file_missing:[404,'O PDF registrado não foi encontrado no armazenamento. Confira o original no painel operacional.'],
+});
 const assertPayload=(v,allowed)=>{if(!plain(v)||Object.keys(v).some(k=>!allowed.includes(k)))throw failure('invalid_payload','Os filtros desta consulta não são válidos.');};
 function binding(v){if(!id(v.patient_id)||!id(v.visit_id))throw failure('invalid_context','Selecione uma paciente e uma consulta salvas.');return{patient_id:v.patient_id,visit_id:v.visit_id};}
 function page(v,max=50){const limit=v.limit??25,offset=v.offset??0;if(!Number.isInteger(limit)||limit<1||limit>max||!Number.isInteger(offset)||offset<0||offset>10000)throw failure('invalid_page','A página solicitada não é válida.');return{limit,offset};}
@@ -57,8 +65,9 @@ export function createClinicalBridgeService({session,request,fetchImpl=globalThi
         check(turn);await session.assertCurrent(auth);check(turn);
         if(!response.ok){
           const rejected=write&&definitiveLinkRejection(response.status,result);
-          const message=write&&!rejected?'O resultado do vínculo não foi confirmado. Confira a gravação antes de repetir.':response.status===409?'O original ou o contexto mudou. Preserve a seleção e atualize a consulta antes de tentar novamente.':response.status===422?(write?'O servidor recusou o vínculo. Confira identidade, recebimento e situação do original.':'Os filtros ou a consulta não foram aceitos pelo serviço.'):response.status===404?'O registro ou a consulta ainda não está disponível neste serviço. Use o painel operacional.':write?'O servidor recusou este envio. Confira os dados antes de continuar.':'Não foi possível consultar os registros. Tente atualizar ou use o painel operacional.';
-          throw Object.assign(failure(`http_${response.status}`,message,{status:response.status,uncertain:write&&!rejected}),{definitiveLinkRejection:rejected});
+          const knownRead=!write&&plain(result)&&result.ok===false&&[].concat(READ_ERRORS[result.codigo]?.[0]||[]).includes(response.status)?READ_ERRORS[result.codigo]:null;
+          const message=knownRead?knownRead[1]:write&&!rejected?'O resultado do vínculo não foi confirmado. Confira a gravação antes de repetir.':response.status===409?'O original ou o contexto mudou. Preserve a seleção e atualize a consulta antes de tentar novamente.':response.status===422?(write?'O servidor recusou o vínculo. Confira identidade, recebimento e situação do original.':'Os filtros ou a consulta não foram aceitos pelo serviço.'):response.status===404?'O registro ou a consulta ainda não está disponível neste serviço. Use o painel operacional.':write?'O servidor recusou este envio. Confira os dados antes de continuar.':'Não foi possível consultar os registros. Tente atualizar ou use o painel operacional.';
+          throw Object.assign(failure(knownRead?result.codigo:`http_${response.status}`,message,{status:response.status,uncertain:write&&!rejected}),{definitiveLinkRejection:rejected});
         }
       }
       check(turn);await session.assertCurrent(auth);check(turn);

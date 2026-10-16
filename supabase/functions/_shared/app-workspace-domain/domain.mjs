@@ -26,9 +26,45 @@ export function normalizedPoint(clientX, clientY, rect) {
   if (!(rect.width>0 && rect.height>0)) throw Error('A foto ainda não está pronta.');
   return {x:Math.max(0,Math.min(1,(clientX-rect.left)/rect.width)),y:Math.max(0,Math.min(1,(clientY-rect.top)/rect.height))};
 }
+export const MAX_TRACE_VERTICES = 256;
+export const DEFAULT_FAN_SPREAD = 48;
+function checkFanSpread(point){
+  if(Object.hasOwn(point,'fanSpread')&&(point.kind!=='leque'||!Number.isFinite(point.fanSpread)||point.fanSpread<=0||point.fanSpread>120))throw Error('A abertura do leque deve ser maior que 0 e até 120 graus.');
+}
+/** Three open rays in normalized photo coordinates; no stored point is changed.
+ * Legacy fans keep their original fixed-width endpoints. New fans rotate the
+ * exact central vector in photo space, independently of zoom or screen size.
+ * Outer tips may leave the photo: renderers clip them, never clamp the geometry.
+ */
+export function fanRays(point,aspectRatio=1){
+  if(!point||point.kind!=='leque'||!['x','y','x2','y2'].every(key=>Number.isFinite(point[key])&&point[key]>=0&&point[key]<=1))throw Error('Geometria do leque inválida.');
+  checkFanSpread(point);
+  if(!Number.isFinite(aspectRatio)||aspectRatio<=0)throw Error('Proporção da fotografia inválida.');
+  const dx=point.x2-point.x,dy=point.y2-point.y;
+  let tips;
+  if(!Object.hasOwn(point,'fanSpread')){
+    const length=Math.hypot(dx,dy)||1,nx=-dy/length*.055,ny=dx/length*.055;
+    tips=[{x:point.x2+nx,y:point.y2+ny},{x:point.x2,y:point.y2},{x:point.x2-nx,y:point.y2-ny}];
+  }else{
+    const half=point.fanSpread*Math.PI/360,cos=Math.cos(half),sin=Math.sin(half);
+    tips=[{x:point.x+dx*cos+dy*sin/aspectRatio,y:point.y-dx*aspectRatio*sin+dy*cos},
+      {x:point.x2,y:point.y2},
+      {x:point.x+dx*cos-dy*sin/aspectRatio,y:point.y+dx*aspectRatio*sin+dy*cos}];
+  }
+  if(tips.some(tip=>!Number.isFinite(tip.x)||!Number.isFinite(tip.y)))throw Error('Geometria do leque fora do limite de representação.');
+  return tips.map(tip=>({x1:point.x,y1:point.y,x2:tip.x,y2:tip.y}));
+}
 export function annotationCheck(point) {
-  if(!['ponto','linha','leque'].includes(point.kind)) throw Error('Marcação inválida.');
-  for(const key of ['x','y',...(point.kind==='ponto'?[]:['x2','y2'])]) if(!Number.isFinite(point[key])||point[key]<0||point[key]>1) throw Error('Marcação fora da imagem.');
+  if(!['ponto','linha','leque','traco'].includes(point.kind)) throw Error('Marcação inválida.');
+  checkFanSpread(point);
+  for(const key of ['x','y',...(['ponto','traco'].includes(point.kind)?[]:['x2','y2'])]) if(!Number.isFinite(point[key])||point[key]<0||point[key]>1) throw Error('Marcação fora da imagem.');
+  if(point.kind==='traco'){
+    // Store bounded normalized vertices, never executable SVG or screen pixels.
+    if(Object.hasOwn(point,'x2')||Object.hasOwn(point,'y2')||!Array.isArray(point.vertices)||point.vertices.length<2||point.vertices.length>MAX_TRACE_VERTICES) throw Error('O traço precisa de 2 a 256 vértices, sem extremidade de linha.');
+    for(const vertex of point.vertices)if(!vertex||typeof vertex!=='object'||Array.isArray(vertex)||Object.keys(vertex).length!==2||!Object.hasOwn(vertex,'x')||!Object.hasOwn(vertex,'y')||!Number.isFinite(vertex.x)||!Number.isFinite(vertex.y)||vertex.x<0||vertex.x>1||vertex.y<0||vertex.y>1) throw Error('Vértice do traço fora da imagem ou inválido.');
+    if(point.x!==point.vertices[0].x||point.y!==point.vertices[0].y) throw Error('A posição do traço deve coincidir com o primeiro vértice.');
+    if(point.quantity!==null||point.unit!=='sem quantidade') throw Error('O traço é uma anotação visual, sem quantidade ou consumo de produto.');
+  }
   if(!point.region?.trim()||point.region.length>100) throw Error('Dê um nome à região.');
   if((point.product||'').length>120||(point.notes||'').length>2000||(point.lot||'').length>80) throw Error('Texto muito longo.');
   if(point.quantity!==null && (!Number.isFinite(point.quantity)||point.quantity<=0||point.quantity>100000)) throw Error('Quantidade inválida.');
@@ -39,12 +75,17 @@ export function annotationCheck(point) {
 export function translateAnnotation(point, target) {
   annotationCheck(point);
   if(!Number.isFinite(target.x)||!Number.isFinite(target.y)) throw Error('Posição inválida.');
-  const xs=point.kind==='ponto'?[point.x]:[point.x,point.x2];
-  const ys=point.kind==='ponto'?[point.y]:[point.y,point.y2];
+  const xs=point.kind==='traco'?point.vertices.map(v=>v.x):point.kind==='ponto'?[point.x]:[point.x,point.x2];
+  const ys=point.kind==='traco'?point.vertices.map(v=>v.y):point.kind==='ponto'?[point.y]:[point.y,point.y2];
   const dx=Math.max(-Math.min(...xs),Math.min(1-Math.max(...xs),target.x-point.x));
   const dy=Math.max(-Math.min(...ys),Math.min(1-Math.max(...ys),target.y-point.y));
   const next={...point,x:point.x+dx,y:point.y+dy};
-  if(point.kind!=='ponto'){next.x2=point.x2+dx;next.y2=point.y2+dy;}
+  if(point.kind==='traco'){
+    // The shared displacement preserves the stroke; the final clamp only absorbs
+    // floating-point rounding at an image boundary.
+    next.vertices=point.vertices.map(v=>({x:Math.max(0,Math.min(1,v.x+dx)),y:Math.max(0,Math.min(1,v.y+dy))}));
+    next.x=next.vertices[0].x;next.y=next.vertices[0].y;
+  }else if(point.kind!=='ponto'){next.x2=point.x2+dx;next.y2=point.y2+dy;}
   return annotationCheck(next);
 }
 export function quantityTotals(points) {

@@ -138,7 +138,9 @@ test('rota 3D antiga abre o mapa da mesma consulta e preserva salvamento ao alte
  assert.deepEqual(h.workspace(),before);
  const page=JSDOM.fragment(h.run('patientPage()')),activeTabs=page.querySelectorAll('nav[aria-label="Áreas da consulta"] a[aria-current="page"]');
  assert.equal(activeTabs.length,1);assert.equal(activeTabs[0].classList.contains('active'),true);assert.equal(activeTabs[0].getAttribute('href'),'#paciente/demo-marina/demo-consulta/mapa');assert.equal(page.querySelector('#facial-panel'),null);
- h.run("selectedId='a';");preparePoint(h);const save=h.listeners.get('submit')[0](submitEvent('point-form'));h.flush();await save;
+ // Use the actual selection transition: the page now begins with an empty
+ // batch, which selecting a previously saved point correctly exits.
+ assert.equal(h.run("selectPoint('a')"),true);preparePoint(h);const save=h.listeners.get('submit')[0](submitEvent('point-form'));h.flush();await save;
  const saved=structuredClone(h.workspace());assert.equal(saved.visits[0].maps['demo-foto'].points[0].region,'Edição de a');
  for(const destination of ['registro','fotos','documentos','mapa']){
   h.run(`location.hash='#paciente/demo-marina/demo-consulta/${destination}';`);await h.run('setHash()');assert.equal(h.run('tab'),destination);assert.deepEqual(structuredClone(h.workspace()),saved);

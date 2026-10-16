@@ -1,0 +1,73 @@
+/* Ana Maria Jacob · light glass. Warm, readable surfaces with depth.
+   Decorative motion never transforms the photograph or the annotation layer. */
+@media screen {
+  :root {
+    color-scheme:light;
+    --ui-bg:#faf8f6;--ui-warm:#faf7f5;--ui-surface:#fffdfc;
+    --ui-ink:#241e22;--ui-muted:#62565e;--ui-line:#e3d7d5;
+    --ui-blush:#e5a9b5;--ui-blush-hover:#df9fae;--ui-blush-edge:#ac7384;
+    --ui-champagne:#c5a059;--ui-champagne-ink:#806438;
+    --ui-control-edge:#a38a96;--ui-focus:#80495f;
+    --ui-radius:24px;--ui-control-radius:16px;
+    --amj-depth-border:#e0d1d2;
+    --amj-depth-card:inset 0 1px 0 #fff,0 3px 6px #56344505,0 14px 32px #5634450b;
+    --amj-depth-raised:inset 0 1px 0 #fff,0 6px 12px #5634450a,0 20px 48px #56344516;
+    --amj-depth-button:inset 0 1px 0 #ffffffb3,0 4px 12px #56344512;
+    --amj-depth-pressed:inset 0 2px 4px #5634451c;
+    --ui-shadow:var(--amj-depth-card);
+  }
+  body,.connected-gate{
+    background-color:var(--ui-bg);
+    background-image:radial-gradient(ellipse at 4% 0%,#efd6df70,transparent 46%),radial-gradient(ellipse at 96% 28%,#eee0cf60,transparent 50%);
+    color:var(--ui-ink);
+  }
+  .app .workspace{background:transparent}
+  .app .topbar,.app .sidebar{background:#fffdfbf5;border-color:#ddcfd3;box-shadow:inset 0 1px 0 #fff,0 8px 28px #65405208}
+  .app :is(.card,.map-card,.patient-card,.area-directory-card,.cb-record,.clinic-home-goal,.sp-home-card),.connected-card{
+    border-radius:24px;border-color:var(--amj-depth-border);box-shadow:var(--amj-depth-card);
+  }
+  .app :is(.primary,.sp-hero-primary),.connected-card .primary,dialog .primary{
+    background:linear-gradient(145deg,#f0c0c8,#e1a0b2);border-color:#b77d90;color:#321e2b;
+    box-shadow:inset 0 1px 0 #fff9,0 6px 16px #9d536623;border-radius:16px;
+  }
+  .app :is(.secondary,.icon-button,.sp-hero-secondary),dialog .secondary{
+    background:linear-gradient(145deg,#fff,#faf4f4);border-color:#ac95a0;color:#40303a;
+    box-shadow:var(--amj-depth-button);border-radius:16px;
+  }
+  .app :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea),dialog :is(input,select,textarea){
+    background-color:#fffdfd;border-color:var(--ui-control-edge);color:var(--ui-ink);
+    box-shadow:inset 0 2px 4px #52344707,0 1px 0 #fff;
+  }
+  .app :is(.primary,.secondary,.danger,.icon-button):disabled,.connected-card .primary:disabled,dialog :is(.primary,.secondary):disabled{background:#eee8e9;border-color:#c6b9bf;color:#74656e;box-shadow:none}
+  .app .nav-item.active{background:linear-gradient(145deg,#f5d3d8,#e9b3c0);color:#512c40;border-color:#c997a7;box-shadow:inset 0 1px 0 #fff9,0 5px 14px #8b4f6312}
+  .app .sp-home .clinic-home-goal{background:linear-gradient(145deg,#fffdfb,#fbf2f3)}
+  .app .sp-home .amj-day-summary{background:linear-gradient(135deg,#f4d6dc,#ead2da 66%,#eadfe0);border-color:#d3a3b1;box-shadow:inset 0 1px 0 #fff,0 14px 32px #8c526719;color:#3f2637}
+  .app .sp-home .amj-day-summary :is(h2,.amj-day-amount,.amj-day-metrics dd){color:#3f2637}
+  .app .sp-home .amj-day-summary :is(.amj-day-summary-top,.amj-day-caption,.amj-day-metrics dt,.amj-day-definitions,.amj-day-definitions p){color:#624151}
+  .app .sp-home .amj-day-count{background:#ffffff70;border-color:#b8819570;color:#573247}
+  .app .sp-home .amj-day-summary svg{color:#846036}
+  .app .sp-home :is(.amj-day-metrics,.amj-day-definitions){border-color:#b2839660}
+  .app .map-layout .photo-stage{background:#eae5e3}
+  dialog{background:#fffdfbf5;border-color:#d3b5c1;box-shadow:inset 0 1px 0 #fff,0 14px 40px #4b293422,0 32px 80px #4b29341c}
+  dialog::backdrop{background:#3d293b61;backdrop-filter:blur(12px)}
+  @supports(backdrop-filter:blur(12px)){
+    .app .sidebar,.app .topbar,dialog{background-color:#fffdfbd9;backdrop-filter:blur(16px) saturate(115%);-webkit-backdrop-filter:blur(16px) saturate(115%)}
+  }
+  @media(hover:hover){
+    .app :is(.patient-card,.area-directory-card):hover{box-shadow:var(--amj-depth-raised);border-color:#c5a059}
+    .app .primary:not(:disabled):hover,.connected-card .primary:hover,dialog .primary:hover{background:linear-gradient(145deg,#edb5c1,#d998ac);color:#321e2b;box-shadow:0 7px 20px #9d53662b}
+  }
+  @media(max-width:850px){
+    .app .sidebar{border-radius:28px;border-color:#ceb6c0;border-top-color:#fff;box-shadow:inset 0 1px 0 #fff,0 8px 20px #5b33431a,0 18px 42px #5b334329}
+    .app .sidebar .nav-item{color:#69515e}
+    .app .sidebar .nav-item.active,.app .sidebar .nav-item.active:hover{background:linear-gradient(145deg,#f5d2d8,#e1a0b6);border-color:#c68fa2;color:#482235;box-shadow:inset 0 1px 0 #fff9,0 6px 16px #8b4f6336;transform:translateY(-7px)}
+    .app .sp-home .sp-hero{background:transparent;border:0;box-shadow:none}
+  }
+  @media(prefers-reduced-motion:no-preference){
+    .app :is(.primary,.secondary,.icon-button,.sp-hero-primary,.sp-hero-secondary,.nav-item){transition:background-color 220ms ease,border-color 220ms ease,box-shadow 300ms ease,transform 220ms cubic-bezier(.2,.8,.2,1)}
+    .app main>.sp-home,.app main>.area-directory,.app main>.vr-page{animation:amj-glass-enter 380ms cubic-bezier(.2,.8,.2,1) both}
+    dialog[open]{animation:amj-glass-enter 280ms cubic-bezier(.2,.8,.2,1) both}
+    @keyframes amj-glass-enter{from{opacity:.4;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  }
+  @media(prefers-reduced-motion:reduce){.app *,dialog *,dialog[open]{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+}

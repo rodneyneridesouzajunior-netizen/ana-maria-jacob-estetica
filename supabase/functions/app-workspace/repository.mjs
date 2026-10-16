@@ -1,4 +1,5 @@
 import {fail,hash} from './rules.mjs';
+import {historicalPDFPath} from './clinical-document-access.mjs';
 const BUCKET='app-workspace-media';
 export function createRepository({supabaseUrl,serviceRoleKey,fetchImpl=fetch}){
  const base=supabaseUrl.replace(/\/+$/,''),headers={apikey:serviceRoleKey,Authorization:'Bearer '+serviceRoleKey};
@@ -23,6 +24,11 @@ export function createRepository({supabaseUrl,serviceRoleKey,fetchImpl=fetch}){
  const rpc=(name,args)=>json('/rest/v1/rpc/'+name,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(args)});
  const filter=(clinic,tail='')=>'clinic_id=eq.'+encodeURIComponent(clinic)+tail;
  const photoRow=row=>row?{...row.metadata,id:row.id,patient_id:row.patient_id,visit_id:row.visit_id,status:row.status}:null;
+ async function signClinicalPath(bucket,path){
+  const encoded=path.split('/').map(encodeURIComponent).join('/'),value=await json('/storage/v1/object/sign/'+bucket+'/'+encoded,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({expiresIn:120})}),signed=value.signedURL||value.signedUrl;
+  if(typeof signed!=='string'||!signed.startsWith('/object/sign/'+bucket+'/'+encoded+'?'))fail('invalid_document_url','Não foi possível abrir o PDF original.',503);
+  return base+'/storage/v1'+signed;
+ }
  return {
   async load(clinic){return (await rows('app_workspaces',filter(clinic)+'&limit=1'))[0]||null;},
   async operation(clinic,id){return (await rows('app_workspace_operations',filter(clinic)+'&operation_id=eq.'+encodeURIComponent(id)+'&limit=1'))[0]||null;},
@@ -46,6 +52,22 @@ export function createRepository({supabaseUrl,serviceRoleKey,fetchImpl=fetch}){
   clinicalLinks:args=>rpc('app_workspace_document_links_list',args),
   clinicalOperation:args=>rpc('app_workspace_document_operation',args),
   linkClinical:args=>rpc('app_workspace_link_document',args),
+  async openHistoricalClinicalPDF(source){
+   const path=historicalPDFPath(source);if(!path)fail('document_not_ready','O PDF histórico não tem um caminho válido registrado.',409);
+   const response=await fetchImpl(base+'/storage/v1/object/fichas-pdf/'+encodeURIComponent(path),{headers,redirect:'error',cache:'no-store',signal:AbortSignal.timeout(25000)});
+   if(response.status===404)fail('document_file_missing','O PDF histórico não foi encontrado no armazenamento.',404);
+   if(!response.ok)fail('backend_unavailable','Não foi possível consultar o PDF histórico.',503);
+   const max=5*1024*1024;if(Number(response.headers.get('content-length')||0)>max)fail('document_integrity_invalid','O PDF histórico excede o limite de leitura.');
+   const reader=response.body?.getReader(),parts=[];let size=0;if(!reader)fail('document_integrity_invalid','O PDF histórico está vazio.');
+   while(true){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>max){await reader.cancel();fail('document_integrity_invalid','O PDF histórico excede o limite de leitura.');}parts.push(value);}
+   const bytes=new Uint8Array(size);let offset=0;for(const part of parts){bytes.set(part,offset);offset+=part.length;}
+   if(size<8||String.fromCharCode(...bytes.subarray(0,5))!=='%PDF-')fail('document_integrity_invalid','O arquivo histórico não é um PDF válido.',409);
+   const currentHash=await hash(bytes);
+   if(source.pdf_sha256!=null&&source.pdf_sha256!==currentHash)fail('document_integrity_invalid','O PDF histórico não corresponde ao hash registrado.',409);
+   // This hash describes the bytes read now. It is never a substitute for a
+   // historical signature, a received document or a persisted registry hash.
+   return {url:await signClinicalPath('fichas-pdf',path),sha256:currentHash,expires_in:120,integrity:'historical_file_only'};
+  },
   async verifyClinicalObject(source,kind){
    const bucket=source.bucket,path=kind==='pdf'?source.pdf_path:source.signature_path,expected=kind==='pdf'?source.pdf_sha256:source.signature_sha256,max=kind==='pdf'?5*1024*1024:500000;
    if(!source.storage_valid||!['fichas-pdf','documentos-clinicos'].includes(bucket)||typeof path!=='string'||path.includes('..')||!/^[a-f0-9]{64}$/.test(expected||''))fail('document_integrity_invalid','Metadados do original incompletos.');
@@ -58,9 +80,7 @@ export function createRepository({supabaseUrl,serviceRoleKey,fetchImpl=fetch}){
   },
   async signClinical(source){
    const bucket=source.bucket,path=source.pdf_path;if(!source.storage_valid||!['fichas-pdf','documentos-clinicos'].includes(bucket)||typeof path!=='string'||path.includes('..'))fail('document_integrity_invalid','Caminho de documento inválido.');
-   const encoded=path.split('/').map(encodeURIComponent).join('/'),value=await json('/storage/v1/object/sign/'+bucket+'/'+encoded,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({expiresIn:120})}),signed=value.signedURL||value.signedUrl;
-   if(typeof signed!=='string'||!signed.startsWith('/object/sign/'+bucket+'/'+encoded+'?'))fail('invalid_document_url','Não foi possível abrir o PDF original.',503);
-   return base+'/storage/v1'+signed;
+   return signClinicalPath(bucket,path);
   },
   async reserve(args){return photoRow(await rpc('app_workspace_photo_reserve',args));},
   async ready(args){return photoRow(await rpc('app_workspace_photo_ready',args));},

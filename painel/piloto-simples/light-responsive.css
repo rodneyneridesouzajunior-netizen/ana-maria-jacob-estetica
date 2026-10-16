@@ -1,0 +1,42 @@
+/* Financial mobile summary only. Printed reports and other metric grids retain
+   their existing layout. Load after the application theme. */
+@media screen and (max-width:600px) {
+  .app .finance-page .metric-grid {
+    grid-template-columns:minmax(0,1fr);
+    gap:14px;
+  }
+  .app .finance-page .metric-grid>.metric {
+    min-width:0;
+    padding:22px;
+    border:1px solid #dfcfd3;
+    border-top-color:#fff;
+    border-radius:22px;
+    background:linear-gradient(145deg,#fff,#fcf7f7);
+    color:#282029;
+    box-shadow:inset 0 1px 0 #fff,0 5px 18px #6d43520b;
+  }
+  .app .finance-page .metric-grid>.metric>span {
+    display:block;
+    font-size:14px;
+    font-weight:550;
+    line-height:1.55;
+    color:#554651;
+  }
+  .app .finance-page .metric-grid .metric-number {
+    margin:10px 0 8px;
+    font-size:clamp(30px,8.2vw,38px);
+    font-weight:650;
+    line-height:1.2;
+    letter-spacing:-.035em;
+    font-variant-numeric:tabular-nums;
+    color:#282029;
+    overflow-wrap:anywhere;
+  }
+  .app .finance-page .metric-grid>.metric>small {
+    display:block;
+    font-size:13px;
+    line-height:1.6;
+    color:#665662;
+    overflow-wrap:anywhere;
+  }
+}

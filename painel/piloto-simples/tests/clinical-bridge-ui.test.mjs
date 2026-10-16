@@ -72,6 +72,21 @@ test('PDF de resposta tardia é descartado quando muda a consulta',async t=>{
  const d=deferred(),f=fixture(t,{service:{openDocument:()=>d.promise}});await f.handle.ready;f.host.querySelector('[data-cb="pdf"]').click();f.setContext({...context(),visitId:'other'});d.resolve({document:original(),pdf:{url:pdfURL(),sha256:'b'.repeat(64),expires_in:120}});await tick();
  assert.equal(f.opened[0].url,null);assert.equal(f.opened[0].closed,true);
 });
+
+test('PDF histórico abre com indicação explícita, sem vínculo e sem fingir assinatura recebida',async t=>{
+ const legacy={...original(),status:'legado',pdf_access:'historical',pdf_sha256:null,eligible_for_link:false},result={document:legacy,pdf:{url:pdfURL(),sha256:'c'.repeat(64),expires_in:120,integrity:'historical_file_only'}};
+ const f=fixture(t,{service:{listDocuments:async()=>listed(legacy),openDocument:async()=>result}});await f.handle.ready;
+ assert.match(f.host.querySelector('[data-cb="pdf"]').textContent,/Abrir PDF histórico/);assert.match(f.host.textContent,/não possui a verificação de recebimento/);assert.equal(f.host.querySelector('[data-cb="link"]'),null);
+ f.host.querySelector('[data-cb="pdf"]').click();await tick();assert.equal(f.opened[0].url,pdfURL());assert.match(f.notices.at(-1)[0],/não confirma recebimento ou assinatura/);
+ for(const patch of [{pdf:{...result.pdf,integrity:undefined}},{document:{...legacy,status:'recebido'}},{document:{...legacy,eligible_for_link:true}},{document:{...legacy,source_id:'other'}}])assert.throws(()=>validateOpenedOriginal({...result,...patch},legacy));
+ assert.throws(()=>validateOpenedOriginal({...result,document:original()},original()),/histórica diferente/);
+ f.invalidate();assert.equal(f.opened[0].closed,true);
+});
+
+test('registro sem PDF disponível não oferece botão de abertura que terminará em erro',async t=>{
+ let opens=0;const f=fixture(t,{service:{listDocuments:async()=>listed({...original(),status:'processando',pdf_access:'unavailable',eligible_for_link:false}),openDocument:async()=>{opens++;}}});await f.handle.ready;
+ const button=f.host.querySelector('[data-cb="pdf"]');assert.equal(button.disabled,true);button.click();await tick();assert.equal(opens,0);assert.equal(f.opened.length,0);assert.match(f.host.textContent,/PDF indisponível neste registro/);
+});
 test('vínculo exige confirmação, conserva rascunho e bloqueia descarte enquanto grava',async t=>{
  const d=deferred(),payloads=[];let pending=null;const f=fixture(t,{service:{linkDocument:p=>{payloads.push(p);pending={payload:p,rejected:false};return d.promise;},getPendingLink:()=>pending}});await f.handle.ready;
  f.host.querySelector('[data-cb="link"]').click();let form=f.host.querySelector('[data-cb-link-form]');form.dispatchEvent(new f.dom.window.Event('submit',{bubbles:true,cancelable:true}));await tick();assert.equal(payloads.length,0);assert.equal(f.handle.isDirty(),true);

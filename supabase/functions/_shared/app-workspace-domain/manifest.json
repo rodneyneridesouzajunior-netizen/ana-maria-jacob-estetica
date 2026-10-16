@@ -46,8 +46,8 @@
     },
     {
       "name": "domain.mjs",
-      "sourceSha256": "c0dff0247413902274d46b896f4738e82af57115e61490228e8ac53dafd9dd82",
-      "generatedSha256": "2607f1d4fe06e31425080b80db28cb67ce024aba8d46545250160532d4d0a585",
+      "sourceSha256": "74121c732fad3fd9d4eb5b21abd06a47f2490a940b5aa1f9902135b875af6ee2",
+      "generatedSha256": "0d718856e3a02241d9c39f8287fbcfae8bc011b141b3a428995cfb4a2d3ab5d4",
       "mode": "pure-prefix"
     },
     {

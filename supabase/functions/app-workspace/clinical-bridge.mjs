@@ -1,5 +1,6 @@
 // Links received originals to the isolated workspace. This is never clinical authorization.
 import {fail,hash,stable,uuid,validId} from './rules.mjs';
+import {historicalPDFPath} from './clinical-document-access.mjs';
 import {validCPF} from '../_shared/app-workspace-domain/patients-domain.mjs';
 export const CLINICAL_ACTIONS=Object.freeze(['listar_documentos_originais','listar_vinculos_documentos','obter_documento_original','vincular_documento','status_vinculo_documento']);
 const types={anamnese:'Ficha de anamnese',tcle_toxina_botulinica:'TCLE · Toxina botulínica',tcle_preenchimento_facial:'TCLE · Preenchimento facial',tcle_intradermoterapia_estetica:'Pré-avaliação · Intradermoterapia',tcle_bioestimulador_colageno:'Pré-avaliação · Bioestimulador',tcle_peeling_quimico:'Pré-avaliação · Peeling químico',tcle_fios_pdo:'Pré-avaliação · Fios de PDO'};
@@ -17,7 +18,8 @@ export function describeClinicalSource(source,patient){
  const identity=source.identity||{},cpf=digits(identity.cpf),target=digits(patient?.cpf),matching={cpf_matches:!!patient&&cpf.length===11&&validCPF(cpf)&&target===cpf,name_matches:!!patient&&name(identity.name).length>=2&&name(identity.name)===name(patient.name),birth_matches:!identity.birth_date||!patient?.birthDate||identity.birth_date===patient.birthDate};
  const blockers=[];if(source.status!=='recebido')blockers.push('source_not_received');if(source.archived)blockers.push('source_archived');if(source.withdrawn)blockers.push('source_withdrawn');if(!source.source_version||![source.source_hash,source.signature_sha256,source.pdf_sha256,source.registry_sha256].every(hex)||!source.storage_valid)blockers.push('source_integrity_incomplete');
  if(!patient)blockers.push('patient_selection_required');else {if(target.length!==11||!validCPF(target))blockers.push('patient_cpf_required');else if(!matching.cpf_matches)blockers.push('identity_cpf_mismatch');if(!matching.name_matches)blockers.push('identity_name_mismatch');if(!matching.birth_matches)blockers.push('identity_birth_mismatch');}
- return {source_kind:source.source_kind,source_id:source.source_id,type:source.type,title:types[source.type],status:source.status,source_version:source.source_version,source_hash:source.source_hash,signature_sha256:source.signature_sha256,pdf_sha256:source.pdf_sha256,source_fingerprint:source.source_fingerprint,received_at:source.received_at,identity:{name:String(identity.name||''),cpf_masked:mask(cpf,2),birth_date:identity.birth_date||'',phone_masked:mask(identity.phone,4)},archived:source.archived===true,withdrawn:source.withdrawn===true,eligible_for_link:blockers.length===0,blockers,matching,clinical_authorization:false};
+ const pdf_access=historicalPDFPath(source)?'historical':source.status==='recebido'&&source.storage_valid&&hex(source.pdf_sha256)?'verified':'unavailable';
+ return {source_kind:source.source_kind,source_id:source.source_id,type:source.type,title:types[source.type],status:source.status,source_version:source.source_version,source_hash:source.source_hash,signature_sha256:source.signature_sha256,pdf_sha256:source.pdf_sha256,pdf_access,source_fingerprint:source.source_fingerprint,received_at:source.received_at,identity:{name:String(identity.name||''),cpf_masked:mask(cpf,2),birth_date:identity.birth_date||'',phone_masked:mask(identity.phone,4)},archived:source.archived===true,withdrawn:source.withdrawn===true,eligible_for_link:blockers.length===0,blockers,matching,clinical_authorization:false};
 }
 export function createClinicalBridge({repository,authorize}){
  const actor=ctx=>({p_clinic:ctx.clinicId,p_actor:ctx.userId,p_session:ctx.sessionId});
@@ -32,7 +34,9 @@ export function createClinicalBridge({repository,authorize}){
   sourceId(p);if(!hex(p.expected_source_fingerprint))fail('document_fingerprint_required','Reabra o documento original antes de continuar.');
   if(p.acao==='obter_documento_original'){
    const source=await repository.clinicalSource({...a,p_kind:p.source_kind,p_id:p.source_id});if(!source)fail('document_not_found','Documento não encontrado nesta clínica.',404);if(source.source_fingerprint!==p.expected_source_fingerprint)fail('document_source_changed','O documento mudou. Atualize a lista antes de abrir.',409);
-   const document=describeClinicalSource(source);if(source.status!=='recebido'||!source.storage_valid||!hex(source.pdf_sha256))fail('document_not_ready','O original ainda não tem um PDF recebido verificável.',409);
+   const document=describeClinicalSource(source);
+   if(document.pdf_access==='historical')return {document,pdf:await repository.openHistoricalClinicalPDF(source)};
+   if(source.status!=='recebido'||!source.storage_valid||!hex(source.pdf_sha256))fail('document_not_ready','O original ainda não tem um PDF recebido verificável.',409);
    await repository.verifyClinicalObject(source,'pdf');const url=await repository.signClinical(source);return {document,pdf:{url,sha256:source.pdf_sha256,expires_in:120}};
   }
   if(p.acao!=='vincular_documento')fail('unsupported_action','Operação não reconhecida.');
