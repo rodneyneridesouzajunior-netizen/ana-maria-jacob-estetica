@@ -379,7 +379,7 @@ document.addEventListener('submit',async e=>{
       const savedPoint=annotationCheck({...base,id:editingId||uid(),region:$('point-region').value.trim(),product:$('point-product').value.trim(),quantity:q?Number(q):null,unit:$('point-unit').value,lot:$('point-lot').value.trim(),notes:$('point-notes').value.trim()});
       $('save-point').disabled=true;
       await updateMap(doc=>({...doc,points:editingId?doc.points.map(x=>x.id===editingId?savedPoint:x):[...doc.points,savedPoint]}));
-      if(editGeneration===generation){clearPoint();toast('Marcação salva neste navegador.');}
+      if(editGeneration===generation){clearPoint();toast(isConnected()?'Marcação salva no servidor.':'Marcação salva neste navegador.');}
       else{selectedId=savedPoint.id;pending=null;dirty=true;drawMap();$('point-title').textContent='Editar marcação';$('point-state').textContent='Há alterações ainda não salvas';toast('Versão anterior salva. Salve as alterações mais recentes.');}
     }catch(error){$('point-error').textContent=error.message;$('save-point').disabled=false;}
   }else{
