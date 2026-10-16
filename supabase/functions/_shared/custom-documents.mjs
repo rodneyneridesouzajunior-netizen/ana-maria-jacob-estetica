@@ -26,7 +26,7 @@ export function issueSnapshot(document,patient,visit,{now=new Date()}={}){
  const name=String(patient.name||'').trim(),cpf=String(patient.cpf||'').replace(/\D/g,'');
  if(name.length<2||name.length>160||!validCPF(cpf))reject('custom_identity_required','Confira nome completo e CPF válido da paciente antes de emitir o documento.');
  const identity={name,cpf,birth_date:requireAdultBirthDate(patient.birthDate,now),phone:String(patient.phone||'')};
- return{document_id:document.id,template_id:document.templateId,template_version:document.templateVersion,kind:document.kind,title:document.snapshot.title,patient_id:patient.id,visit_id:visit.id,identity,snapshot:structuredClone(document.snapshot),confirmation:{version:CONFIRMATION.version,text:CONFIRMATION.text,...(document.kind==='anamnese'?{general_data_text:CONFIRMATION.general_data_text}:{})}};
+ return{document_id:document.id,template_id:document.templateId,template_version:document.templateVersion,kind:document.kind,title:document.snapshot.title,patient_id:patient.id,visit_id:visit.id,identity,snapshot:structuredClone(document.snapshot),confirmation:{version:CONFIRMATION.version,renderer_version:'2026-10-16-v2',text:CONFIRMATION.text,...(document.kind==='anamnese'?{general_data_text:CONFIRMATION.general_data_text}:{})}};
 }
 export async function capability(issue,secret){
  if(!secret||!uuid(issue.id)||!uuid(issue.clinic_id)||!uuid(issue.token_nonce))reject('custom_configuration_unavailable','O link individual está temporariamente indisponível.',503);

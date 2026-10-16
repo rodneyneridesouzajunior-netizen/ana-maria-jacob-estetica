@@ -1,6 +1,32 @@
 import {visibleQuestions} from '../_shared/app-workspace-domain/documents-domain.mjs';
 import {reject,digest} from '../_shared/custom-documents.mjs';
 export const PDF_ASSETS=Object.freeze({font:{url:'https://anamariajacob.com.br/assets/amj-poppins-20261015.ttf',hash:'7e65201e9b79159e2300267cc885e16c8dcef2424cdfa09a29bfb0980a94a7ba'},logo:{url:'https://anamariajacob.com.br/assets/identidade-visual-transparente-v1.png',hash:'6dd5a16fa082b9875882ad795f975eff3a1423fc4198937a1fc4f955584d33ff'}});
+const graphemes=new Intl.Segmenter('pt-BR',{granularity:'grapheme'});
+function usesWordWrap(issue){const version=issue.confirmation?.renderer_version;if(version===undefined||version==='2026-10-16-v1')return false;if(version==='2026-10-16-v2')return true;reject('custom_pdf_version','A versão de renderização deste documento não está disponível.',409);}
+// Issued v1 originals may have been uploaded before an interrupted finalize.
+// Their retry must reproduce the original bytes, even after a renderer release.
+export function legacyPDFLines(value,measure,maxWidth){const lines=[];for(const paragraph of String(value??'').replace(/\r\n?/g,'\n').replace(/\t/g,'    ').split('\n')){let line='';for(const char of [...paragraph]){if(measure(line+char)>maxWidth&&line){lines.push(line);line='';}line+=char;}lines.push(line);}return lines;}
+/** Keep ordinary words intact. Only an over-wide token uses hard wrapping,
+ * and even then a combining character stays attached to its base letter. */
+export function wrapPDFLines(value,measure,maxWidth){
+ const lines=[],cache=new Map(),width=s=>{if(!cache.has(s))cache.set(s,measure(s));return cache.get(s);};
+ for(const paragraph of String(value??'').replace(/\r\n?/g,'\n').replace(/\t/g,'    ').split('\n')){
+  let line='',spacing='';
+  for(const token of paragraph.split(/( +)/u).filter(Boolean)){
+   if(/^ +$/.test(token)){spacing+=token;continue;}
+   const candidate=line+spacing+token;
+   if(width(candidate)<=maxWidth){line=candidate;spacing='';continue;}
+   if(line){lines.push(line);line='';}spacing='';
+   if(width(token)<=maxWidth){line=token;continue;}
+   for(const {segment} of graphemes.segment(token)){
+    if(width(segment)>maxWidth)reject('custom_pdf_layout','Um símbolo ultrapassa a largura disponível no PDF.');
+    if(line&&width(line+segment)>maxWidth){lines.push(line);line='';}line+=segment;
+   }
+  }
+  lines.push(line);
+ }
+ return lines;
+}
 export function createPDFRenderer({PDFDocument,rgb,fontkit,fetchImpl=fetch,assets=null}){
  let loaded;
  async function load(){if(assets)return assets;if(!loaded)loaded=Promise.all(Object.entries(PDF_ASSETS).map(async([key,spec])=>{const r=await fetchImpl(spec.url,{redirect:'error',cache:'no-store',signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error('asset');const b=new Uint8Array(await r.arrayBuffer());if(b.length>4000000||await digest(b)!==spec.hash)throw Error('asset integrity');return[key,b];})).then(Object.fromEntries).catch(e=>{loaded=null;throw e;});return loaded;}
@@ -13,7 +39,8 @@ export function createPDFRenderer({PDFDocument,rgb,fontkit,fetchImpl=fetch,asset
   function text(value,{size=9.5,gap=5,color=rgb(.16,.14,.15)}={}){
    value=String(value??'').replace(/\r\n?/g,'\n').replace(/\t/g,'    ');
    if([...value].some(c=>c!=='\n'&&!chars.has(c.codePointAt(0))))reject('custom_pdf_character','O texto contém um caractere sem representação no PDF. Revise o modelo antes de emitir.');
-   for(const para of value.split('\n')){let line='';for(const char of [...para]){if(font.widthOfTextAtSize(line+char,size)>right-left&&line){if(y<56)addPage();page.drawText(line,{x:left,y,size,font,color});y-=size*1.5;line='';}line+=char;}if(y<56)addPage();page.drawText(line||' ',{x:left,y,size,font,color});y-=size*1.5;}y-=gap;
+   const wrap=usesWordWrap(issue)?wrapPDFLines:legacyPDFLines;
+   for(const line of wrap(value,line=>font.widthOfTextAtSize(line,size),right-left)){if(y<56)addPage();page.drawText(line||' ',{x:left,y,size,font,color});y-=size*1.5;}y-=gap;
   }
   text(issue.title,{size:17,gap:12});text(`Paciente: ${issue.identity.name}\nVersão do modelo: ${issue.template_version}\nEmissão: ${issue.id}\nManifestação recebida em: ${stamp.toISOString()}`);
   text(issue.snapshot.body);for(const b of issue.snapshot.blocks||[]){text(b.title,{size:12});text(b.body);}
@@ -36,7 +63,8 @@ export function createPDFRenderer({PDFDocument,rgb,fontkit,fetchImpl=fetch,asset
  render.validate=async(issue,submission)=>{
   const a=await load(),font=fontkit.create(a.font),chars=new Set(font.characterSet),values=[issue.title,issue.identity.name,issue.snapshot.body,...(issue.snapshot.blocks||[]).flatMap(b=>[b.title,b.body]),...visibleQuestions(issue.snapshot,submission.answers).flatMap(q=>[q.label,submission.answers[q.id]||'']),submission.signer_name,submission.confirmation_text,submission.general_data_text||''];let lines=0;
   for(const value of values){const text=String(value).replace(/\r\n?/g,'\n').replace(/\t/g,'    ');if([...text].some(c=>c!=='\n'&&!chars.has(c.codePointAt(0))))reject('custom_pdf_character','Há um caractere que o PDF não representa. Remova emojis ou símbolos especiais da resposta, ou peça a revisão do modelo.');
-   for(const paragraph of text.split('\n')){let width=0;for(const char of [...paragraph])width+=font.glyphForCodePoint(char.codePointAt(0)).advanceWidth/font.unitsPerEm*17;lines+=1+Math.ceil(width/490);}
+   if(usesWordWrap(issue))lines+=wrapPDFLines(text,line=>font.layout(line).glyphs.reduce((sum,g)=>sum+g.advanceWidth,0)/font.unitsPerEm*17,490).length;
+   else for(const paragraph of text.split('\n')){let width=0;for(const char of [...paragraph])width+=font.glyphForCodePoint(char.codePointAt(0)).advanceWidth/font.unitsPerEm*17;lines+=1+Math.ceil(width/490);}
   }
   // Conservative upper bound at title size, including line breaks, headings
   // and page furniture. Content is rejected explicitly, never truncated.
