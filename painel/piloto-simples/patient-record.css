@@ -1,0 +1,240 @@
+/* Ana Maria Jacob · patient directory and record.
+   Component scope only: no shell, map, photo geometry or shared token overrides.
+   Load after the app foundation/depth styles. */
+.app :is(.pr-page,.patients-expanded){
+ --pr-ink:#241e22;
+ --pr-muted:#6b5e65;
+ --pr-line:#e7dcd8;
+ --pr-soft:#fcfaf8;
+ --pr-rose:#e5a9a9;
+ --pr-rose-edge:#b57c85;
+ --pr-rose-ink:#704750;
+ --pr-gold:#c5a059;
+ --pr-shadow:0 1px 0 #fff inset,0 2px 4px #432b3605,0 12px 32px #432b360a;
+ --pr-shadow-raised:0 1px 0 #fff inset,0 4px 10px #432b3609,0 18px 42px #432b3610;
+ min-width:0;color:var(--pr-ink);font-family:var(--ui-font,Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif)
+}
+.app .pr-page{background:radial-gradient(ellipse at 96% 0%,#f3e5e135,transparent 60%);isolation:isolate}
+.app .pr-page :is(h1,h2,h3,p){overflow-wrap:anywhere}
+.app .pr-page :is(h1,h2,h3){font-family:inherit;letter-spacing:-.025em;color:var(--pr-ink)}
+.app .pr-page .pr-back{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin:0 0 18px;color:var(--pr-muted);font-size:13px;font-weight:600;text-decoration:none}
+.app .pr-page .pr-layout{display:grid;grid-template-columns:340px minmax(0,1fr);align-items:start;gap:28px}
+.app .pr-page :is(.pr-sidebar,.pr-main){min-width:0;display:flex;flex-direction:column;gap:26px}
+.app .pr-page :is(.pr-card,.pr-return-card,.pr-visit-card){
+ min-width:0;border:1px solid var(--pr-line);border-radius:24px;background:linear-gradient(150deg,#fff,#fffefd);
+ box-shadow:var(--pr-shadow);padding:24px
+}
+.app .pr-page .pr-profile{border-color:#deccbb;background:linear-gradient(135deg,#fff 68%,#fcf8f4)}
+.app .pr-page .pr-profile-header{display:flex;align-items:center;gap:15px;min-width:0}
+.app .pr-page .pr-avatar{display:flex;align-items:center;justify-content:center;flex:0 0 62px;width:62px;height:62px;padding:0;border:2px solid var(--patient-tone,#a66e7c);border-radius:50%;background:var(--patient-soft,#fbf2f2);color:var(--patient-tone,#804d5c);box-shadow:0 0 0 4px #fff,0 3px 10px #5730430d;font-size:21px;font-weight:650;line-height:1;letter-spacing:-.04em}
+.app .pr-page .pr-avatar img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
+.app .pr-page .pr-identity{min-width:0;flex:1}
+.app .pr-page .pr-eyebrow{margin:0 0 6px;color:var(--pr-rose-ink);font-size:10px;font-weight:700;line-height:1.5;letter-spacing:.13em;text-transform:uppercase}
+.app .pr-page .pr-name{margin:0;font-size:24px;line-height:1.25;font-weight:600;letter-spacing:-.035em}
+.app .pr-page .pr-last-procedure{margin:18px 0 4px;font-size:13px;line-height:1.65;color:var(--pr-muted)}
+.app .pr-page .pr-last-procedure span{display:block;font-size:11px;line-height:1.6;margin-bottom:4px}
+.app .pr-page .pr-last-procedure strong{display:block;color:var(--pr-ink);font-size:13px;font-weight:600;line-height:1.6}
+.app .pr-page .pr-updated{margin:4px 0 0;font-size:12px;line-height:1.6;color:var(--pr-muted)}
+.app .pr-page .pr-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:22px 0}
+.app .pr-page .pr-stat{min-width:0;padding:16px 14px;border:1px solid #eee7e2;border-radius:18px;background:#fcfaf8;box-shadow:0 1px 0 #fff inset}
+.app .pr-page .pr-stat strong{display:block;margin:0 0 4px;color:var(--pr-ink);font-size:29px;font-weight:600;letter-spacing:-.04em;line-height:1.15;font-variant-numeric:tabular-nums}
+.app .pr-page .pr-stat span{display:block;font-size:12px;line-height:1.5;color:var(--pr-muted);overflow-wrap:anywhere}
+.app .pr-page .pr-actions{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-top:18px}
+.app .pr-page .pr-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;min-width:0;max-width:100%;padding:11px 16px;border:1px solid var(--pr-rose-edge);border-radius:16px;font:600 13px/1.5 var(--ui-font,Inter,sans-serif);text-align:center;text-decoration:none;white-space:normal;overflow-wrap:anywhere;cursor:pointer;box-shadow:0 1px 0 #fff9 inset,0 3px 8px #5932420a}
+.app .pr-page .pr-button-primary{color:#2b2025;border-color:var(--pr-rose-edge);background:linear-gradient(180deg,#edb8b4,#e2a3a7)}
+.app .pr-page .pr-button-secondary{color:var(--pr-rose-ink);border-color:#d2bdc2;background:linear-gradient(180deg,#fff,#fdfaf9)}
+.app .pr-page .pr-button:not(.pr-button-primary):not(.pr-button-secondary){color:var(--pr-rose-ink);border-color:var(--pr-line);background:#fff}
+.app .pr-page .pr-profile .pr-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.app .pr-page :is(.pr-returns,.pr-visits){display:flex;flex-direction:column;gap:16px;min-width:0}
+.app .pr-page .pr-returns>h2,.app .pr-page .pr-anamnesis>h2,.app .pr-page .pr-info>h2{margin:0;font-size:17px;font-weight:600;line-height:1.45}
+.app .pr-page .pr-return-card{padding:21px;position:relative}
+.app .pr-page .pr-return-card h3{margin:0 0 9px;font-size:15px;font-weight:600;line-height:1.5}
+.app .pr-page .pr-return-card>p{margin:6px 0;color:var(--pr-muted);font-size:13px;line-height:1.8}
+.app .pr-page .pr-return-card .pr-actions{gap:8px;margin-top:17px}
+.app .pr-page .pr-return-card .pr-button{flex:1 1 118px;padding-inline:10px;font-size:12px}
+.app .pr-page .pr-anamnesis>p{font-size:13px;line-height:1.75;color:var(--pr-muted);margin:12px 0 0}
+.app .pr-page .pr-anamnesis>.pr-badge{margin-top:12px}
+.app .pr-page .pr-anamnesis .pr-button{width:100%}
+.app .pr-page .pr-info-list{margin:18px 0 0;padding:0}
+.app .pr-page .pr-info-list>div{padding:13px 0;border-bottom:1px solid #f0e9e5}
+.app .pr-page .pr-info-list>div:first-child{padding-top:0}
+.app .pr-page .pr-info-list>div:last-child{padding-bottom:0;border-bottom:0}
+.app .pr-page .pr-info-list dt{margin:0 0 4px;font-size:10px;line-height:1.5;font-weight:650;letter-spacing:.08em;text-transform:uppercase;color:var(--pr-muted)}
+.app .pr-page .pr-info-list dd{margin:0;font-size:13px;line-height:1.65;color:var(--pr-ink);overflow-wrap:anywhere}
+.app .pr-page .pr-section-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 18px;min-width:0}
+.app .pr-page .pr-section-heading>div{min-width:0}
+.app .pr-page .pr-section-heading h2{font-size:20px;font-weight:600;line-height:1.4;margin:0}
+.app .pr-page .pr-section-heading p{margin:7px 0 0;font-size:13px;line-height:1.7;color:var(--pr-muted)}
+.app .pr-page .pr-section-heading>.pr-button{flex:none}
+.app .pr-page .pr-visits>.pr-section-heading{margin-bottom:0}
+.app .pr-page .pr-visit-group{min-width:0;margin:0}
+.app .pr-page .pr-visit-group>h3{display:flex;align-items:center;gap:10px;margin:2px 0 13px;font-size:13px;font-weight:650;letter-spacing:0;line-height:1.5;color:var(--pr-muted)}
+.app .pr-page .pr-visit-group>h3>span{display:inline-flex;align-items:center;justify-content:center;min-width:24px;min-height:24px;padding:2px 7px;border:1px solid #dfd0d3;border-radius:999px;background:#fff9f8;color:var(--pr-rose-ink);font-size:11px;font-variant-numeric:tabular-nums}
+.app .pr-page .pr-visit-group>h3::after{content:"";height:1px;flex:1;background:linear-gradient(90deg,#d8c4a5aa,var(--pr-line));min-width:16px}
+.app .pr-page .pr-visit-list{display:grid;gap:14px}
+.app .pr-page .pr-visit-card{padding:23px 24px}
+.app .pr-page .pr-visit-active{border-color:#d8b28d;box-shadow:0 0 0 1px #c5a05912,var(--pr-shadow-raised);background:linear-gradient(120deg,#fff 70%,#fdf8f3)}
+.app .pr-page .pr-visit-scheduled{border-color:#dfd3ca;background:linear-gradient(135deg,#fff,#fcfaf7)}
+.app .pr-page .pr-visit-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;min-width:0}
+.app .pr-page .pr-visit-heading>div{min-width:0;flex:1}
+.app .pr-page .pr-visit-heading h3{margin:0;font-size:17px;font-weight:600;line-height:1.5}
+.app .pr-page .pr-badge{display:inline-flex;align-items:center;min-height:27px;max-width:100%;padding:4px 10px;border:1px solid #e3d8ce;border-radius:999px;background:#faf5ed;color:#6d5532;font-size:11px;font-weight:650;line-height:1.4;white-space:normal;flex:none}
+.app .pr-page .pr-badge:is([data-status="concluido"],[data-status="confirmado"]){background:#f0f6f1;color:#315b43;border-color:#d7e6db}
+.app .pr-page .pr-badge[data-status="em_atendimento"]{background:#fbefef;color:#794b58;border-color:#e6cacf}
+.app .pr-page .pr-badge[data-status="cancelado"]{background:#f7f2f1;color:#6e5052;border-color:#e4d6d6}
+.app .pr-page .pr-visit-meta{display:flex;align-items:center;flex-wrap:wrap;gap:6px 18px;margin:10px 0 0;font-size:13px;line-height:1.7;color:var(--pr-muted);font-variant-numeric:tabular-nums}
+.app .pr-page .pr-visit-value{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px 18px;margin:17px 0 0;line-height:1.7}
+.app .pr-page .pr-visit-value span{font-size:12px;color:var(--pr-muted)}
+.app .pr-page .pr-visit-value strong{font-size:20px;font-weight:600;letter-spacing:-.025em;font-variant-numeric:tabular-nums;color:var(--pr-ink)}
+.app .pr-page .pr-visit-card .pr-actions{margin-top:18px;padding-top:16px;border-top:1px solid #f0e8e2}
+.app .pr-page .pr-empty{padding:28px 22px;margin:0;border:1px dashed #d8c7bc;border-radius:20px;background:#fcfaf8;font-size:14px;line-height:1.75;color:var(--pr-muted);overflow-wrap:anywhere}
+.app .pr-page .pr-card>.pr-empty{padding:0;border:0;border-radius:0;background:transparent}
+.app .pr-page .pr-note{margin:14px 0 0;padding:13px 15px;border:1px solid #e8dbcb;border-radius:16px;background:#fbf7f0;color:#69563c;font-size:12px;line-height:1.75;overflow-wrap:anywhere}
+
+/* Keep the existing comparison component and all of its real controls. */
+.app .pr-page .pr-comparison{min-width:0}
+.app .pr-page .pr-comparison #comparison-panel{min-width:0}
+.app .pr-page .pr-comparison button{min-height:44px}
+.app .pr-page .pr-comparison .comparison-library{padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+.app .pr-page .pr-comparison .comparison-library-heading{margin:0 0 12px;align-items:flex-start}
+.app .pr-page .pr-comparison .comparison-library-heading :is(h2,h3){font-size:15px;line-height:1.5;font-weight:600}
+.app .pr-page .pr-comparison .comparison-library-heading p{font-size:12px;line-height:1.7;color:var(--pr-muted)}
+.app .pr-page .pr-comparison .comparison-library-heading>button{white-space:normal;flex-shrink:0}
+.app .pr-page .pr-comparison .comparison-library-archive{margin:12px 0 16px;line-height:1.7;color:var(--pr-muted)}
+.app .pr-page .pr-comparison .comparison-library-list{grid-template-columns:minmax(0,1fr);gap:16px}
+.app .pr-page .pr-comparison .comparison-library-card{border-color:var(--pr-line);border-radius:20px;box-shadow:0 2px 10px #432b3605;padding:20px}
+.app .pr-page .pr-comparison .comparison-library-card h3{font-size:17px;line-height:1.5;font-weight:600;overflow-wrap:anywhere}
+.app .pr-page .pr-comparison .comparison-library-card :is(p,small,summary){color:var(--pr-muted);overflow-wrap:anywhere}
+.app .pr-page .pr-comparison .comparison-library-editor{padding:20px;border-color:var(--pr-line);border-radius:20px}
+.app .pr-page .pr-comparison .comparison-photo-groups{grid-template-columns:minmax(0,1fr);gap:14px}
+.app .pr-page .pr-comparison .compare-stage.is-sliding .compare-images{height:clamp(360px,38vw,600px);border-radius:20px;background:#f3efed}
+.app .pr-page .pr-comparison .compare-photo img{background:#f3efed;border-color:var(--pr-line);border-radius:16px}
+.app .pr-page .pr-comparison .compare-stage.is-sliding .compare-photo img{border-radius:0}
+.app .pr-page .pr-comparison .compare-selection{grid-template-columns:minmax(0,1fr)}
+.app .pr-page .pr-comparison .comparison-library .empty{line-height:1.75;font-size:13px;background:#fcfaf8;border-radius:18px;padding:22px 18px;margin:0;color:var(--pr-muted)}
+.app .pr-page .pr-comparison [data-library-status]:empty{min-height:0;margin:0}
+
+/* Existing patient-list markup: clear hierarchy without hiding fields or
+   inventing headings/counts in generated content. */
+.app .patients-expanded>.page-heading{align-items:center;gap:24px;margin-bottom:26px}
+.app .patients-expanded>.page-heading h1{font-size:clamp(28px,2.5vw,36px);font-weight:450;line-height:1.25;letter-spacing:-.04em}
+.app .patients-expanded>.page-heading .eyebrow{color:var(--pr-rose-ink);font-size:10px;letter-spacing:.12em;margin-bottom:8px}
+.app .patients-expanded>.page-heading .subtitle{margin-top:9px;color:var(--pr-muted);font-size:14px}
+.app .patients-expanded>.page-heading>.primary{min-height:46px;flex:none;border-radius:16px;white-space:normal}
+.app .patients-expanded .patients-heading-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:24px;min-width:0}
+.app .patients-expanded .patients-heading-stat{min-width:0;padding:3px 0;display:flex;flex-direction:column;gap:5px;text-align:center}
+.app .patients-expanded .patients-heading-stat strong{color:var(--pr-ink);font-size:27px;font-weight:550;line-height:1.15;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.app .patients-expanded .patients-heading-stat span{font-size:11px;font-weight:500;line-height:1.5;color:var(--pr-muted);overflow-wrap:anywhere}
+.app .patients-expanded .patients-heading-actions>.primary{min-height:46px;max-width:100%;border-radius:16px;white-space:normal;flex:0 1 auto;gap:8px}
+.app .patients-expanded .patients-filter-tabs{display:flex;align-items:stretch;flex-wrap:wrap;gap:10px;margin:0 0 20px}
+.app .patients-expanded .patients-filter-tabs [data-patients-filter]{display:inline-flex;align-items:center;gap:8px}
+.app .patients-expanded>.card{border:1px solid var(--pr-line);border-radius:24px;background:#fff;box-shadow:var(--pr-shadow-raised);overflow:hidden}
+.app .patients-expanded .patients-expanded-filters{padding:24px 26px;border-bottom:1px solid var(--pr-line);background:linear-gradient(180deg,#fff,#fdfbf9)}
+.app .patients-expanded .patients-expanded-filters nav{display:flex;flex-wrap:wrap;gap:9px;align-items:stretch}
+.app .patients-expanded [data-patients-filter]{min-height:44px;min-width:0;border-radius:999px;padding:10px 15px;font-size:12px;line-height:1.5;white-space:normal;text-align:left;color:#65515a;border-color:#dfd0d2;box-shadow:0 1px 0 #fff inset,0 2px 6px #432b3605;flex:0 1 auto}
+.app .patients-expanded [data-patients-filter][aria-pressed="true"]{color:#3a252f;border-color:#c18a94;background:linear-gradient(180deg,#f1c8c5,#e7b3b7);font-weight:650}
+.app .patients-expanded [data-patients-filter] span{display:inline-flex;align-items:center;justify-content:center;min-width:24px;min-height:24px;padding:2px 6px;border-radius:999px;background:#ffffffa6;color:inherit;font-weight:650;font-size:11px;font-variant-numeric:tabular-nums;flex:none}
+.app .patients-expanded .patients-expanded-search{display:grid;grid-template-columns:minmax(0,1fr) minmax(160px,230px);gap:20px;margin-top:0}
+.app .patients-expanded .patients-expanded-search .field{margin:0;min-width:0;color:var(--pr-muted);font-size:12px;font-weight:600}
+.app .patients-expanded .patients-expanded-search :is(input,select){min-height:48px;margin-top:7px;border-radius:16px;border-color:#9c8991;background:#fff;box-shadow:0 1px 3px #432b3605 inset;font-size:14px;font-weight:500}
+.app .patients-expanded [data-patients-explanation]{max-width:78ch;margin:14px 0 0;color:var(--pr-muted);font-size:12px;line-height:1.75;overflow-wrap:anywhere}
+.app .patients-expanded [data-patients-count]{display:inline-flex;align-items:center;margin:10px 0 0;color:#57454e;font-size:12px;font-weight:650;font-variant-numeric:tabular-nums}
+.app .patients-expanded .patients-list-columns{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) minmax(0,.95fr) 62px;gap:22px;padding:16px 26px;background:#fcfaf8;border-bottom:1px solid #eee7e3;color:var(--pr-muted);font-size:11px;font-weight:650;line-height:1.6;overflow-wrap:anywhere}
+.app .patients-expanded .patients-expanded-row{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) minmax(0,.95fr) 62px;align-items:center;gap:22px;padding:24px 26px;border-bottom:1px solid #eee7e3;background:#fff}
+.app .patients-expanded .patients-expanded-row:last-child{border-bottom:0}
+.app .patients-expanded .patients-expanded-person{min-width:0;gap:14px;grid-column:auto;grid-row:auto}
+.app .patients-expanded .patients-expanded-person>span:last-child{min-width:0}
+.app .patients-expanded .patients-expanded-person .avatar{flex:0 0 46px;width:46px;height:46px;border:1px solid var(--patient-tone,#9b405b);box-shadow:0 0 0 3px #fff,0 2px 7px #432b3607;font-size:14px;font-weight:650}
+.app .patients-expanded .patients-expanded-person strong{display:block;color:var(--pr-ink);font-size:14px;font-weight:650;line-height:1.55;overflow-wrap:anywhere}
+.app .patients-expanded .patients-expanded-person small{margin-top:4px;color:var(--pr-muted);font-size:11px;line-height:1.65;overflow-wrap:anywhere}
+.app .patients-expanded .patient-color-label{font-size:10px;margin-top:4px;line-height:1.5}
+.app .patients-expanded :is(.patients-expanded-contact,.patients-expanded-history){min-width:0;grid-column:auto;grid-row:auto;line-height:1.7;font-size:12px;color:#443a40;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.app .patients-expanded :is(.patients-expanded-contact,.patients-expanded-history) small{margin-top:3px;font-size:11px;line-height:1.65;color:var(--pr-muted)}
+.app .patients-expanded .patients-expanded-history .patients-return{display:inline-block;padding:3px 8px;margin-top:7px;border:1px solid #d8e6dc;border-radius:999px;background:#f2f7f3;color:#365d45;font-size:10px;line-height:1.6}
+.app .patients-expanded .patients-expanded-row>button{min-height:44px;min-width:0;padding:8px 5px;border:1px solid #e2d5d8;border-radius:13px;background:#fdfafa;color:var(--pr-rose-ink);font-size:12px;grid-column:auto;grid-row:auto}
+.app .patients-expanded>.note-box{margin-top:18px;border-color:#e6ddd3;border-radius:16px;background:#faf7f2;color:#6b5d4c;font-size:12px;line-height:1.7}
+
+@media(hover:hover){
+ .app .pr-page .pr-button-primary:not(:disabled):hover{background:linear-gradient(180deg,#e8b0b0,#dda0a8);border-color:#9b6975;box-shadow:0 1px 0 #fff9 inset,0 5px 14px #7047501b}
+ .app .pr-page .pr-button-secondary:not(:disabled):hover{background:#fff;border-color:#b18d98;box-shadow:0 3px 12px #70475012}
+ .app .patients-expanded .patients-expanded-row:hover{background:#fdfaf9}
+ .app .patients-expanded .patients-expanded-person:hover strong{color:#744753;text-decoration:underline;text-underline-offset:4px}
+}
+.app .pr-page .pr-button:disabled,.app .pr-page .pr-button[aria-disabled="true"]{cursor:not-allowed;background:#eeeae6;border-color:#d2c8c0;color:#71666a;box-shadow:none;transform:none}
+.app :is(.pr-page,.patients-expanded) :is(button,a,input,select,summary,[tabindex]):focus-visible{outline:3px solid #865362;outline-offset:4px}
+@media(prefers-reduced-motion:no-preference){
+ .app .pr-page .pr-button,.app .patients-expanded .patients-expanded-row{transition:background-color 150ms ease,border-color 150ms ease,box-shadow 150ms ease}
+ .app .pr-page .pr-button:not(:disabled):active{box-shadow:0 1px 3px #432b3617 inset;transform:translateY(1px)}
+}
+@media(max-width:1100px){
+ .app .pr-page .pr-layout{grid-template-columns:minmax(0,1fr);gap:28px}
+ .app .pr-page :is(.pr-sidebar,.pr-main){gap:22px}
+ .app .pr-page .pr-profile .pr-actions{display:flex}
+ .app .pr-page .pr-profile .pr-actions>.pr-button{flex:0 1 auto;min-width:132px}
+ .app .pr-page .pr-stats{max-width:420px}
+ .app .pr-page .pr-comparison .compare-stage.is-sliding .compare-images{height:clamp(360px,65vw,620px)}
+ .app .patients-expanded .patients-expanded-row{gap:16px;padding:22px}
+ .app .patients-expanded .patients-list-columns{gap:16px;padding-inline:22px}
+ .app .patients-expanded>.page-heading{flex-wrap:wrap}
+ .app .patients-expanded .patients-heading-actions{gap:22px}
+}
+@media(max-width:700px){
+ .app .pr-page :is(.pr-card,.pr-return-card,.pr-visit-card){padding:20px;border-radius:22px}
+ .app .pr-page .pr-layout{gap:26px}
+ .app .pr-page .pr-section-heading{align-items:flex-start;flex-direction:column;gap:12px}
+ .app .pr-page .pr-section-heading>.pr-button{width:100%}
+ .app .pr-page .pr-visit-heading{align-items:flex-start;flex-direction:column;gap:10px}
+ .app .pr-page .pr-visit-heading h3{font-size:16px}
+ .app .pr-page .pr-visit-card .pr-actions>.pr-button{flex:1 1 140px}
+ .app .pr-page .pr-comparison .comparison-library-card,.app .pr-page .pr-comparison .comparison-library-editor{padding:16px;border-radius:18px}
+ .app .pr-page .pr-comparison .comparison-library-heading{gap:14px}
+ .app .pr-page .pr-comparison .compare-stage.is-sliding .compare-images{height:clamp(300px,95vw,510px);border-radius:16px}
+ .app .patients-expanded>.page-heading{align-items:flex-start;flex-direction:column;gap:18px;margin-bottom:22px}
+ .app .patients-expanded>.page-heading>.primary{width:100%}
+ .app .patients-expanded .patients-heading-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:center;gap:18px 24px;width:100%}
+ .app .patients-expanded .patients-heading-stat{padding:12px 16px;border:1px solid #e8ded8;border-radius:18px;background:#fff;box-shadow:var(--pr-shadow);text-align:left}
+ .app .patients-expanded .patients-heading-actions>.primary{grid-column:1/-1;width:100%}
+ .app .patients-expanded .patients-filter-tabs{gap:8px;margin-bottom:18px}
+ .app .patients-expanded .patients-list-columns{display:none}
+ .app .patients-expanded .patients-expanded-filters{padding:20px 18px}
+ .app .patients-expanded .patients-expanded-filters nav{gap:8px}
+ .app .patients-expanded [data-patients-filter]{flex:1 1 125px;font-size:12px;padding:10px 12px;justify-content:space-between;border-radius:16px}
+ .app .patients-expanded .patients-expanded-search{grid-template-columns:minmax(0,1fr);gap:15px;margin-top:0}
+ .app .patients-expanded .patients-expanded-search :is(input,select){font-size:16px}
+ .app .patients-expanded [data-patients-list]{padding:12px;background:#fcfaf8}
+ .app .patients-expanded .patients-expanded-row{grid-template-columns:minmax(0,1fr) auto;gap:14px 10px;margin-bottom:12px;padding:18px;border:1px solid var(--pr-line);border-radius:20px;box-shadow:0 3px 12px #432b3605;background:#fff}
+ .app .patients-expanded .patients-expanded-row:last-child{border:1px solid var(--pr-line);margin-bottom:0}
+ .app .patients-expanded .patients-expanded-person{grid-column:1;grid-row:1;align-items:flex-start;gap:11px}
+ .app .patients-expanded .patients-expanded-person .avatar{flex-basis:40px;width:40px;height:40px;font-size:12px}
+ .app .patients-expanded .patients-expanded-person strong{font-size:14px}
+ .app .patients-expanded .patients-expanded-row>button{grid-column:2;grid-row:1;align-self:start;padding-inline:9px;font-size:11px}
+ .app .patients-expanded .patients-expanded-contact{grid-column:1/-1;grid-row:2;padding-top:12px;border-top:1px solid #f0e8e4;font-size:13px}
+ .app .patients-expanded .patients-expanded-history{grid-column:1/-1;grid-row:3;padding-top:12px;border-top:1px solid #f0e8e4;font-size:12px}
+}
+@media(max-width:390px){
+ .app .pr-page :is(.pr-card,.pr-return-card,.pr-visit-card){padding:18px}
+ .app .pr-page .pr-profile-header{gap:12px;align-items:flex-start}
+ .app .pr-page .pr-avatar{flex-basis:50px;width:50px;height:50px;font-size:18px}
+ .app .pr-page .pr-name{font-size:21px}
+ .app .pr-page .pr-stats{gap:10px;margin-block:18px}
+ .app .pr-page .pr-stat{padding:14px 11px}
+ .app .pr-page .pr-stat strong{font-size:26px}
+ .app .pr-page .pr-profile .pr-actions{display:grid;grid-template-columns:minmax(0,1fr)}
+ .app .pr-page .pr-profile .pr-actions>.pr-button{min-width:0;width:100%}
+ .app .patients-expanded .patients-expanded-filters{padding:18px 16px}
+ .app .patients-expanded [data-patients-list]{padding:10px}
+ .app .patients-expanded .patients-expanded-row{padding:15px;gap:13px 8px}
+ .app .patients-expanded .patients-expanded-person{gap:8px}
+ .app .patients-expanded .patients-expanded-person .avatar{flex-basis:34px;width:34px;height:34px;font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){
+ .app :is(.pr-page,.patients-expanded),.app :is(.pr-page,.patients-expanded) *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+ .app .pr-page .pr-button:active{transform:none}
+}
+@media print{
+ .app .pr-page .pr-layout{display:block}
+ .app .pr-page :is(.pr-card,.pr-return-card,.pr-visit-card),.app .patients-expanded>.card{background:#fff;box-shadow:none;border-color:#bbb;break-inside:avoid}
+ .app .pr-page :is(.pr-back,.pr-actions,.pr-button),.app .patients-expanded [data-patients="new"],.app .patients-expanded .patients-expanded-row>button{display:none!important}
+ .app .pr-page .pr-sidebar{margin-bottom:24px}
+ .app .pr-page .pr-comparison .comparison-library{box-shadow:none}
+}

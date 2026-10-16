@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {fittedPhotoSize} from '../map-fit.mjs';
+import {fittedPhotoSize,MAP_ZOOM_LEVELS} from '../map-fit.mjs';
 import {normalizedPoint} from '../domain.mjs';
 
 test('100% ajusta retrato inteiro pela altura do estágio sem cortar o rosto',()=>{
@@ -19,5 +19,17 @@ test('resize preserva proporção e coordenadas normalizadas sem impor dimensõe
   const small=fittedPhotoSize(320,430,1122,1402);assert.ok(small.width<=320&&small.height<=430);
   assert.equal(fittedPhotoSize(0,570,1122,1402),null);assert.equal(fittedPhotoSize(900,570,0,0),null);
   assert.equal(fittedPhotoSize(900,570,1122,1402,Infinity),null);
-  assert.equal(fittedPhotoSize(900,570,1122,1402,9).zoom,3);
+  assert.equal(fittedPhotoSize(900,570,1122,1402,20).zoom,10);
+  assert.equal(fittedPhotoSize(900,570,1122,1402,-2).zoom,1);
+});
+test('1×, 3×, 6× e 10× preservam geometria em retrato, paisagem e celular',()=>{
+ assert.deepEqual(MAP_ZOOM_LEVELS,[1,3,6,10]);
+ for(const [sw,sh,iw,ih]of [[900,570,1122,1402],[900,570,1800,1000],[320,430,1122,1402]]){
+  const base=fittedPhotoSize(sw,sh,iw,ih);
+  for(const scale of MAP_ZOOM_LEVELS){const fit=fittedPhotoSize(sw,sh,iw,ih,scale);
+   assert.equal(fit.zoom,scale);assert.ok(Math.abs(fit.width/base.width-scale)<1e-10);
+   const point=normalizedPoint(45+fit.width*.371,70+fit.height*.629,{left:45,top:70,width:fit.width,height:fit.height});
+   assert.ok(Math.abs(point.x-.371)<1e-12);assert.ok(Math.abs(point.y-.629)<1e-12);
+  }
+ }
 });

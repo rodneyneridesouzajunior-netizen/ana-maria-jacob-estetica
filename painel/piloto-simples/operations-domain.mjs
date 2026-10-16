@@ -4,7 +4,7 @@ export const STOCK_SCALE=10000;
 export const PRODUCT_UNITS=['mL','U','fios','un','mg','g'];
 export const PRODUCT_USES=['applied','material'];
 export const PROCEDURE_RECORD_MODES=['injectable','non_injectable','simple'];
-const collections=['products','procedures','stockLots','stockMovements','quotes','quoteSessionUses','expectedReturns','operationHistory'];
+const collections=['products','procedures','stockLots','stockMovements','quotes','quoteSessionUses','quoteProductDeliveries','quoteProductDeliveryReversals','expectedReturns','operationHistory'];
 const clone=value=>structuredClone(value);
 const fail=message=>{throw Error(message);};
 const integer=(value,min,max,label)=>Number.isSafeInteger(value)&&value>=min&&value<=max?value:fail(`${label} inválido.`);
@@ -111,6 +111,8 @@ export function cancelQuote(state,input){const payload={quoteId:input.quoteId,ex
   const q=requireItem(s.quotes,input.quoteId,'Orçamento');requireVersion(q,input.expectedVersion);if(!['rascunho','aprovado'].includes(q.status))fail('Este orçamento já está cancelado.');
   const reason=text(input.reason,500,'o motivo do cancelamento'),date=validDate(payload.date),origin=(q.approvedAt||q.createdAt||'').slice(0,10);if(reason.length<5)fail('Descreva o motivo do cancelamento com pelo menos 5 caracteres.');if(date>validDate(input.today)||origin&&date<origin)fail('A data do cancelamento deve ficar entre a criação/aprovação e hoje.');
   if(s.quoteSessionUses.some(use=>use.quoteId===q.id&&!use.reversedAt))fail('Há sessões utilizadas. Revise os atendimentos e seus vínculos antes de cancelar este orçamento.');
+  if(activeProductDeliveries(s,q.id).length)fail('Há produtos entregues. Estorne as entregas após conferir a devolução ou a baixa indevida antes de cancelar este orçamento.');
+  if(s.quoteProductDeliveryReversals.some(r=>r.quoteId===q.id&&r.date>date))fail('A data do cancelamento não pode ser anterior ao estorno da entrega.');
   if(q.status==='aprovado'){
     const bill=requireItem(s.bills,q.billId,'Cobrança vinculada');if(bill.quoteId!==q.id||bill.patientId!==q.patientId||bill.total!==q.total||bill.cancelledAt)fail('Cobrança vinculada incompatível. Revise o financeiro antes de cancelar.');
     if((s.payments||[]).some(p=>p.billId===bill.id&&!p.reversedAt))fail('Estorne os recebimentos ativos no Financeiro antes de cancelar este orçamento.');
@@ -121,6 +123,79 @@ export function cancelQuote(state,input){const payload={quoteId:input.quoteId,ex
   q.status='cancelado';q.version++;q.cancelledAt=now;q.cancelDate=date;q.cancelReason=reason;q.updatedAt=now;q.history.push({version:q.version,status:'cancelado',at:now,note:reason});return q;
 }));}
 export function remainingSessions(state,quoteId,itemId){const q=requireItem(state.quotes||[],quoteId,'Orçamento'),item=requireItem(q.items,itemId,'Item');if(item.type==='product'||q.status==='cancelado')return 0;return item.sessions-(state.quoteSessionUses||[]).filter(x=>x.quoteId===quoteId&&x.itemId===itemId&&!x.reversedAt).reduce((n,x)=>n+x.sessions,0);}
+
+// Entregas e estornos são eventos imutáveis. O saldo é derivado deles, nunca de um
+// contador editável no orçamento. Uma entrega pode cobrir parte do item e um lote.
+function activeProductDeliveries(state,quoteId){const reversed=new Set((state.quoteProductDeliveryReversals||[]).map(x=>x.deliveryId));return(state.quoteProductDeliveries||[]).filter(x=>x.quoteId===quoteId&&!reversed.has(x.id));}
+export function quoteProductDeliveryBalance(state,quoteId,itemId){
+  const quote=requireItem(state.quotes||[],quoteId,'Orçamento'),item=requireItem(quote.items,itemId,'Item do orçamento');if(item.type!=='product')fail('Selecione um produto do orçamento.');
+  const orderedUnits=validateQuoteItem(item).quantityUnits,deliveredUnits=activeProductDeliveries(state,quoteId).filter(x=>x.itemId===itemId).reduce((n,x)=>n+integer(x.quantityUnits,1,1000000000000,'Quantidade entregue'),0),remainingUnits=integer(orderedUnits-deliveredUnits,0,1000000000000,'Saldo a entregar');
+  return{orderedUnits,deliveredUnits,remainingUnits,ordered:stockQuantity(orderedUnits),delivered:stockQuantity(deliveredUnits),remaining:stockQuantity(remainingUnits),unit:item.unit};
+}
+export function quoteExecutionCosts(state,quoteId){
+  const quote=requireItem(state.quotes||[],quoteId,'Orçamento'),uses=(state.quoteSessionUses||[]).filter(x=>x.quoteId===quoteId&&!x.reversedAt),deliveries=activeProductDeliveries(state,quoteId),lots=new Map();
+  for(const delivery of deliveries){const group=lots.get(delivery.lotId)||{unitCost:money(delivery.unitCost),units:0};if(group.unitCost!==delivery.unitCost)fail('Custo inconsistente nas entregas do mesmo lote.');group.units=integer(group.units+delivery.quantityUnits,1,1000000000000,'Quantidade entregue do lote');lots.set(delivery.lotId,group);}
+  // Arredondar uma vez por lote impede que fracionar a entrega crie centavos de custo.
+  const actualCost=money(uses.reduce((n,x)=>n+money(x.cost),0)+[...lots.values()].reduce((n,x)=>n+lineCost(x.unitCost,x.units),0));let pending=false;
+  const remainingCost=money(quote.items.reduce((n,item)=>{if(item.type==='product'){const balance=quoteProductDeliveryBalance(state,quoteId,item.id);pending ||= balance.remainingUnits>0;return n+lineCost(item.unitCost,balance.remainingUnits);}const remaining=integer(item.sessions-uses.filter(x=>x.itemId===item.id).reduce((sum,x)=>sum+x.sessions,0),0,1000,'Sessões restantes');pending ||= remaining>0;return n+money(remaining*item.unitCost);},0));
+  return{actualCost,remainingCost,cost:money(actualCost+remainingCost),costKind:!uses.length&&!deliveries.length?'estimado':pending?'realizado + estimado':'realizado'};
+}
+function deliveryQuote(state,quoteId,expectedVersion){
+  const quote=requireItem(state.quotes,quoteId,'Orçamento');requireVersion(quote,expectedVersion);if(quote.status!=='aprovado')fail('A entrega exige um orçamento aprovado.');requirePatient(state,quote.patientId);
+  const bill=requireItem(state.bills||[],quote.billId,'Cobrança vinculada');if(bill.cancelledAt||bill.quoteId!==quote.id||bill.patientId!==quote.patientId||bill.total!==quote.total||bill.quoteVersion!==quote.version)fail('Cobrança vinculada incompatível. Revise o financeiro.');return{quote,bill};
+}
+function deliveryReason(value){const reason=text(value,500,'o motivo da entrega ou do estorno');if(reason.length<5)fail('Descreva o motivo com pelo menos 5 caracteres.');return reason;}
+const deliveryDayFormatter=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'});
+// Operational dates are civil dates at the clinic, while audit timestamps are UTC.
+// Slicing a UTC timestamp would incorrectly reject deliveries after 21:00 in SP.
+function deliveryCivilDay(value){const parts=Object.fromEntries(deliveryDayFormatter.formatToParts(new Date(timestamp({now:value}))).map(part=>[part.type,part.value]));return `${parts.year}-${parts.month}-${parts.day}`;}
+function applyQuoteExecutionCosts(state,quote,bill){const {actualCost,cost,costKind}=quoteExecutionCosts(state,quote.id);Object.assign(bill,{actualCost,cost,costKind});}
+export function deliverQuoteProduct(state,input){
+  const payload={quoteId:input.quoteId,itemId:input.itemId,lotId:input.lotId,quantity:stockQuantity(stockUnits(input.quantity)),unit:input.unit,expectedQuoteVersion:input.expectedQuoteVersion,expectedLotVersion:input.expectedLotVersion,date:input.date??input.today,reason:String(input.reason??'').trim()};
+  return atomic(state,s=>operation(s,input,'quote-product-delivery',payload,now=>{
+    const {quote,bill}=deliveryQuote(s,payload.quoteId,payload.expectedQuoteVersion),item=requireItem(quote.items,payload.itemId,'Item do orçamento');if(item.type!=='product')fail('Procedimentos são registrados como sessões, não como entrega de produto.');
+    const lot=active(requireItem(s.stockLots,payload.lotId,'Lote')),product=active(requireItem(s.products,item.productId,'Produto'));requireVersion(lot,payload.expectedLotVersion);
+    if(lot.productId!==item.productId)fail('Selecione um lote do mesmo produto do orçamento.');if(payload.unit!==item.unit||lot.unit!==item.unit||product.unit!==item.unit)fail('A unidade deve ser a mesma do produto e do orçamento.');
+    const today=validDate(input.today),date=validDate(payload.date);if(date>today||date<deliveryCivilDay(quote.approvedAt))fail('A data da entrega deve ficar entre a aprovação e hoje.');if(validDate(lot.expiry)<today)fail('Lote vencido. Escolha um lote válido para a entrega.');if(lot.createdAt&&date<deliveryCivilDay(lot.createdAt))fail('A entrega não pode ser anterior à entrada do lote.');
+    const quantityUnits=stockUnits(payload.quantity),balance=quoteProductDeliveryBalance(s,quote.id,item.id);if(quantityUnits>balance.remainingUnits)fail('A quantidade excede o saldo a entregar deste item.');if(quantityUnits>lot.balanceUnits)fail('Saldo insuficiente no lote selecionado.');
+    const reason=deliveryReason(payload.reason),delivery={id:input.operationId,operationId:input.operationId,quoteId:quote.id,quoteVersion:quote.version,itemId:item.id,patientId:quote.patientId,productId:product.id,productVersion:product.version,productName:product.name,lotId:lot.id,lotVersion:lot.version,lotCode:lot.code,expiry:lot.expiry,unit:lot.unit,unitCost:lot.unitCost,quantityUnits,quantity:stockQuantity(quantityUnits),date,reason,createdAt:now};
+    s.quoteProductDeliveries.push(delivery);lot.balanceUnits-=quantityUnits;lot.version++;lot.updatedAt=now;
+    s.stockMovements.push({id:input.operationId+':delivery',operationId:input.operationId,quoteId:quote.id,itemId:item.id,deliveryId:delivery.id,lotId:lot.id,productId:product.id,type:'entrega_produto',deltaUnits:-quantityUnits,balanceAfter:lot.balanceUnits,unit:lot.unit,unitCost:lot.unitCost,reason,createdAt:now});
+    applyQuoteExecutionCosts(s,quote,bill);return delivery;
+  }));
+}
+export function reverseQuoteProductDelivery(state,input){
+  const payload={deliveryId:input.deliveryId,expectedQuoteVersion:input.expectedQuoteVersion,expectedLotVersion:input.expectedLotVersion,date:input.date??input.today,reason:String(input.reason??'').trim(),confirmedStockReturn:input.confirmedStockReturn};
+  return atomic(state,s=>operation(s,input,'quote-product-delivery-reversal',payload,now=>{
+    const delivery=requireItem(s.quoteProductDeliveries,payload.deliveryId,'Entrega'),{quote,bill}=deliveryQuote(s,delivery.quoteId,payload.expectedQuoteVersion),lot=requireItem(s.stockLots,delivery.lotId,'Lote');requireVersion(lot,payload.expectedLotVersion);
+    if(s.quoteProductDeliveryReversals.some(x=>x.deliveryId===delivery.id))fail('Esta entrega já foi estornada.');if(payload.confirmedStockReturn!==true)fail('Confirme a devolução ao mesmo lote ou a correção de uma baixa indevida antes de estornar.');
+    if(lot.productId!==delivery.productId||lot.unit!==delivery.unit||lot.unitCost!==delivery.unitCost||lot.code!==delivery.lotCode||lot.expiry!==delivery.expiry)fail('Lote diferente do registro da entrega. Revise o estoque.');
+    const date=validDate(payload.date);if(date>validDate(input.today)||date<delivery.date)fail('A data do estorno deve ficar entre a entrega e hoje.');const reason=deliveryReason(payload.reason),balance=integer(lot.balanceUnits+delivery.quantityUnits,0,1000000000000,'Saldo do lote');
+    const reversal={id:input.operationId,operationId:input.operationId,deliveryId:delivery.id,quoteId:quote.id,quoteVersion:quote.version,itemId:delivery.itemId,patientId:delivery.patientId,lotId:lot.id,lotVersion:lot.version,productId:delivery.productId,unit:delivery.unit,unitCost:delivery.unitCost,quantityUnits:delivery.quantityUnits,quantity:delivery.quantity,date,reason,confirmedStockReturn:true,createdAt:now};
+    s.quoteProductDeliveryReversals.push(reversal);lot.balanceUnits=balance;lot.version++;lot.updatedAt=now;
+    s.stockMovements.push({id:input.operationId+':delivery-reversal',operationId:input.operationId,quoteId:quote.id,itemId:delivery.itemId,deliveryId:delivery.id,reversalId:reversal.id,lotId:lot.id,productId:delivery.productId,type:'estorno_entrega_produto',deltaUnits:delivery.quantityUnits,balanceAfter:balance,unit:lot.unit,unitCost:lot.unitCost,reason,createdAt:now});
+    applyQuoteExecutionCosts(s,quote,bill);return reversal;
+  }));
+}
+// Validação sem mutação, compartilhada por importação e servidor. Ausência das
+// coleções novas representa um backup legado sem entregas, e não dados perdidos.
+export function validateQuoteProductDeliveries(state){
+  const deliveries=state.quoteProductDeliveries??[],reversals=state.quoteProductDeliveryReversals??[];if(!Array.isArray(deliveries)||!Array.isArray(reversals))fail('Histórico de entregas inválido.');
+  const allIds=new Set(),reversed=new Set(),touched=new Set(),movementIds=new Set();
+  const record=(entry)=>{if(!entry||typeof entry!=='object'||Array.isArray(entry))fail('Evento de entrega inválido.');identifier(entry.id);if(allIds.has(entry.id)||entry.id!==entry.operationId)fail('Identificador de entrega ou estorno repetido.');allIds.add(entry.id);if(entry.quantity!==stockQuantity(integer(entry.quantityUnits,1,1000000000000,'Quantidade entregue')))fail('Quantidade da entrega inconsistente.');money(entry.unitCost);validDate(entry.date);timestamp({now:entry.createdAt});if(entry.reason!==deliveryReason(entry.reason))fail('Motivo da entrega inconsistente.');integer(entry.quoteVersion,1,1000000000,'Versão do orçamento');integer(entry.lotVersion,1,1000000000,'Versão do lote');};
+  const movement=(entry,type,suffix,delta)=>{const id=entry.operationId+suffix,matches=(state.stockMovements||[]).filter(x=>x.id===id);if(matches.length!==1)fail('Movimento de estoque da entrega não encontrado ou repetido.');const m=matches[0];for(const key of ['operationId','quoteId','itemId','lotId','productId','unit','unitCost','reason','createdAt'])if(m[key]!==entry[key])fail('Movimento de entrega incompatível com seu histórico.');if(m.type!==type||m.deltaUnits!==delta||m.deliveryId!==(entry.deliveryId||entry.id)||type==='estorno_entrega_produto'&&m.reversalId!==entry.id)fail('Movimento de entrega incompatível com seu histórico.');movementIds.add(id);};
+  for(const delivery of deliveries){record(delivery);const quote=requireItem(state.quotes||[],delivery.quoteId,'Orçamento da entrega'),item=requireItem(quote.items,delivery.itemId,'Item da entrega'),lot=requireItem(state.stockLots||[],delivery.lotId,'Lote da entrega'),product=requireItem(state.products||[],delivery.productId,'Produto da entrega');requirePatient(state,delivery.patientId);touched.add(quote.id);
+    if(item.type!=='product'||item.productId!==delivery.productId||quote.patientId!==delivery.patientId||!['aprovado','cancelado'].includes(quote.status)||delivery.quoteVersion!==((quote.history||[]).find(x=>x.status==='aprovado')?.version??quote.version))fail('Vínculo de orçamento da entrega inválido.');
+    if(lot.productId!==delivery.productId||lot.unit!==delivery.unit||item.unit!==delivery.unit||product.unit!==delivery.unit||lot.unitCost!==delivery.unitCost||lot.code!==delivery.lotCode||lot.expiry!==delivery.expiry||delivery.lotVersion>=lot.version)fail('Lote da entrega incompatível.');
+    integer(delivery.productVersion,1,product.version,'Versão do produto');text(delivery.productName,120,'o nome do produto');if(delivery.date<deliveryCivilDay(quote.approvedAt)||delivery.date<deliveryCivilDay(lot.createdAt)||delivery.date>delivery.expiry)fail('Data histórica da entrega inválida.');movement(delivery,'entrega_produto',':delivery',-delivery.quantityUnits);
+  }
+  for(const reversal of reversals){record(reversal);const delivery=requireItem(deliveries,reversal.deliveryId,'Entrega estornada'),lot=requireItem(state.stockLots||[],reversal.lotId,'Lote do estorno');if(reversed.has(delivery.id))fail('Entrega estornada mais de uma vez.');reversed.add(delivery.id);
+    for(const key of ['quoteId','quoteVersion','itemId','patientId','lotId','productId','unit','unitCost','quantityUnits','quantity'])if(reversal[key]!==delivery[key])fail('Estorno incompatível com a entrega original.');if(reversal.confirmedStockReturn!==true||reversal.date<delivery.date||Date.parse(reversal.createdAt)<Date.parse(delivery.createdAt)||reversal.lotVersion<=delivery.lotVersion||reversal.lotVersion>=lot.version)fail('Registro de estorno inválido.');movement(reversal,'estorno_entrega_produto',':delivery-reversal',reversal.quantityUnits);
+  }
+  for(const m of state.stockMovements||[])if(['entrega_produto','estorno_entrega_produto'].includes(m.type)&&!movementIds.has(m.id))fail('Movimento de entrega sem histórico correspondente.');
+  for(const quoteId of touched){const quote=requireItem(state.quotes,quoteId,'Orçamento');for(const item of quote.items)if(item.type==='product')quoteProductDeliveryBalance(state,quoteId,item.id);if(quote.status==='cancelado'&&activeProductDeliveries(state,quoteId).length)fail('Orçamento cancelado mantém entregas ativas.');if(quote.status==='cancelado'&&reversals.some(x=>x.quoteId===quoteId&&x.date>quote.cancelDate))fail('Cancelamento anterior ao estorno da entrega.');const bill=requireItem(state.bills||[],quote.billId,'Cobrança vinculada');if(bill.quoteId!==quoteId||bill.patientId!==quote.patientId||bill.total!==quote.total)fail('Cobrança da entrega incompatível.');const costs=quoteExecutionCosts(state,quoteId);for(const key of ['actualCost','cost','costKind'])if(bill[key]!==costs[key])fail('Custo da cobrança incompatível com as entregas e sessões.');}
+  return true;
+}
 export function allocateLotCosts(consumptions){
   const result=consumptions.map(x=>({...x})),groups=new Map();
   result.forEach((entry,index)=>{money(entry.unitCost);integer(entry.units,1,1000000000000,'Quantidade');const lotId=identifier(entry.lotId);let group=groups.get(lotId);if(!group){group={unitCost:entry.unitCost,units:0,entries:[]};groups.set(lotId,group);}if(group.unitCost!==entry.unitCost)fail('Custo inconsistente entre consumos do mesmo lote.');group.units=integer(group.units+entry.units,1,1000000000000,'Quantidade do lote');const raw=BigInt(entry.unitCost)*BigInt(entry.units);entry.cost=money(Number(raw/BigInt(STOCK_SCALE)));group.entries.push({entry,index,remainder:Number(raw%BigInt(STOCK_SCALE))});});
@@ -152,7 +227,7 @@ export function completeVisit(state,input,{documentCheck}={}){return atomic(stat
   else {if(visitBills.length>1)fail('A consulta tem cobranças múltiplas. Reconcilie o financeiro.');bill=visitBills[0];if(bill&&(bill.patientId!==visit.patientId||bill.total!==procedure.price||bill.quoteId))fail('A cobrança existente é incompatível com o procedimento. Corrija o vínculo financeiro antes de concluir.');if(!bill){bill={id:input.operationId+':bill',patientId:visit.patientId,visitId:visit.id,date:visit.date,description:procedure.name,total:procedure.price,cost:actualCost,costKind:'realizado'};s.bills.push(bill);}}
   const received=(s.payments||[]).filter(p=>p.billId===bill.id&&!p.reversedAt).reduce((n,p)=>n+p.amount,0);if(received>bill.total||received<0)fail('Recebimentos incompatíveis com a cobrança. Revise o financeiro.');
   for(const [lotId,units] of totals){const lot=requireItem(s.stockLots,lotId,'Lote');lot.balanceUnits-=units;lot.version++;s.stockMovements.push({id:input.operationId+':stock:'+lot.id,operationId:input.operationId,visitId:visit.id,lotId:lot.id,productId:lot.productId,type:'consumo',deltaUnits:-units,balanceAfter:lot.balanceUnits,unitCost:lot.unitCost,reason:'Conclusão da consulta',createdAt:now});}
-  if(quote){s.quoteSessionUses.push({id:input.operationId+':session',operationId:input.operationId,quoteId:quote.id,itemId:quoteItem.id,visitId:visit.id,patientId:visit.patientId,sessions,cost:actualCost,createdAt:now});bill.actualCost=money((bill.actualCost||0)+actualCost);const pendingProducts=quote.items.filter(x=>x.type==='product'),remainingCost=quote.items.reduce((n,x)=>n+(x.type==='product'?validateQuoteItem(x).cost:remainingSessions(s,quote.id,x.id)*x.unitCost),0),complete=!pendingProducts.length&&quote.items.every(x=>remainingSessions(s,quote.id,x.id)===0);bill.cost=money(bill.actualCost+remainingCost);bill.costKind=complete?'realizado':'realizado + estimado';}
+  if(quote){s.quoteSessionUses.push({id:input.operationId+':session',operationId:input.operationId,quoteId:quote.id,itemId:quoteItem.id,visitId:visit.id,patientId:visit.patientId,sessions,cost:actualCost,createdAt:now});applyQuoteExecutionCosts(s,quote,bill);}
   else {bill.cost=actualCost;bill.actualCost=actualCost;bill.costKind='realizado';}
   visit.procedureId=procedure.id;visit.procedureVersion=procedure.version;visit.procedureSnapshot=clone(procedure);visit.recordMode=procedure.recordMode||'injectable';visit.status='concluido';visit.lockedAt=now;visit.completedAt=now;visit.completionOperationId=input.operationId;visit.billId=bill.id;visit.quoteId=quote?.id||null;visit.consumptions=usage;visit.actualCost=actualCost;visit.addenda=visit.addenda||[];
   visit.completionSnapshot={patientId:visit.patientId,date:visit.date,service:visit.service,notes:visit.notes,photos:clone(visit.photos||[]),maps:clone(visit.maps||{}),procedure:clone(procedure),consumptions:clone(usage),actualCost,billId:bill.id,quoteId:quote?.id||null,sessions};

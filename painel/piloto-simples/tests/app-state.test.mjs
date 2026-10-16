@@ -3,8 +3,11 @@ import vm from 'node:vm';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {webcrypto} from 'node:crypto';
+import {createRequire} from 'node:module';
 import * as rules from '../domain.mjs';
 import {assertVisitEditable} from '../operations-domain.mjs';
+import {fittedPhotoSize,MAP_ZOOM_LEVELS} from '../map-fit.mjs';
+const {JSDOM}=createRequire(new URL('../../../../../skinpro-analise/test-tools/package.json',import.meta.url))('jsdom');
 
 // Real handlers, with a deliberately delayed transaction and a minimal DOM.
 // This checks async state transitions; physical pointer/browser tests stay separate.
@@ -20,17 +23,22 @@ function harness(){
    return elements.get(id);
  };
  const document={getElementById:el,querySelector:selector=>selector.includes('undo-map')?el('undo'):null,querySelectorAll:()=>[],addEventListener:(type,fn)=>{const list=listeners.get(type)||[];list.push(fn);listeners.set(type,list);},visibilityState:'visible'};
- const context=vm.createContext({...rules,assertVisitEditable,isConnected:()=>false,structuredClone,crypto:webcrypto,console,document,location:{hash:'#paciente/demo-marina/demo-consulta/mapa'},history:{replaceState(){}},window:{addEventListener(){}},confirm:()=>confirmAnswer,setTimeout:()=>0,clearTimeout(){},load:async()=>structuredClone(workspace),getPhoto:async()=>null,commit:(revision,update)=>new Promise((resolve,reject)=>queued.push(()=>{
+ const context=vm.createContext({...rules,assertVisitEditable,fittedPhotoSize,MAP_ZOOM_LEVELS,isConnected:()=>false,structuredClone,crypto:webcrypto,console,document,location:{hash:'#paciente/demo-marina/demo-consulta/mapa'},history:{replaceState(){}},window:{addEventListener(){}},confirm:()=>confirmAnswer,setTimeout:()=>0,clearTimeout(){},load:async()=>structuredClone(workspace),getPhoto:async()=>null,commit:(revision,update)=>new Promise((resolve,reject)=>queued.push(()=>{
    try{assert.equal(revision,workspace.revision);const next=structuredClone(workspace);update(next);next.revision++;workspace=next;resolve(structuredClone(next));}catch(error){reject(error);}
  }))});
  vm.runInContext(source,context);
  context.initial=structuredClone(workspace);
  vm.runInContext("state=initial;patientId='demo-marina';visitId='demo-consulta';photoId='demo-foto';route='paciente';tab='mapa';selectedId='a';",context);
- return {context,el,listeners,run:code=>vm.runInContext(code,context),flush:()=>queued.shift()(),points:()=>workspace.visits[0].maps['demo-foto'].points,workspace:()=>workspace,confirm:value=>confirmAnswer=value};
+ return {context,el,listeners,run:code=>vm.runInContext(code,context),pendingWrites:()=>queued.length,flush:()=>{assert.equal(queued.length,1,'O handler deve ter iniciado exatamente uma transação.');return queued.shift()();},points:()=>workspace.visits[0].maps['demo-foto'].points,workspace:()=>workspace,confirm:value=>confirmAnswer=value};
 }
 const actionEvent=action=>({target:{closest:selector=>selector==='[data-action]'?{dataset:{action}}:null}});
 const submitEvent=id=>({target:{id},preventDefault(){}});
-function preparePoint(h){h.el('point-region').value='Edição de a';h.el('point-unit').value='sem quantidade';h.run('dirty=true');}
+function preparePoint(h){
+ // Selecting an existing marker fills percentage inputs and preserves original
+ // precision. The minimal DOM must model that form before a real submit.
+ h.run('fillMapGeometry(map().points.find(point=>point.id===selectedId));');
+ h.el('point-region').value='Edição de a';h.el('point-unit').value='sem quantidade';h.run('dirty=true');
+}
 
 test('excluir mantém o alvo capturado mesmo se a seleção mudar antes da transação',async()=>{
  const h=harness(),promise=h.listeners.get('click')[0](actionEvent('delete-point'));
@@ -38,11 +46,20 @@ test('excluir mantém o alvo capturado mesmo se a seleção mudar antes da trans
  assert.deepEqual(h.points().map(p=>p.id),['b']);
 });
 test('salvar edição mantém IDs únicos e preserva as outras marcações',async()=>{
- const h=harness();preparePoint(h);
+ const h=harness(),before=structuredClone(h.points());preparePoint(h);
+ assert.equal(h.el('map-x').value,'20');assert.equal(h.el('map-y').value,'30');
  const promise=h.listeners.get('submit')[0](submitEvent('point-form'));
  h.run("selectedId='b'");h.flush();await promise;
  assert.deepEqual(h.points().map(p=>p.id),['a','b']);
  assert.equal(h.points()[0].region,'Edição de a');assert.equal(h.points()[1].region,'Região b');
+ assert.equal(h.points()[0].x,before[0].x);assert.equal(h.points()[0].y,before[0].y);assert.deepEqual(h.points()[1],before[1]);
+});
+
+test('coordenada inválida mantém o rascunho e não inicia uma transação',async()=>{
+ const h=harness(),before=structuredClone(h.points());preparePoint(h);h.el('map-x').value='101';
+ await h.listeners.get('submit')[0](submitEvent('point-form'));
+ assert.equal(h.pendingWrites(),0);assert.deepEqual(h.points(),before);assert.equal(h.run('dirty'),true);assert.equal(h.run('busy'),false);
+ assert.match(h.el('point-error').textContent,/0% e 100%/);
 });
 test('seleção e controles do mapa ficam protegidos durante o commit',async()=>{
  const h=harness(),promise=h.listeners.get('click')[0](actionEvent('delete-point'));
@@ -62,7 +79,7 @@ test('notas digitadas durante um salvamento continuam marcadas como pendentes',a
 });
 test('edição de ponto durante commit permanece no formulário para próximo save',async()=>{
  const h=harness();preparePoint(h);const promise=h.listeners.get('submit')[0](submitEvent('point-form'));
- h.el('point-region').value='Edição mais recente';h.listeners.get('input')[0]({target:{id:'point-region',closest:()=>({})}});
+ h.el('point-region').value='Edição mais recente';h.listeners.get('input')[0]({target:{id:'point-region',closest:selector=>selector==='#point-form'?{}:null,matches:()=>false}});
  h.flush();await promise;
  assert.equal(h.points()[0].region,'Edição de a');assert.equal(h.el('point-region').value,'Edição mais recente');
  assert.equal(h.run('dirty'),true);assert.equal(h.run('selectedId'),'a');
@@ -118,7 +135,9 @@ test('rota 3D antiga abre o mapa da mesma consulta e preserva salvamento ao alte
  await h.run('setHash()');
  assert.equal(h.run('location.hash'),'#paciente/demo-marina/demo-consulta/mapa');assert.equal(h.run('acceptedHash'),h.run('location.hash'));
  assert.equal(h.run('patientId'),'demo-marina');assert.equal(h.run('visitId'),'demo-consulta');assert.equal(h.run('tab'),'mapa');
- assert.deepEqual(h.workspace(),before);assert.match(h.run('patientPage()'),/class="tab active" href="#paciente\/demo-marina\/demo-consulta\/mapa"/);assert.doesNotMatch(h.run('patientPage()'),/id="facial-panel"/);
+ assert.deepEqual(h.workspace(),before);
+ const page=JSDOM.fragment(h.run('patientPage()')),activeTabs=page.querySelectorAll('nav[aria-label="Áreas da consulta"] a[aria-current="page"]');
+ assert.equal(activeTabs.length,1);assert.equal(activeTabs[0].classList.contains('active'),true);assert.equal(activeTabs[0].getAttribute('href'),'#paciente/demo-marina/demo-consulta/mapa');assert.equal(page.querySelector('#facial-panel'),null);
  h.run("selectedId='a';");preparePoint(h);const save=h.listeners.get('submit')[0](submitEvent('point-form'));h.flush();await save;
  const saved=structuredClone(h.workspace());assert.equal(saved.visits[0].maps['demo-foto'].points[0].region,'Edição de a');
  for(const destination of ['registro','fotos','documentos','mapa']){

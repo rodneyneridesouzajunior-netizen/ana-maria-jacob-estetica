@@ -1,5 +1,6 @@
 import {PUBLIC_BACKEND} from './integration/public-backend.mjs';
 import {normalizeWorkspace} from './store.mjs';
+import {reconciliationAvailability,reconcileWorkspaceRecords,WorkspaceReconciliationError} from './workspace-reconciliation.mjs';
 
 export class CloudStoreError extends Error {
   constructor(code,message,{status=0,uncertain=false}={}) { super(message);this.name='CloudStoreError';this.code=code;this.status=status;this.uncertain=uncertain; }
@@ -20,7 +21,13 @@ export function createCloudStore({session,fetchImpl=globalThis.fetch,timeoutMs=2
   if(!session?.requireReady||!session?.assertCurrent)throw Error('Sessão autenticada obrigatória.');
   let current=null,clinicId=null,pending=null,busy=false,closed=false,locked=false,generation=0;
   const controllers=new Set();
-  const status=(kind,message,details={})=>{if(locked&&kind!=='locked')return;try{onStatus({kind,message,revision:current?.revision,pending:!!pending,operationId:pending?.payload.operation_id,canDiscardPending:!!pending?.rejected,...details});}catch{}};
+  const reconciliationInfo=()=>{
+    if(!pending?.rejected||pending.confirmedRevisionConflict!==true)return {canReconcilePending:false,reconciliationBlockedReason:null};
+    if(pending.upload)return {canReconcilePending:false,reconciliationBlockedReason:'Esta operação inclui fotografia. Confira os arquivos e preserve o rascunho; a reconciliação de uploads ainda não está disponível.'};
+    const capability=pending.reconciliationCapability??=reconciliationAvailability(pending.base,pending.payload.state);
+    return {canReconcilePending:capability.canReconcile&&!pending.reconciliationBlockedReason,reconciliationBlockedReason:pending.reconciliationBlockedReason||capability.reason||null};
+  };
+  const status=(kind,message,details={})=>{if(locked&&kind!=='locked')return;try{onStatus({kind,message,revision:current?.revision,pending:!!pending,operationId:pending?.payload.operation_id,canDiscardPending:!!pending?.rejected,...reconciliationInfo(),...details});}catch{}};
   const invalidate=reason=>{if(locked)return;locked=true;generation++;current=null;clinicId=null;pending=null;for(const c of controllers)c.abort();status('locked','Acesso encerrado. Entre novamente.');try{onInvalidated(reason);}catch{}};
   const unsubscribe=session.subscribe?.(invalidate);
   const assertOpen=()=>{if(closed||locked)throw fail('session_closed','A conexão foi encerrada. Entre novamente.');};
@@ -49,7 +56,9 @@ export function createCloudStore({session,fetchImpl=globalThis.fetch,timeoutMs=2
         const code=typeof data?.codigo==='string'?data.codigo:typeof data?.code==='string'?data.code:typeof data?.error?.code==='string'?data.error.code:'http_'+response.status;
         const supplied=typeof data?.erro==='string'?data.erro:typeof data?.message==='string'?data.message:null;
         const message=response.status===409?'Os dados mudaram ou a operação entrou em conflito. Confira a versão do servidor antes de refazer a alteração.':response.status>=500?'O servidor não confirmou a gravação. Use Conferir gravação para recuperar o resultado.':supplied||'O servidor recusou esta alteração. Confira os campos e tente novamente.';
-        throw fail(code,message,{status:response.status,uncertain:write&&response.status>=500});
+        const error=fail(code,message,{status:response.status,uncertain:write&&response.status>=500});
+        error.confirmedRevisionConflict=write&&response.status===409&&data?.ok===false&&code==='revision_conflict';
+        throw error;
       }
       return envelope(data,{write});
     }catch(error){
@@ -96,14 +105,14 @@ export function createCloudStore({session,fetchImpl=globalThis.fetch,timeoutMs=2
   }
   function uploadBody(op){const f=new FormData();for(const [key,value]of Object.entries(op.upload.fields))f.set(key,String(value));f.set('original',op.upload.original,op.upload.original.name||'original');f.set('preview',op.upload.preview,'preview');return f;}
   async function executePending(){
-    const op=pending;if(!op)throw fail('no_pending','Nenhuma gravação pendente.');op.rejected=false;
+    const op=pending;if(!op)throw fail('no_pending','Nenhuma gravação pendente.');op.rejected=false;op.rejectionCode=null;op.confirmedRevisionConflict=false;
     if(op.upload&&!op.upload.done)verifyUpload(await request(uploadBody(op),{write:true,multipart:true}),op);
     assertOpen();if(pending!==op)throw fail('session_changed','A operação perdeu seu contexto.');
     op.commitStarted=true;return saved(await request(op.payload,{write:true}),op);
   }
   function rememberError(error,{keepRejected=false}={}){
     if(!pending)return;
-    if(!error.uncertain&&error.status>=400&&error.status<500)pending.rejected=true;
+    if(!error.uncertain&&error.status>=400&&error.status<500){pending.rejected=true;pending.rejectionCode=error.code;if(error.confirmedRevisionConflict)pending.confirmedRevisionConflict=true;}
     if(pending.rejected&&error.status!==409&&!keepRejected)pending=null;
   }
   const announceError=error=>status(pending?(pending.rejected?'conflict':'pending'):'error',error.message);
@@ -118,7 +127,7 @@ export function createCloudStore({session,fetchImpl=globalThis.fetch,timeoutMs=2
     if(!current||current.revision!==expectedRevision)throw fail('revision_conflict','Atualize os dados antes de gravar.');
     const turn=generation;busy=true;
     try{
-      const draft=clone(current),result=update(draft);if(result?.then)throw fail('async_mutation','A alteração precisa ser síncrona.');
+      const base=clone(current),draft=clone(base),result=update(draft);if(result?.then)throw fail('async_mutation','A alteração precisa ser síncrona.');
       // Detach from objects retained by the caller before any await or retry.
       const candidate=clone(draft);
       if(candidate.revision!==expectedRevision)throw fail('revision_changed','A revisão é controlada pelo servidor.');
@@ -134,7 +143,7 @@ export function createCloudStore({session,fetchImpl=globalThis.fetch,timeoutMs=2
         const expected={id:photo.id,patient_id:visit.patientId,visit_id:visit.id,sha256:originalHash,preview_sha256:previewHash,size_bytes:photo.original.size,preview_size_bytes:photo.preview.size,mime_type:photo.original.type,preview_mime_type:photo.preview.type,width:meta.width,height:meta.height};
         upload={fields:{acao:'upload',operation_id:uuid(),expected_revision:expectedRevision,patient_id:visit.patientId,visit_id:visit.id,photo_id:photo.id},expected,original:photo.original,preview:photo.preview,done:false};
       }
-      check(turn);pending={payload:{acao:'commit',operation_id:uuid(),expected_revision:expectedRevision,state:candidate},upload,commitStarted:false,rejected:false};
+      check(turn);pending={base,payload:{acao:'commit',operation_id:uuid(),expected_revision:expectedRevision,state:candidate},upload,commitStarted:false,rejected:false,rejectionCode:null};
       status('saving','Gravando no servidor…');return await executePending();
     }catch(error){rememberError(error);announceError(error);throw error;}finally{busy=false;}
   }
@@ -169,6 +178,32 @@ export function createCloudStore({session,fetchImpl=globalThis.fetch,timeoutMs=2
       }
       const value=accept(await request({acao:'abrir'}));status('saved','Dados do servidor · revisão '+value.revision);return value;
     }catch(error){announceError(error);throw error;}finally{busy=false;}
+  }
+  /** Reapply only independent records after a proven CAS rejection. An absent
+   * receipt alone never permits a new UUID or a replacement of an uncertain write. */
+  async function reconcilePending(){
+    assertOpen();if(busy)throw fail('busy','Aguarde a operação em andamento.');
+    if(!pending?.rejected||pending.confirmedRevisionConflict!==true)throw fail('reconciliation_unavailable','A reconciliação exige uma rejeição de versão confirmada. Confira primeiro a gravação pendente.',{uncertain:!!pending&&!pending.rejected});
+    const availability=reconciliationInfo();
+    if(!availability.canReconcilePending)throw fail('reconciliation_unsupported',availability.reconciliationBlockedReason||'Este rascunho precisa de conferência manual. A operação foi preservada.');
+    const rejected=pending;busy=true;
+    try{
+      const prior=await operation(rejected.payload.operation_id,'commit');
+      if(prior?.receipt.status==='committed')return recoverCommit(prior,rejected);
+      if(prior){rejected.rejected=false;rejected.confirmedRevisionConflict=false;throw fail('operation_pending','O servidor ainda está conferindo a operação original. Não foi criada outra gravação.',{uncertain:true});}
+      const latest=accept(await request({acao:'abrir'}));assertOpen();
+      if(pending!==rejected)throw fail('session_changed','A operação perdeu seu contexto.');
+      const reconciled=reconcileWorkspaceRecords(rejected.base,rejected.payload.state,latest),operationId=uuid();
+      if(!uuidValue(operationId)||operationId===rejected.payload.operation_id)throw fail('invalid_operation','Não foi possível criar uma nova operação independente. O rascunho foi preservado.');
+      pending={base:clone(latest),payload:{acao:'commit',operation_id:operationId,expected_revision:latest.revision,state:reconciled.state},commitStarted:false,rejected:false,rejectionCode:null};
+      status('saving','Reaplicando alterações independentes; o servidor ainda precisa confirmar…');
+      return await executePending();
+    }catch(error){
+      if(error instanceof WorkspaceReconciliationError&&pending===rejected)rejected.reconciliationBlockedReason=error.message;
+      // A rejected reconciliation keeps its draft as well; a lost response keeps
+      // the new immutable UUID/payload for ordinary receipt recovery.
+      rememberError(error,{keepRejected:true});announceError(error);throw error;
+    }finally{busy=false;}
   }
   async function readPhotoBytes(url,metadata,variant,turn){
     const original=variant==='original',size=metadata[original?'size_bytes':'preview_size_bytes'],mime=metadata[original?'mime_type':'preview_mime_type'];
@@ -208,7 +243,7 @@ export function createCloudStore({session,fetchImpl=globalThis.fetch,timeoutMs=2
       check(turn);return {state:value,photos,scope:'clinica-servidor',clinicId:snapshotClinic};
     }finally{busy=false;}
   }
-  return {load,commit,getPhoto,readSnapshot,getClinicId:()=>{assertOpen();return clinicId;},resolvePending,refreshAfterConflict,isBusy:()=>busy,hasPending:()=>!!pending,hasConflict:()=>!!pending?.rejected,
+  return {load,commit,getPhoto,readSnapshot,getClinicId:()=>{assertOpen();return clinicId;},resolvePending,refreshAfterConflict,reconcilePending,getReconciliationInfo:()=>({...reconciliationInfo()}),isBusy:()=>busy,hasPending:()=>!!pending,hasConflict:()=>!!pending?.rejected,
     restoreSnapshot:async()=>{throw fail('restore_unavailable','Restauração no servidor exige conferência do histórico e ainda não está disponível nesta versão.');},
     dispose(){closed=true;unsubscribe?.();invalidate('closed');}};
 }

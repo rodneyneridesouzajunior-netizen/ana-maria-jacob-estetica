@@ -20,6 +20,8 @@ async function ready(){
     const status=document.querySelector('[data-cloud-status]');if(status){status.textContent=state.message;status.dataset.kind=state.kind;}
     document.querySelector('[data-cloud-resolve]')?.toggleAttribute('hidden',!state.pending||state.canDiscardPending);
     document.querySelector('[data-cloud-conflict]')?.toggleAttribute('hidden',!state.canDiscardPending);
+    const recovery=document.querySelector('[data-cloud-reconcile]');
+    if(recovery){recovery.hidden=!state.canReconcilePending;recovery.title=state.reconciliationBlockedReason||'Conferir alterações de outros aparelhos e reaplicar a gravação recusada.';}
   }});
   try{await store.load();}catch(error){store.dispose();bridge.destroy();gate.innerHTML=base('<h1>Conexão ainda não confirmada</h1><p>'+escape(error.message)+'</p><button class="primary" data-login-reload>Conferir conexão novamente</button>');return;}
   configureClinicalBridge(createClinicalBridgeService({session:bridge}));
@@ -39,6 +41,7 @@ document.querySelector('[data-cloud-exit]')?.addEventListener('click',async()=>{
 document.querySelector('[data-cloud-resolve]')?.addEventListener('click',async()=>{try{await store.resolvePending();window.dispatchEvent(new Event('amj:cloud-refresh'));}catch(error){document.querySelector('[data-cloud-status]').textContent=error.message;}});
 document.querySelector('[data-cloud-refresh]')?.addEventListener('click',()=>window.dispatchEvent(new Event('amj:cloud-refresh')));
 document.querySelector('[data-cloud-conflict]')?.addEventListener('click',()=>window.dispatchEvent(new CustomEvent('amj:cloud-reload-request',{detail:{refresh:()=>store.refreshAfterConflict()}})));
+document.querySelector('[data-cloud-reconcile]')?.addEventListener('click',()=>window.dispatchEvent(new CustomEvent('amj:cloud-reconcile-request',{detail:{reconcile:()=>store.reconcilePending()}})));
 gate.innerHTML=base('<h1>Preparando acesso seguro…</h1>');
 try{auth=await loadClinicAuth();await auth.initialize();await show();}catch(error){gate.innerHTML=base('<h1>Não foi possível iniciar o acesso</h1><p>'+escape(errorMessage(error))+'</p><button class="primary" data-login-reload>Tentar novamente</button>');}
 addEventListener('pagehide',()=>{clearClinicalBridge();store?.dispose();bridge?.destroy();auth?.destroy();},{once:true});

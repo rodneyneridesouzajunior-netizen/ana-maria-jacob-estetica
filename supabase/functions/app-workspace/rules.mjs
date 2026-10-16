@@ -1,6 +1,7 @@
 import {validateBackupState} from '../_shared/app-workspace-domain/backup.mjs';
 import {defaultClinic,validateClinicAppointment} from '../_shared/app-workspace-domain/clinic-domain.mjs';
-import {allocateLotCosts,quoteTotals,validateQuoteItem,stockUnits,visitMarkings} from '../_shared/app-workspace-domain/operations-domain.mjs';
+import {allocateLotCosts,quoteTotals,validateQuoteItem,stockUnits,visitMarkings,quoteExecutionCosts} from '../_shared/app-workspace-domain/operations-domain.mjs';
+import {assertQuoteDeliveryTransitions} from './quote-delivery-transitions.mjs';
 import {assertFacialHistoryPreserved} from '../_shared/app-workspace-domain/facial-study-domain.mjs';
 
 export class WorkspaceError extends Error{constructor(code,message,status=422){super(message);this.code=code;this.status=status;}}
@@ -10,7 +11,7 @@ export const validId=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9_.:-
 export const stable=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(k=>[k,v[k]])):v);
 export const hash=async value=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',typeof value==='string'?new TextEncoder().encode(value):value)),b=>b.toString(16).padStart(2,'0')).join('');
 const same=(a,b)=>stable(a)===stable(b),omit=(v,keys)=>Object.fromEntries(Object.entries(v).filter(([k])=>!keys.includes(k)));
-export const COLLECTIONS=['patients','appointments','visits','bills','payments','requests','products','procedures','stockLots','stockMovements','quotes','quoteSessionUses','expectedReturns','operationHistory','patientHistory','installments','installmentHistory','expenses','expensePayments','expensePaymentReversals','paymentReversals','financeHistory','documentTemplates','documentResponses','documentHistory','comparisons','auditLog','facialStudies'];
+export const COLLECTIONS=['patients','appointments','visits','bills','payments','requests','products','procedures','stockLots','stockMovements','quotes','quoteSessionUses','quoteProductDeliveries','quoteProductDeliveryReversals','expectedReturns','operationHistory','patientHistory','installments','installmentHistory','expenses','expensePayments','expensePaymentReversals','paymentReversals','financeHistory','documentTemplates','documentResponses','documentHistory','comparisons','auditLog','facialStudies'];
 const TOP_KEYS=new Set(['schema','revision','clinic','operationsSchema',...COLLECTIONS]);
 export function emptyState(){return {schema:1,revision:0,operationsSchema:1,...Object.fromEntries(COLLECTIONS.map(k=>[k,[]])),clinic:defaultClinic()};}
 function preserve(old,rows,label,allowed=[]){const index=new Map(rows.map(x=>[x.id,x]));for(const previous of old){const next=index.get(previous.id);if(!next||!same(omit(previous,allowed),omit(next,allowed)))fail('immutable_history',`${label}: registro anterior precisa ser preservado.`);}}
@@ -20,6 +21,9 @@ const timestamp=value=>typeof value==='string'&&Number.isFinite(Date.parse(value
 const newly=(old,next,key)=>next[key].filter(x=>!get(old,key,x.id));
 function validateShape(s){
  if(!s||typeof s!=='object'||Array.isArray(s)||Object.keys(s).some(k=>!TOP_KEYS.has(k)))fail('unknown_state_field','Estrutura operacional não reconhecida.');
+ // Additive schema-1 fields: accept pre-release records, but preserve() below
+ // still rejects an old client attempting to erase existing delivery history.
+ for(const key of ['quoteProductDeliveries','quoteProductDeliveryReversals'])if(s[key]===undefined)s[key]=[];
  if(new TextEncoder().encode(stable(s)).length>4*1024*1024)fail('state_too_large','O estado excede o limite operacional de 4 MB.',413);
  for(const key of COLLECTIONS)if(!Array.isArray(s[key])||s[key].length>10000)fail('invalid_collection','Coleção operacional incompatível: '+key);
  try{validateBackupState(s);}catch(error){fail('invalid_state',error.message);}
@@ -34,9 +38,14 @@ function versioned(old,next,label){for(const p of old){const n=next.find(x=>x.id
 export function validateTransition(old,next,{photos=[],now=new Date().toISOString(),clinicalCompletions=new Set()}={}){
  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date(now));
  validateShape(next);if(next.revision!==old.revision)fail('revision_conflict','A revisão enviada difere da versão lida.',409);
+ // Block new identity collisions without freezing unrelated work on a legacy
+ // snapshot. Existing duplicates remain visible for deliberate correction.
+ const cpfOf=p=>String(p?.cpf||'').replace(/\D/g,'');
+ for(const p of next.patients){const previous=old.patients.find(x=>x.id===p.id),cpf=cpfOf(p);if(!cpf||previous&&cpfOf(previous)===cpf)continue;if(next.patients.some(other=>other.id!==p.id&&cpfOf(other)===cpf))fail('duplicate_patient_cpf','Este CPF já está vinculado a outro cadastro. Confira a paciente antes de salvar.');}
  try{assertFacialHistoryPreserved(old,next);}catch(error){fail('immutable_facial_history',error.message);}
  prefix(old.auditLog,next.auditLog,'Auditoria');if(next.auditLog.length!==old.auditLog.length)fail('audit_server_owned','A auditoria de revisão é registrada pelo servidor.');
- for(const key of ['stockMovements','quoteSessionUses','operationHistory','patientHistory','installmentHistory','paymentReversals','expensePaymentReversals','financeHistory','documentHistory'])preserve(old[key]||[],next[key],key);
+ for(const key of ['stockMovements','quoteSessionUses','quoteProductDeliveries','quoteProductDeliveryReversals','operationHistory','patientHistory','installmentHistory','paymentReversals','expensePaymentReversals','financeHistory','documentHistory'])preserve(old[key]||[],next[key],key);
+ try{assertQuoteDeliveryTransitions(old,next,{today,now});}catch(error){fail('product_delivery_invalid',error.message);}
  for(const key of ['patients','appointments','visits','bills','payments','products','procedures','stockLots','quotes','expenses','expensePayments','documentTemplates','documentResponses','comparisons','expectedReturns'])for(const p of old[key]||[])if(!get(next,key,p.id))fail('record_removal_forbidden','Use arquivamento ou cancelamento; não remova '+key+'.');
  preserve(old.expectedReturns,next.expectedReturns,'Retornos previstos',['status','appointmentId']);
  for(const a of next.appointments){const p=get(old,'appointments',a.id);if(p&&(p.status==='concluido'||old.visits.some(v=>v.appointmentId===p.id&&(v.status==='concluido'||v.lockedAt)))&&!same(p,a))fail('appointment_history_immutable','Preserve o horário e o profissional do atendimento concluído.');const moved=!p||['patientId','date','time','duration','professionalId'].some(k=>p[k]!==a[k])||p.status==='cancelado'&&a.status!=='cancelado';if(moved){try{validateClinicAppointment(next,a,a.id);}catch(error){fail('appointment_invalid',error.message);}}}
@@ -61,11 +70,12 @@ export function validateTransition(old,next,{photos=[],now=new Date().toISOStrin
   if(q.status==='aprovado'&&!same(q,n)){
    if(n.status!=='cancelado'||n.version!==q.version+1||!same(omit(q,['status','version','cancelledAt','cancelDate','cancelReason','updatedAt','history']),omit(n,['status','version','cancelledAt','cancelDate','cancelReason','updatedAt','history'])))fail('immutable_quote','Valores e itens aprovados são imutáveis.');
    if(next.quoteSessionUses.some(u=>u.quoteId===q.id&&!u.reversedAt))fail('quote_already_used','Orçamento com sessões utilizadas não pode ser cancelado.');
+   if(next.quoteProductDeliveries.some(d=>d.quoteId===q.id&&!next.quoteProductDeliveryReversals.some(r=>r.deliveryId===d.id)))fail('quote_already_delivered','Confira e estorne as entregas antes de cancelar o orçamento.');
   }
  }
  for(const b of old.bills){const n=get(next,'bills',b.id);if(!same(omit(b,['cost','actualCost','costKind','cancelledAt','cancelDate','cancelReason']),omit(n,['cost','actualCost','costKind','cancelledAt','cancelDate','cancelReason'])))fail('immutable_bill','Valores e vínculos da cobrança anterior são preservados.');if(b.cancelledAt&&!same(b,n))fail('immutable_bill','Cobrança cancelada não pode mudar.');if(!b.visitId&&!b.quoteId&&!same(omit(b,['cancelledAt','cancelDate','cancelReason']),omit(n,['cancelledAt','cancelDate','cancelReason'])))fail('immutable_bill','Custos de cobrança avulsa são preservados.');if(n.cancelledAt&&(!timestamp(n.cancelledAt)||String(n.cancelReason||'').trim().length<5))fail('invalid_cancellation','Cancelamento precisa de data e motivo.');}
  // Stock cannot be consumed independently from the clinical conclusion that owns it.
- for(const m of newly(old,next,'stockMovements')){const lot=get(next,'stockLots',m.lotId);if(!['entrada','ajuste','consumo'].includes(m.type)||m.unitCost!==lot.unitCost||typeof m.reason!=='string'||!m.reason.trim())fail('stock_movement_invalid','Movimento de estoque sem tipo, custo ou motivo válido.');if(m.type==='entrada'&&(get(old,'stockLots',m.lotId)||m.deltaUnits!==lot.initialUnits))fail('stock_entry_invalid','A entrada inicial deve corresponder ao novo lote.');if(m.type==='consumo'&&(!m.visitId||get(old,'visits',m.visitId)?.status==='concluido'||get(next,'visits',m.visitId)?.status!=='concluido'))fail('stock_consumption_invalid','Baixa de consumo precisa de conclusão da consulta.');if(m.type!=='consumo'&&m.visitId)fail('stock_consumption_invalid','Ajuste de estoque não substitui o consumo da consulta.');}
+ for(const m of newly(old,next,'stockMovements')){const lot=get(next,'stockLots',m.lotId);if(!['entrada','ajuste','consumo','entrega_produto','estorno_entrega_produto'].includes(m.type)||m.unitCost!==lot.unitCost||typeof m.reason!=='string'||!m.reason.trim())fail('stock_movement_invalid','Movimento de estoque sem tipo, custo ou motivo válido.');if(m.type==='entrada'&&(get(old,'stockLots',m.lotId)||m.deltaUnits!==lot.initialUnits))fail('stock_entry_invalid','A entrada inicial deve corresponder ao novo lote.');if(m.type==='consumo'&&(!m.visitId||get(old,'visits',m.visitId)?.status==='concluido'||get(next,'visits',m.visitId)?.status!=='concluido'))fail('stock_consumption_invalid','Baixa de consumo precisa de conclusão da consulta.');if(m.type!=='consumo'&&m.visitId)fail('stock_consumption_invalid','Ajuste de estoque não substitui o consumo da consulta.');}
  const verified=new Map(photos.map(p=>[p.id,p]));
  for(const v of next.visits){const previous=get(old,'visits',v.id);
   if(previous&&(previous.status==='concluido'||previous.lockedAt)){if(!same(omit(previous,['addenda']),omit(v,['addenda'])))fail('immutable_visit','Consulta concluída só aceita adendos.');prefix(previous.addenda||[],v.addenda||[],'Adendos');}
@@ -90,7 +100,7 @@ export function validateTransition(old,next,{photos=[],now=new Date().toISOStrin
  }
  for(const u of newly(old,next,'quoteSessionUses'))if(get(old,'visits',u.visitId)?.status==='concluido'||get(next,'visits',u.visitId)?.quoteId!==u.quoteId||u.reversedAt)fail('session_use_invalid','Evento de sessão precisa corresponder à nova conclusão.');
  // Every realised bill is derived from finished visits / session events; no client-written profit.
- for(const b of next.bills){if(b.visitId){const v=get(next,'visits',b.visitId);if(v?.billId!==b.id||v.status!=='concluido')fail('visit_bill_invalid','Cobrança de consulta sem vínculo recíproco exclusivo.');if(b.actualCost!==v.actualCost||b.cost!==v.actualCost)fail('bill_cost_invalid','Custo de cobrança não corresponde à consulta.');}if(b.quoteId){const q=get(next,'quotes',b.quoteId),uses=next.quoteSessionUses.filter(x=>x.quoteId===q.id&&!x.reversedAt),actual=uses.reduce((n,x)=>n+x.cost,0);const remaining=q.items.reduce((n,x)=>n+(x.type==='product'?validateQuoteItem(x).cost:(x.sessions-uses.filter(u=>u.itemId===x.id).reduce((a,u)=>a+u.sessions,0))*x.unitCost),0);if(b.actualCost!==actual||b.cost!==actual+remaining)fail('bill_cost_invalid','Custo da proposta não corresponde às sessões e produtos.');}}
+ for(const b of next.bills){if(b.visitId){const v=get(next,'visits',b.visitId);if(v?.billId!==b.id||v.status!=='concluido')fail('visit_bill_invalid','Cobrança de consulta sem vínculo recíproco exclusivo.');if(b.actualCost!==v.actualCost||b.cost!==v.actualCost)fail('bill_cost_invalid','Custo de cobrança não corresponde à consulta.');}if(b.quoteId){const expected=quoteExecutionCosts(next,b.quoteId);if(b.actualCost!==expected.actualCost||b.cost!==expected.cost)fail('bill_cost_invalid','Custo da proposta não corresponde às sessões e produtos entregues.');}}
  return next;
 }
 
