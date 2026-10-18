@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createWorkspaceHandler} from './handler.mjs';
 import {emptyState,hash,fail} from './rules.mjs';
 import {testPNG} from './test-images.mjs';
+import {saveProduct as savePackageProduct} from '../../../painel/piloto-simples/operations-domain.mjs';
 const id=n=>`${n.repeat(8)}-${n.repeat(4)}-4${n.repeat(3)}-8${n.repeat(3)}-${n.repeat(12)}`;
 const ctx={authMethod:'supabase_auth',role:'owner',aal:'aal2',clinicId:id('1'),userId:id('2'),sessionId:id('3')};
 const origin='https://anamariajacob.com.br';
@@ -39,3 +40,17 @@ test('partial photo upload remains pending and exact same operation resumes with
 test('uploaded photo must be committed to its own visit before a temporary URL is issued',async()=>{const f=fixture();await f.save(data());const uploaded=await f.request(f.upload());assert.equal(uploaded.status,200);assert.equal((await f.request({acao:'obterfoto',photo_id:'photo'})).status,404);assert.equal(f.calls.includes('sign'),false);const s=structuredClone(f.row.state),p=uploaded.body.photo;s.visits[0].photos.push({id:p.id,sha256:p.sha256,width:p.width,height:p.height,label:'Frontal',phase:'antes'});s.visits[0].maps.photo={version:0,points:[],history:[]};assert.equal((await f.save(s,id('7'))).status,200);const result=await f.request({acao:'obterfoto',photo_id:'photo'});assert.equal(result.status,200);assert.equal(result.body.photo.expires_in,120);assert.equal(f.calls.filter(x=>x==='sign').length,2);assert.equal((await f.request({acao:'obterfoto',photo_id:'other'})).status,404);});
 test('upload rejects omitted revision, unbound patient, changed idempotency payload, and malformed MIME',async()=>{const f=fixture();await f.save(data());const absent=f.upload();absent.delete('expected_revision');assert.equal((await f.request(absent)).status,422);const wrong=f.upload();wrong.set('patient_id','other');assert.equal((await f.request(wrong)).status,422);const bad=f.upload();bad.set('original',new Blob(['not a PNG'],{type:'image/png'}),'bad.png');assert.equal((await f.request(bad)).status,422);await f.request(f.upload());const changed=f.upload();changed.set('photo_id','other-photo');assert.equal((await f.request(changed)).status,409);assert.equal(f.photos.size,1);});
 test('oversize requests stop before payload parsing and server diagnostics stay private',async()=>{const f=fixture();const r=await f.request({acao:'abrir'},{'Content-Length':String(6*1024*1024)});assert.equal(r.status,413);assert.deepEqual(f.calls,['auth']);const broken=fixture();broken.repository.load=()=>{throw Error('private database address/password');};const e=await broken.request({acao:'abrir'});assert.equal(e.status,503);assert.equal(JSON.stringify(e.body).includes('password'),false);assert.equal(e.headers.get('Cache-Control'),'no-store');});
+
+test('package content persists through authenticated commit/open and invalid direct payload cannot write',async()=>{
+ const f=fixture();let s=emptyState();
+ for(const [i,value] of ['2','5','2,5'].entries()){
+  savePackageProduct(s,{operationId:'package-'+i,today:'2026-10-15',now:'2026-10-15T18:00:00Z',data:{id:'product',name:'Isolado',unit:'mL',unitCost:2000,packageQuantity:value,expectedVersion:i}});
+  const result=await f.save(s,id(String(i+4)));assert.equal(result.status,200,JSON.stringify(result.body));
+  s=(await f.request({acao:'abrir'})).body.workspace.state;assert.equal(s.products[0].packageQuantity,Number(value.replace(',','.')));
+ }
+ const before=structuredClone(f.row),commits=f.calls.filter(x=>x==='commit').length;
+ for(const invalid of [0,-1,'2,5',2.12345,true]){
+  const bad=structuredClone(s);bad.products[0].packageQuantity=invalid;bad.products[0].version++;assert.equal((await f.save(bad,id('9'))).status,422);
+ }
+ assert.deepEqual(f.row,before);assert.equal(f.calls.filter(x=>x==='commit').length,commits);
+});
