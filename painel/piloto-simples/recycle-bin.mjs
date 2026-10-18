@@ -1,0 +1,129 @@
+// Reversible visibility ledger. Originals and their immutable histories stay in
+// the authenticated workspace; no storage object or business record is deleted.
+import {quoteExecutionCosts} from './operations-domain.mjs';
+export const RECYCLE_TYPES=Object.freeze({
+  patients:'Pacientes',visits:'Atendimentos',appointments:'Agendamentos',
+  bills:'Cobranças',payments:'Recebimentos',installments:'Parcelas',expenses:'Despesas',expensePayments:'Pagamentos de despesas',
+  paymentReversals:'Estornos de recebimentos',expensePaymentReversals:'Estornos de pagamentos',quoteProductDeliveryReversals:'Estornos de entregas',
+  quotes:'Orçamentos',quoteProductDeliveries:'Entregas de produtos',
+  products:'Produtos e materiais',procedures:'Procedimentos',stockLots:'Lotes de estoque',stockMovements:'Movimentações de estoque',
+  documentTemplates:'Modelos de documentos',documentResponses:'Formulários do atendimento',
+  comparisons:'Comparações de fotografias',expectedReturns:'Previsões de retorno',facialStudies:'Estudos 3D',
+  professionals:'Integrantes da equipe',blocks:'Bloqueios de agenda',holidays:'Fechamentos da clínica',goals:'Metas mensais',
+  photos:'Fotografias',points:'Marcações de fotografias',addenda:'Adendos do atendimento',
+});
+const clinicTypes=new Set(['professionals','blocks','holidays','goals']);
+const nestedTypes=new Set(['photos','points','addenda']);
+const stable=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(k=>[k,v[k]])):v);
+const same=(a,b)=>stable(a)===stable(b);
+const stamp=value=>typeof value==='string'&&Number.isFinite(Date.parse(value))&&new Date(value).toISOString()===value;
+const id=value=>typeof value==='string'&&/^[A-Za-z0-9][A-Za-z0-9_.:-]{0,179}$/.test(value)&&!['constructor','prototype','__proto__'].includes(value);
+export const recycleTargetKey=t=>JSON.stringify([t.type,t.id,t.parentId||'',t.photoId||'']);
+export const openRecycleEntries=s=>(s.recycleBin||[]).filter(x=>!x.restoredAt);
+export const hiddenRecycleTargets=s=>new Set(openRecycleEntries(s).flatMap(x=>x.targets.map(recycleTargetKey)));
+export function isRecycled(s,type,recordId,parentId='',photoId=''){return hiddenRecycleTargets(s).has(recycleTargetKey({type,id:recordId,parentId,photoId}));}
+function rawRecords(s,type){
+ if(clinicTypes.has(type))return (s.clinic?.[type]||[]).map((record,index)=>({record,id:record.id||record.month||String(index)}));
+ if(nestedTypes.has(type))return (s.visits||[]).flatMap(v=>type==='points'?Object.entries(v.maps||{}).flatMap(([photoId,map])=>(map.points||[]).map(record=>({record,id:record.id,parentId:v.id,photoId}))):(v[type]||[]).map((record,index)=>({record,id:record.id||String(index),parentId:v.id})));
+ return (s[type]||[]).map(record=>({record,id:record.id}));
+}
+export function recycleRecords(s,type,{includeHidden=false}={}){
+ if(!Object.hasOwn(RECYCLE_TYPES,type))return [];
+ const hidden=hiddenRecycleTargets(s);
+ return rawRecords(s,type).filter(x=>includeHidden||!hidden.has(recycleTargetKey({type,...x}))).map(x=>({type,...x,label:recycleLabel(s,type,x.record,x)}));
+}
+export function recycleLabel(s,type,r,ref={}){
+ const patient=(s.patients||[]).find(p=>p.id===(r.patientId||(s.visits||[]).find(v=>v.id===ref.parentId)?.patientId));
+ const bill=(s.bills||[]).find(b=>b.id===r.billId),expense=(s.expenses||[]).find(e=>e.id===r.expenseId);
+ const amount=Number.isSafeInteger(r.amount)?' · '+new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(r.amount/100):'';
+ return [r.name||r.title||r.description||r.label||r.reason||r.code||r.service||bill?.description||expense?.description||r.month||RECYCLE_TYPES[type],patient?.name,r.date||r.dueDate||r.createdAt?.slice(0,10)].filter(Boolean).join(' · ')+amount;
+}
+export function recycleScope(s,target){
+ if(!Object.hasOwn(RECYCLE_TYPES,target?.type)||!id(target.id))throw Error('Tipo ou registro inválido.');
+ const record=recycleRecords(s,target.type).find(x=>x.id===target.id&&(x.parentId||'')===(target.parentId||'')&&(x.photoId||'')===(target.photoId||''));
+ if(!record)throw Error('O registro mudou ou já está na lixeira. Atualize e confira novamente.');
+ const selected=new Map(),add=t=>{const value={type:t.type,id:t.id,...(t.parentId?{parentId:t.parentId}:{}),...(t.photoId?{photoId:t.photoId}:{})};selected.set(recycleTargetKey(value),value);};
+ add(record);
+ const reversalParents={paymentReversals:['payments','paymentId'],expensePaymentReversals:['expensePayments','paymentId'],quoteProductDeliveryReversals:['quoteProductDeliveries','deliveryId']};
+ if(reversalParents[target.type]){const [type,field]=reversalParents[target.type];if(record.record[field])add({type,id:record.record[field]});}
+ const has=(type,recordId)=>selected.has(recycleTargetKey({type,id:recordId}));
+ const any=(type,recordId)=>recordId&&[...selected.values()].some(t=>t.type===type&&t.id===recordId);
+ const related=r=>has('patients',r.patientId)||has('visits',r.visitId)||has('appointments',r.appointmentId)||has('bills',r.billId)||has('expenses',r.expenseId)||has('quotes',r.quoteId)||has('payments',r.paymentId)||has('expensePayments',r.paymentId)||has('stockLots',r.lotId)||has('products',r.productId)||has('documentTemplates',r.templateId)||has('documentResponses',r.documentId)||any('photos',r.beforePhotoId)||any('photos',r.afterPhotoId);
+ // Closure is limited to ownership links. Catalog references in historical
+ // procedure snapshots never erase a patient's record or original form.
+ let previous=-1;
+ while(previous!==selected.size){previous=selected.size;
+  for(const type of Object.keys(RECYCLE_TYPES))for(const row of recycleRecords(s,type)){
+   const r=row.record;let include=related(r)||row.parentId&&has('visits',row.parentId);
+   if(type==='visits')include=has('patients',r.patientId)||has('appointments',r.appointmentId);
+   if(type==='appointments')include=has('patients',r.patientId)||(s.visits||[]).some(v=>has('visits',v.id)&&v.appointmentId===r.id);
+   if(type==='stockLots')include=has('products',r.productId)||(target.type==='stockMovements'&&(s.stockMovements||[]).some(m=>has('stockMovements',m.id)&&m.lotId===r.id));
+   if(type==='stockMovements')include=has('products',r.productId)||has('stockLots',r.lotId);
+   if(type==='comparisons')include=include||[...(r.beforePhotos||[]),...(r.afterPhotos||[]),r.before,r.after].some(p=>{if(p&&typeof p==='object')return has('visits',p.visitId)||any('photos',p.photoId);try{const [visitId,photoId]=JSON.parse(p);return has('visits',visitId)||any('photos',photoId);}catch{return false;}});
+   if(type==='points')include=include||any('photos',row.photoId);
+   if(include)add({type,...row});
+  }
+  if(target.type==='installments'){const part=(s.installments||[]).find(x=>has('installments',x.id));if(part?.billId)add({type:'bills',id:part.billId});}
+  // Private derived ledgers follow their owners, while audit/version records
+  // remain available to support and the encrypted export.
+  for(const type of ['paymentReversals','expensePaymentReversals','quoteSessionUses','quoteProductDeliveryReversals'])for(const r of s[type]||[])if(related(r)||has('quoteProductDeliveries',r.deliveryId))add({type,id:r.id});
+ }
+ return {target:{type:record.type,id:record.id,...(record.parentId?{parentId:record.parentId}:{}),...(record.photoId?{photoId:record.photoId}:{})},label:record.label,targets:[...selected.values()].sort((a,b)=>recycleTargetKey(a).localeCompare(recycleTargetKey(b)))};
+}
+export function moveToRecycleBin(s,target,{operationId=crypto.randomUUID(),now=new Date().toISOString()}={}){
+ const scope=recycleScope(s,target);if(!id(operationId)||!stamp(now))throw Error('Confirmação inválida.');
+ s.recycleBin??=[];if(s.recycleBin.some(x=>x.id===operationId))throw Error('Esta operação já foi registrada.');
+ const entry={id:operationId,...scope,deletedAt:now,restoredAt:null};s.recycleBin.push(entry);return entry;
+}
+export function restoreRecycleEntry(s,entryId,{now=new Date().toISOString()}={}){
+ const entry=(s.recycleBin||[]).find(x=>x.id===entryId);if(!entry||entry.restoredAt)throw Error('Este item não está na lixeira.');if(!stamp(now))throw Error('Data de recuperação inválida.');
+ entry.restoredAt=now;return entry;
+}
+export function activeWorkspace(source){
+ const s=structuredClone(source),hidden=hiddenRecycleTargets(s),hide=(type,r,parentId='',photoId='')=>hidden.has(recycleTargetKey({type,id:r.id||r.month,parentId,photoId}));
+ for(const [type,rows]of Object.entries(s))if(Array.isArray(rows)&&type!=='recycleBin')s[type]=rows.filter(r=>!hide(type,r));
+ if(s.clinic)for(const type of clinicTypes)s.clinic[type]=(s.clinic[type]||[]).filter(r=>!hide(type,r));
+ for(const v of s.visits||[]){v.photos=(v.photos||[]).filter(r=>!hide('photos',r,v.id));if(v.addenda)v.addenda=v.addenda.filter((r,i)=>!hidden.has(recycleTargetKey({type:'addenda',id:r.id||String(i),parentId:v.id})));for(const [photoId,map]of Object.entries(v.maps||{})){if(hidden.has(recycleTargetKey({type:'photos',id:photoId,parentId:v.id}))){delete v.maps[photoId];continue;}map.points=(map.points||[]).filter(r=>!hide('points',r,v.id,photoId));}}
+ for(const b of s.bills||[])if(b.quoteId&&(s.quotes||[]).some(q=>q.id===b.quoteId)){const {actualCost,cost,costKind}=quoteExecutionCosts(s,b.quoteId);Object.assign(b,{actualCost,cost,costKind});}
+ return s;
+}
+// Apply an edit made against the active view without losing a hidden original.
+// Existing order is preserved; new rows are appended once. CAS remains in the
+// provider and the server validates the full canonical transition.
+export function mergeActiveWorkspace(canonical,edited){
+ const hidden=hiddenRecycleTargets(canonical),base=activeWorkspace(canonical);
+ const merge=(type,oldRows,rows,parentId='',photoId='')=>{
+  const lookup=new Map(rows.map((r,i)=>[r.id||r.month||String(i),r]));
+  const result=oldRows.flatMap((old,index)=>{const key=old.id||old.month||String(index);if(hidden.has(recycleTargetKey({type,id:key,parentId,photoId}))){if(lookup.has(key))throw Error('Este registro já existe na lixeira. Abra Lixeira e recuperação e recupere o original antes de cadastrá-lo novamente.');return [structuredClone(old)];}const next=lookup.get(key);lookup.delete(key);return next?[structuredClone(next)]:[];});return result.concat([...lookup.values()].map(x=>structuredClone(x)));
+ };
+ const result=structuredClone(edited);
+ for(const [type,rows]of Object.entries(canonical))if(Array.isArray(rows)&&type!=='recycleBin')result[type]=merge(type,rows,edited[type]||[]);
+ if(canonical.clinic)for(const type of clinicTypes)result.clinic[type]=merge(type,canonical.clinic[type]||[],edited.clinic?.[type]||[]);
+ for(const b of result.bills||[]){const before=(canonical.bills||[]).find(x=>x.id===b.id),view=(base.bills||[]).find(x=>x.id===b.id);if(before?.quoteId&&view)for(const key of ['cost','actualCost','costKind'])if(same(b[key],view[key])){if(Object.hasOwn(before,key))b[key]=before[key];else delete b[key];}}
+ for(const v of result.visits||[]){const old=(canonical.visits||[]).find(x=>x.id===v.id);if(!old)continue;if(hidden.has(recycleTargetKey({type:'visits',id:v.id})))continue;
+  for(const type of ['photos','addenda'])if(old[type]||v[type])v[type]=merge(type,old[type]||[],v[type]||[],v.id);
+  for(const [photoId,map]of Object.entries(old.maps||{})){if(hidden.has(recycleTargetKey({type:'photos',id:photoId,parentId:v.id}))){v.maps[photoId]=structuredClone(map);continue;}if(v.maps[photoId]){const changed=v.maps[photoId].version!==map.version;if(changed&&v.maps[photoId].history.length===map.history.length+1)v.maps[photoId].history[v.maps[photoId].history.length-1]=structuredClone(map.points);v.maps[photoId].points=merge('points',map.points||[],v.maps[photoId].points||[],v.id,photoId);}}
+ }
+ for(const key of Object.keys(canonical))delete canonical[key];Object.assign(canonical,result);return canonical;
+}
+export function validateRecycleTransition(old,next){
+ const a=old.recycleBin||[],b=next.recycleBin||[];
+ if(!Array.isArray(b)||b.length<a.length||b.length>10000)throw Error('A lixeira e seu histórico precisam ser preservados.');
+ const seen=new Set();for(const entry of b){if(!entry||!id(entry.id)||seen.has(entry.id)||!stamp(entry.deletedAt)||entry.restoredAt!==null&&!stamp(entry.restoredAt)||!Array.isArray(entry.targets)||!entry.targets.length)throw Error('Registro de lixeira inválido.');seen.add(entry.id);}
+ let changed=false;
+ for(let i=0;i<a.length;i++){const prior=a[i],entry=b[i];if(!same({...prior,restoredAt:entry?.restoredAt},entry)||prior.restoredAt&&entry.restoredAt!==prior.restoredAt)throw Error('Histórico da lixeira não pode ser reescrito.');if(prior.restoredAt!==entry.restoredAt){if(!entry.restoredAt)throw Error('Recuperação inválida.');changed=true;}}
+ if(b.length>a.length){if(b.length!==a.length+1)throw Error('Exclua um registro por confirmação.');const entry=b.at(-1),scope=recycleScope(old,entry.target);if(entry.restoredAt||!same(scope,{target:entry.target,label:entry.label,targets:entry.targets})||Object.keys(entry).some(k=>!['id','target','label','targets','deletedAt','restoredAt'].includes(k)))throw Error('Os vínculos da exclusão mudaram. Atualize e confirme novamente.');changed=true;}
+ if(changed){const omit=s=>Object.fromEntries(Object.entries(s).filter(([k])=>k!=='recycleBin'));if(!same(omit(old),omit(next)))throw Error('A exclusão ou recuperação deve preservar todos os registros originais.');}
+ else{
+  for(const type of Object.keys(RECYCLE_TYPES))for(const row of recycleRecords(old,type,{includeHidden:true})){if(!isRecycled(old,type,row.id,row.parentId,row.photoId))continue;const after=recycleRecords(next,type,{includeHidden:true}).find(x=>x.id===row.id&&x.parentId===row.parentId&&x.photoId===row.photoId);if(!after||!same(after.record,row.record))throw Error('Recupere o registro antes de alterá-lo.');}
+ }
+ // A restored appointment must not silently double-book a slot used while it
+ // was hidden. Historical completed/cancelled appointments remain historical.
+ if(a.some((x,i)=>!x.restoredAt&&b[i]?.restoredAt)){
+  const active=activeWorkspace(next),live=active.appointments||[];
+  for(const entry of a.filter((x,i)=>!x.restoredAt&&b[i]?.restoredAt))for(const target of entry.targets.filter(t=>t.type==='patients')){const patient=(active.patients||[]).find(x=>x.id===target.id),cpf=String(patient?.cpf||'').replace(/\D/g,'');if(cpf&&(active.patients||[]).some(x=>x.id!==target.id&&String(x.cpf||'').replace(/\D/g,'')===cpf))throw Error('Já existe um cadastro ativo com este CPF. Confira o duplicado antes de recuperar.');}
+  const minutes=t=>Number(t.slice(0,2))*60+Number(t.slice(3));
+  for(const entry of a.filter((x,i)=>!x.restoredAt&&b[i]?.restoredAt))for(const target of entry.targets.filter(t=>t.type==='appointments')){const r=live.find(x=>x.id===target.id);if(!r||['cancelado','concluido'].includes(r.status))continue;const start=minutes(r.time);if(live.some(x=>x.id!==r.id&&x.date===r.date&&!['cancelado','concluido'].includes(x.status)&&(x.professionalId||'amj-principal')===(r.professionalId||'amj-principal')&&start<minutes(x.time)+x.duration&&minutes(x.time)<start+r.duration))throw Error('O horário foi ocupado enquanto estava na lixeira. Reagende ou exclua o conflito antes de recuperar.');}
+ }
+ return changed;
+}

@@ -12,6 +12,8 @@ const collections = {
 };
 export function destructiveChanges(before, after) {
   const changes = new Set();
+  const entries=new Set((before.recycleBin||[]).map(x=>x.id));
+  for(const entry of after.recycleBin||[])if(!entries.has(entry.id))changes.add('Mover para a lixeira: '+entry.label+' · '+entry.targets.length+' registro(s) vinculado(s) preservados');
   function compare(oldRows, newRows, label) {
     const next = new Map((newRows || []).map(row => [row.id, row]));
     for (const old of oldRows || []) {

@@ -2,6 +2,7 @@ import {loadClinicAuth} from './integration/auth-loader.mjs';
 import {createSessionBridge} from './integration/session.mjs';
 import {errorMessage} from './integration/errors.mjs';
 import {createCloudStore} from './cloud-store.mjs';
+import {activeWorkspace} from './recycle-bin.mjs';
 import {configureRuntimeStore} from './runtime-store.mjs';
 import {createClinicalBridgeService} from './clinical-bridge-service.mjs';
 import {configureClinicalBridge,clearClinicalBridge,getClinicalBridge} from './clinical-bridge-runtime.mjs';
@@ -17,6 +18,7 @@ async function ready(){
   if(started){location.reload();return;}
   bridge=createSessionBridge(auth);
   store=createCloudStore({session:bridge,onInvalidated:invalidate,onStatus:state=>{
+    const daily=document.querySelector('[data-cloud-daily-status]');if(daily){daily.dataset.kind=state.kind;daily.textContent=state.kind==='saved'?'Alterações salvas':state.kind==='saving'?'Salvando…':state.kind==='locked'?'Entre novamente para continuar':state.pending?'Salvamento precisa de conferência · abra Conta e suporte':state.kind==='error'||state.kind==='conflict'?state.message:'Conferindo salvamento…';}
     const status=document.querySelector('[data-cloud-status]');if(status){status.textContent=state.message;status.dataset.kind=state.kind;}
     document.querySelector('[data-cloud-resolve]')?.toggleAttribute('hidden',!state.pending||state.canDiscardPending);
     document.querySelector('[data-cloud-conflict]')?.toggleAttribute('hidden',!state.canDiscardPending);
@@ -40,8 +42,8 @@ gate.addEventListener('click',async event=>{if(event.target.closest('[data-login
 document.querySelector('[data-cloud-exit]')?.addEventListener('click',async()=>{const originalService=getClinicalBridge(),pending=originalService?.getPendingLink?.();if(store?.isBusy()||originalService?.isLinkBusy?.()||pending&&!pending.rejected){document.querySelector('[data-cloud-status]').textContent='Confira a gravação pendente antes de sair da conta.';return;}if(!window.dispatchEvent(new Event('amj:before-sign-out',{cancelable:true})))return;if(!confirm('Sair da conta e retirar os dados desta tela? Alterações não salvas serão descartadas.'))return;try{await bridge.signOut();}catch{invalidate();}});
 document.querySelector('[data-cloud-resolve]')?.addEventListener('click',async()=>{try{await store.resolvePending();window.dispatchEvent(new Event('amj:cloud-refresh'));}catch(error){document.querySelector('[data-cloud-status]').textContent=error.message;}});
 document.querySelector('[data-cloud-refresh]')?.addEventListener('click',()=>window.dispatchEvent(new Event('amj:cloud-refresh')));
-document.querySelector('[data-cloud-conflict]')?.addEventListener('click',()=>window.dispatchEvent(new CustomEvent('amj:cloud-reload-request',{detail:{refresh:()=>store.refreshAfterConflict()}})));
-document.querySelector('[data-cloud-reconcile]')?.addEventListener('click',()=>window.dispatchEvent(new CustomEvent('amj:cloud-reconcile-request',{detail:{reconcile:()=>store.reconcilePending()}})));
+document.querySelector('[data-cloud-conflict]')?.addEventListener('click',()=>window.dispatchEvent(new CustomEvent('amj:cloud-reload-request',{detail:{refresh:()=>store.refreshAfterConflict().then(activeWorkspace)}})));
+document.querySelector('[data-cloud-reconcile]')?.addEventListener('click',()=>window.dispatchEvent(new CustomEvent('amj:cloud-reconcile-request',{detail:{reconcile:()=>store.reconcilePending().then(activeWorkspace)}})));
 gate.innerHTML=base('<h1>Preparando acesso seguro…</h1>');
 try{auth=await loadClinicAuth();await auth.initialize();await show();}catch(error){gate.innerHTML=base('<h1>Não foi possível iniciar o acesso</h1><p>'+escape(errorMessage(error))+'</p><button class="primary" data-login-reload>Tentar novamente</button>');}
 addEventListener('pagehide',()=>{clearClinicalBridge();store?.dispose();bridge?.destroy();auth?.destroy();},{once:true});

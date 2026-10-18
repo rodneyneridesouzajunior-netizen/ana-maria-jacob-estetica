@@ -1,3 +1,4 @@
+import {openRecycleEntries,isRecycled} from '../_shared/app-workspace-domain/recycle-bin.mjs';
 import {emptyState,validateTransition,stable,hash,uuid,validId,fail,WorkspaceError,imageInfo} from './rules.mjs';
 import {CLINICAL_ACTIONS,createClinicalBridge} from './clinical-bridge.mjs';
 import {SITE_BOOKING_ACTIONS,createSiteBooking} from './site-booking.mjs';
@@ -29,6 +30,7 @@ export function createWorkspaceHandler({authenticate,authorize,repository,now=()
    const bytes=await limited(req,multipart?11*1024*1024:5*1024*1024);let p;
    try{p=multipart?await new Request(req.url,{method:'POST',headers:{'Content-Type':req.headers.get('content-type')},body:bytes}).formData():JSON.parse(new TextDecoder().decode(bytes));}catch{fail('invalid_payload','Envio inválido.');}
    const action=multipart?p.get('acao'):p?.acao;if(!['abrir','commit','status_operacao','upload','obterfoto',...CLINICAL_ACTIONS,...SITE_BOOKING_ACTIONS,...CLINICAL_COMPLETION_ACTIONS,...CLINICAL_SETTINGS_ACTIONS,...CUSTOM_DOCUMENT_ACTIONS].includes(action)||multipart!== (action==='upload'))fail('unsupported_action','Operação não reconhecida.');
+   if(!['abrir','commit','status_operacao','upload','obterfoto'].includes(action)&&(p.patient_id||p.visit_id||p.document_id)){const row=await repository.load(ctx.clinicId);for(const [field,type]of Object.entries({patient_id:'patients',visit_id:'visits',document_id:'documentResponses'}))if(p[field]&&isRecycled(row?.state||{},type,p[field]))fail('record_in_recycle_bin','O registro está na lixeira. Recupere-o antes de continuar.',409);}
    if(CUSTOM_DOCUMENT_ACTIONS.includes(action))return response({...fields,...await customDocuments(p,ctx,req)});
    if(SITE_BOOKING_ACTIONS.includes(action))return response({...fields,...await siteBooking(p,ctx,req)});
    if(CLINICAL_COMPLETION_ACTIONS.includes(action))return response({...fields,...await completion(p,ctx,req)});
@@ -41,6 +43,8 @@ export function createWorkspaceHandler({authenticate,authorize,repository,now=()
     return response({...fields,operation:{id:op.operation_id,kind:op.kind,status:op.status,revision:op.revision||null,result}});
    }
    if(action==='obterfoto'){
+    // Owners may still read originals in the recycle bin for the encrypted
+    // backup. Active lists are filtered separately; clinic/hash checks remain.
     if(!validId(p.photo_id))fail('invalid_photo','Fotografia inválida.');const [row,photo]=await Promise.all([repository.load(ctx.clinicId),repository.photo(ctx.clinicId,p.photo_id)]);const owner=row?.state.visits.find(v=>v.id===photo?.visit_id&&v.patientId===photo?.patient_id&&v.photos.some(x=>x.id===photo?.id&&x.sha256===photo?.sha256));if(!photo||photo.status!=='ready'||!owner)fail('photo_not_found','Fotografia não encontrada nesta clínica.',404);
     const [original_url,preview_url]=await Promise.all([repository.sign(photo.original_path),repository.sign(photo.preview_path)]);return response({...fields,photo:{...publicPhoto(photo),original_url,preview_url,expires_in:120}});
    }
@@ -54,10 +58,11 @@ export function createWorkspaceHandler({authenticate,authorize,repository,now=()
     const fingerprint=await hash(stable({expected_revision:expected,state:p.state})),prior=await repository.operation(ctx.clinicId,operationId);
     if(prior){if(prior.kind!=='commit'||prior.fingerprint!==fingerprint)fail('operation_reused','Esta operação já foi usada com outros dados.',409);const saved=await repository.version(ctx.clinicId,prior.revision);return response({...fields,workspace:workspace(saved),operation:{id:operationId,status:'committed',revision:prior.revision,replayed:true}});}
     const [row,photos]=await Promise.all([repository.load(ctx.clinicId),repository.photos(ctx.clinicId)]),old=row?.state||emptyState();if((row?.revision||0)!==expected)fail('revision_conflict','Outra alteração foi salva. Mantenha o rascunho e confira a versão atual.',409);
-    try{validateTransition(old,p.state,{photos,now:now()});}catch(error){if(error instanceof WorkspaceError)throw error;fail('invalid_state','O estado contém valores incompatíveis com as regras operacionais.');}const state=structuredClone(p.state);state.revision=expected+1;state.auditLog.push({id:operationId,at:now(),action:'Alteração operacional confirmada',revision:state.revision,actorId:ctx.userId});
+    try{validateTransition(old,p.state,{photos,now:now()});}catch(error){if(error instanceof WorkspaceError)throw error;fail('invalid_state','O estado contém valores incompatíveis com as regras operacionais.');}const state=structuredClone(p.state);state.revision=expected+1;state.auditLog.push({id:operationId,at:now(),action:(p.state.recycleBin||[]).length>(old.recycleBin||[]).length?'Movido para a lixeira: '+p.state.recycleBin.at(-1).label:openRecycleEntries(p.state).length<openRecycleEntries(old).length?'Registro recuperado da lixeira':'Revisão operacional confirmada',revision:state.revision,actorId:ctx.userId});
     const saved=await repository.commit({...actor,p_fingerprint:fingerprint,p_expected:expected,p_state:state,p_state_hash:await hash(stable(state))});return response({...fields,workspace:workspace(saved),operation:{id:operationId,status:'committed',revision:saved.revision,replayed:saved.replayed}});
    }
    const id=p.get('photo_id'),patient=p.get('patient_id'),visit=p.get('visit_id'),original=p.get('original'),preview=p.get('preview');if(![id,patient,visit].every(validId)||!(original instanceof Blob)||!(preview instanceof Blob)||!original.size||original.size>8*1024*1024||!preview.size||preview.size>2*1024*1024||!ext[original.type]||!ext[preview.type])fail('invalid_photo','Envie original JPEG/PNG/WebP até 8 MB e prévia até 2 MB.');
+   const liveRow=await repository.load(ctx.clinicId);if(liveRow&&(['patients','visits'].some((type,i)=>isRecycled(liveRow.state,type,i?visit:patient))))fail('record_in_recycle_bin','Recupere a paciente e a consulta antes de enviar uma fotografia.',409);
    const originalBytes=new Uint8Array(await original.arrayBuffer()),previewBytes=new Uint8Array(await preview.arrayBuffer()),originalInfo=imageInfo(originalBytes,original.type),previewInfo=imageInfo(previewBytes,preview.type),sha256=await hash(originalBytes),previewHash=await hash(previewBytes),path=ctx.clinicId+'/'+id;
    const metadata={id,patient_id:patient,visit_id:visit,sha256,mime_type:original.type,size_bytes:original.size,preview_sha256:previewHash,preview_mime_type:preview.type,preview_size_bytes:preview.size,width:previewInfo.width,height:previewInfo.height,original_width:originalInfo.width,original_height:originalInfo.height,original_path:path+'/original-'+sha256+'.'+ext[original.type],preview_path:path+'/preview-'+previewHash+'.'+ext[preview.type]};
    const fingerprint=await hash(stable({expected_revision:expected,metadata}));let reserved=await repository.reserve({...actor,p_fingerprint:fingerprint,p_expected:expected,p_photo:id,p_patient:patient,p_visit:visit,p_metadata:metadata});

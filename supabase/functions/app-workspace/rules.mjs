@@ -3,6 +3,7 @@ import {defaultClinic,validateClinicAppointment} from '../_shared/app-workspace-
 import {allocateLotCosts,quoteTotals,validateQuoteItem,stockUnits,visitMarkings,quoteExecutionCosts,completeVisit} from '../_shared/app-workspace-domain/operations-domain.mjs';
 import {assertQuoteDeliveryTransitions} from './quote-delivery-transitions.mjs';
 import {assertFacialHistoryPreserved} from '../_shared/app-workspace-domain/facial-study-domain.mjs';
+import {activeWorkspace,mergeActiveWorkspace,validateRecycleTransition,isRecycled} from '../_shared/app-workspace-domain/recycle-bin.mjs';
 
 export class WorkspaceError extends Error{constructor(code,message,status=422){super(message);this.code=code;this.status=status;}}
 export const fail=(code,message,status=422)=>{throw new WorkspaceError(code,message,status);};
@@ -12,7 +13,7 @@ export const stable=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!
 export const hash=async value=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',typeof value==='string'?new TextEncoder().encode(value):value)),b=>b.toString(16).padStart(2,'0')).join('');
 const same=(a,b)=>stable(a)===stable(b),omit=(v,keys)=>Object.fromEntries(Object.entries(v).filter(([k])=>!keys.includes(k)));
 export const COLLECTIONS=['patients','appointments','visits','bills','payments','requests','products','procedures','stockLots','stockMovements','quotes','quoteSessionUses','quoteProductDeliveries','quoteProductDeliveryReversals','expectedReturns','operationHistory','patientHistory','installments','installmentHistory','expenses','expensePayments','expensePaymentReversals','paymentReversals','financeHistory','documentTemplates','documentResponses','documentHistory','comparisons','auditLog','facialStudies'];
-const TOP_KEYS=new Set(['schema','revision','clinic','operationsSchema',...COLLECTIONS]);
+const TOP_KEYS=new Set(['schema','revision','clinic','operationsSchema','recycleBin',...COLLECTIONS]);
 export function emptyState(){return {schema:1,revision:0,operationsSchema:1,...Object.fromEntries(COLLECTIONS.map(k=>[k,[]])),clinic:defaultClinic()};}
 function preserve(old,rows,label,allowed=[]){const index=new Map(rows.map(x=>[x.id,x]));for(const previous of old){const next=index.get(previous.id);if(!next||!same(omit(previous,allowed),omit(next,allowed)))fail('immutable_history',`${label}: registro anterior precisa ser preservado.`);}}
 function prefix(old,next,label){if(!Array.isArray(next)||next.length<old.length||old.some((x,i)=>!same(x,next[i])))fail('immutable_history',`${label}: histórico anterior precisa ser preservado.`);}
@@ -36,19 +37,21 @@ function validateShape(s){
 }
 function versioned(old,next,label){for(const p of old){const n=next.find(x=>x.id===p.id);if(!n)fail('record_removal_forbidden',`${label}: use inativação ou cancelamento.`);if(!same(p,n)&&n.version!==(p.version||1)+1)fail('entity_version_conflict',`${label}: versão não avançou exatamente uma vez.`,409);}}
 export function validateTransition(old,next,{photos=[],now=new Date().toISOString(),clinicalCompletions=new Set()}={}){
+ try{validateRecycleTransition(old,next);}catch(error){fail('recycle_transition_invalid',error.message);}
  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date(now));
  validateShape(next);if(next.revision!==old.revision)fail('revision_conflict','A revisão enviada difere da versão lida.',409);
+ for(const type of COLLECTIONS)for(const record of next[type]||[]){const previous=get(old,type,record.id);if(previous&&same(previous,record))continue;for(const [field,owner]of Object.entries({patientId:'patients',visitId:'visits',billId:'bills',expenseId:'expenses',quoteId:'quotes',productId:'products',lotId:'stockLots',templateId:'documentTemplates'}))if(record[field]&&isRecycled(next,owner,record[field]))fail('recycled_binding','Recupere o registro vinculado na lixeira antes de cadastrar ou alterar este item.');}
  // Block new identity collisions without freezing unrelated work on a legacy
  // snapshot. Existing duplicates remain visible for deliberate correction.
  const cpfOf=p=>String(p?.cpf||'').replace(/\D/g,'');
- for(const p of next.patients){const previous=old.patients.find(x=>x.id===p.id),cpf=cpfOf(p);if(!cpf||previous&&cpfOf(previous)===cpf)continue;if(next.patients.some(other=>other.id!==p.id&&cpfOf(other)===cpf))fail('duplicate_patient_cpf','Este CPF já está vinculado a outro cadastro. Confira a paciente antes de salvar.');}
+ for(const p of next.patients){const previous=old.patients.find(x=>x.id===p.id),cpf=cpfOf(p);if(!cpf||previous&&cpfOf(previous)===cpf)continue;if(activeWorkspace(next).patients.some(other=>other.id!==p.id&&cpfOf(other)===cpf))fail('duplicate_patient_cpf','Este CPF já está vinculado a outro cadastro. Confira a paciente antes de salvar.');}
  try{assertFacialHistoryPreserved(old,next);}catch(error){fail('immutable_facial_history',error.message);}
  prefix(old.auditLog,next.auditLog,'Auditoria');if(next.auditLog.length!==old.auditLog.length)fail('audit_server_owned','A auditoria de revisão é registrada pelo servidor.');
  for(const key of ['stockMovements','quoteSessionUses','quoteProductDeliveries','quoteProductDeliveryReversals','operationHistory','patientHistory','installmentHistory','paymentReversals','expensePaymentReversals','financeHistory','documentHistory'])preserve(old[key]||[],next[key],key);
- try{assertQuoteDeliveryTransitions(old,next,{today,now});}catch(error){fail('product_delivery_invalid',error.message);}
+ try{assertQuoteDeliveryTransitions(activeWorkspace(old),activeWorkspace(next),{today,now});}catch(error){fail('product_delivery_invalid',error.message);}
  for(const key of ['patients','appointments','visits','bills','payments','products','procedures','stockLots','quotes','expenses','expensePayments','documentTemplates','documentResponses','comparisons','expectedReturns'])for(const p of old[key]||[])if(!get(next,key,p.id))fail('record_removal_forbidden','Use arquivamento ou cancelamento; não remova '+key+'.');
  preserve(old.expectedReturns,next.expectedReturns,'Retornos previstos',['status','appointmentId']);
- for(const a of next.appointments){const p=get(old,'appointments',a.id);if(p&&(p.status==='concluido'||old.visits.some(v=>v.appointmentId===p.id&&(v.status==='concluido'||v.lockedAt)))&&!same(p,a))fail('appointment_history_immutable','Preserve o horário e o profissional do atendimento concluído.');const moved=!p||['patientId','date','time','duration','professionalId'].some(k=>p[k]!==a[k])||p.status==='cancelado'&&a.status!=='cancelado';if(moved){try{validateClinicAppointment(next,a,a.id);}catch(error){fail('appointment_invalid',error.message);}}}
+ for(const a of next.appointments){const p=get(old,'appointments',a.id);if(p&&(p.status==='concluido'||old.visits.some(v=>v.appointmentId===p.id&&(v.status==='concluido'||v.lockedAt)))&&!same(p,a))fail('appointment_history_immutable','Preserve o horário e o profissional do atendimento concluído.');const moved=!p||['patientId','date','time','duration','professionalId'].some(k=>p[k]!==a[k])||p.status==='cancelado'&&a.status!=='cancelado';if(moved){try{validateClinicAppointment(activeWorkspace(next),a,a.id);}catch(error){fail('appointment_invalid',error.message);}}}
  for(const key of ['patients','products','procedures','stockLots','expenses'])versioned(old[key],next[key],key);
  for(const p of old.patients){const n=get(next,'patients',p.id);if(!same(p,n)&&!newly(old,next,'patientHistory').some(h=>h.patientId===p.id&&same(h.previous,p)&&same(h.snapshot,n)))fail('patient_history_required','A correção do cadastro precisa preservar a versão anterior.');}
  for(const e of old.expenses){const n=get(next,'expenses',e.id);if(same(e,n))continue;if(e.cancelledAt||old.expensePayments.some(p=>p.expenseId===e.id&&!p.reversedAt)&&next.expensePayments.some(p=>p.expenseId===e.id&&!p.reversedAt))fail('paid_expense_immutable','Estorne os pagamentos antes de corrigir a despesa.');if(!newly(old,next,'financeHistory').some(h=>h.entityId===e.id&&same(h.previous,e)&&same(h.snapshot,n)&&String(h.reason||'').trim().length>=5))fail('expense_history_required','A alteração da despesa precisa preservar seu histórico e motivo.');}
@@ -69,8 +72,9 @@ export function validateTransition(old,next,{photos=[],now=new Date().toISOStrin
   if(q.status==='cancelado'&&!same(q,n))fail('immutable_quote','Orçamento cancelado é preservado.');
   if(q.status==='aprovado'&&!same(q,n)){
    if(n.status!=='cancelado'||n.version!==q.version+1||!same(omit(q,['status','version','cancelledAt','cancelDate','cancelReason','updatedAt','history']),omit(n,['status','version','cancelledAt','cancelDate','cancelReason','updatedAt','history'])))fail('immutable_quote','Valores e itens aprovados são imutáveis.');
-   if(next.quoteSessionUses.some(u=>u.quoteId===q.id&&!u.reversedAt))fail('quote_already_used','Orçamento com sessões utilizadas não pode ser cancelado.');
-   if(next.quoteProductDeliveries.some(d=>d.quoteId===q.id&&!next.quoteProductDeliveryReversals.some(r=>r.deliveryId===d.id)))fail('quote_already_delivered','Confira e estorne as entregas antes de cancelar o orçamento.');
+   const active=activeWorkspace(next);
+   if(active.quoteSessionUses.some(u=>u.quoteId===q.id&&!u.reversedAt))fail('quote_already_used','Orçamento com sessões utilizadas não pode ser cancelado.');
+   if(active.quoteProductDeliveries.some(d=>d.quoteId===q.id&&!active.quoteProductDeliveryReversals.some(r=>r.deliveryId===d.id)))fail('quote_already_delivered','Confira e estorne as entregas antes de cancelar o orçamento.');
   }
  }
  for(const b of old.bills){const n=get(next,'bills',b.id);if(!same(omit(b,['cost','actualCost','costKind','cancelledAt','cancelDate','cancelReason']),omit(n,['cost','actualCost','costKind','cancelledAt','cancelDate','cancelReason'])))fail('immutable_bill','Valores e vínculos da cobrança anterior são preservados.');if(b.cancelledAt&&!same(b,n))fail('immutable_bill','Cobrança cancelada não pode mudar.');if(!b.visitId&&!b.quoteId&&!same(omit(b,['cancelledAt','cancelDate','cancelReason']),omit(n,['cancelledAt','cancelDate','cancelReason'])))fail('immutable_bill','Custos de cobrança avulsa são preservados.');if(n.cancelledAt&&(!timestamp(n.cancelledAt)||String(n.cancelReason||'').trim().length<5))fail('invalid_cancellation','Cancelamento precisa de data e motivo.');}
@@ -93,16 +97,19 @@ export function validateTransition(old,next,{photos=[],now=new Date().toISOStrin
    if(!v.completionSnapshot||!timestamp(v.completedAt)||v.lockedAt!==v.completedAt||!v.procedureSnapshot||!validId(v.completionOperationId))fail('completion_snapshot_required','Conclusão sem versão clínica preservada.');
    if(v.procedureSnapshot.active===false||get(next,'procedures',v.procedureId)?.active===false||v.date>today||Date.parse(v.completedAt)>Date.parse(now)+300000)fail('invalid_completion','Confira data e procedimento da conclusão.');
    const usage=v.consumptions||[],allocated=allocateLotCosts(usage);if(usage.some((x,i)=>x.cost!==allocated[i].cost))fail('cost_allocation_invalid','Custos dos lotes não correspondem ao consumo.');
-   const required=visitMarkings(v),seen=new Set(),totals=new Map();
+   const activeVisit=get(activeWorkspace(next),'visits',v.id);
+   if(!activeVisit)fail('recycled_binding','Recupere a consulta na lixeira antes de concluir.');
+   const required=visitMarkings(activeVisit),seen=new Set(),totals=new Map();
    for(const x of usage){const lot=get(next,'stockLots',x.lotId),product=get(next,'products',x.productId);if(!lot||!product||product.active===false||x.unitCost!==lot.unitCost||x.productId!==lot.productId||x.unit!==lot.unit||x.lotCode!==lot.code||x.expiry!==lot.expiry||x.productName!==product.name||x.units!==stockUnits(x.quantity)||lot.expiry<today)fail('consumption_lot_invalid','Consumo difere do lote verificado ou o lote está vencido.');totals.set(lot.id,(totals.get(lot.id)||0)+x.units);if(x.photoId||x.pointId){const key=JSON.stringify([x.photoId,x.pointId]),point=required.find(p=>p.photoId===x.photoId&&p.pointId===x.pointId);if(!point||seen.has(key)||stockUnits(point.quantity)!==x.units||point.unit!==x.unit||point.region!==x.region)fail('consumption_marking_invalid','Consumo difere da marcação registrada.');seen.add(key);}else if(typeof x.reason!=='string'||!x.reason.trim())fail('consumption_reason_required','Informe o uso do material sem marcação.');}
    if(required.some(p=>!seen.has(JSON.stringify([p.photoId,p.pointId]))))fail('consumption_marking_missing','Toda marcação com quantidade precisa de lote e consumo.');
    const movements=newly(old,next,'stockMovements').filter(m=>m.visitId===v.id);if(movements.length!==totals.size||[...totals].some(([lot,units])=>!movements.some(m=>m.type==='consumo'&&m.lotId===lot&&m.deltaUnits===-units&&m.operationId===v.completionOperationId)))fail('consumption_movement_missing','Consumo precisa corresponder à baixa do estoque.');
    if(v.completionSnapshot.procedureExecutions){
     // Rebuild from the saved draft and the explicit user selections. This checks
     // every cost allocation and session event, including the multi-procedure case.
-    const expectedState=structuredClone(old),snap=v.completionSnapshot;
+    const expectedActive=activeWorkspace(old),snap=v.completionSnapshot;
     const consumptions=usage.map(x=>Object.fromEntries(['lotId','quantity','photoId','pointId','reason'].filter(k=>x[k]!==undefined).map(k=>[k,x[k]])));
-    try{completeVisit(expectedState,{operationId:v.completionOperationId,visitId:v.id,procedureId:v.procedureId,consumptions,quoteId:v.quoteId||'',...(v.quoteId?{quoteItems:snap.quoteItems}:{}),today,now:v.completedAt},{documentCheck:()=>true});}catch(error){fail('completion_execution_invalid',error.message);}
+    try{completeVisit(expectedActive,{operationId:v.completionOperationId,visitId:v.id,procedureId:v.procedureId,consumptions,quoteId:v.quoteId||'',...(v.quoteId?{quoteItems:snap.quoteItems}:{}),today,now:v.completedAt},{documentCheck:()=>true});}catch(error){fail('completion_execution_invalid',error.message);}
+    const expectedState=structuredClone(old);mergeActiveWorkspace(expectedState,expectedActive);
     const expectedVisit=get(expectedState,'visits',v.id);
     if(!same(expectedVisit,v))fail('completion_execution_invalid','A conclusão diverge da execução preservada dos procedimentos.');
     for(const key of ['quoteSessionUses','stockMovements','expectedReturns'])if(!same(expectedState[key].filter(x=>x.visitId===v.id),next[key].filter(x=>x.visitId===v.id)))fail('completion_execution_invalid','Sessões, estoque e retornos precisam corresponder à conclusão.');
@@ -118,7 +125,8 @@ export function validateTransition(old,next,{photos=[],now=new Date().toISOStrin
  }
  for(const u of newly(old,next,'quoteSessionUses'))if(get(old,'visits',u.visitId)?.status==='concluido'||get(next,'visits',u.visitId)?.quoteId!==u.quoteId||u.reversedAt)fail('session_use_invalid','Evento de sessão precisa corresponder à nova conclusão.');
  // Every realised bill is derived from finished visits / session events; no client-written profit.
- for(const b of next.bills){if(b.visitId){const v=get(next,'visits',b.visitId);if(v?.billId!==b.id||v.status!=='concluido')fail('visit_bill_invalid','Cobrança de consulta sem vínculo recíproco exclusivo.');if(b.actualCost!==v.actualCost||b.cost!==v.actualCost)fail('bill_cost_invalid','Custo de cobrança não corresponde à consulta.');}if(b.quoteId){const expected=quoteExecutionCosts(next,b.quoteId);if(b.actualCost!==expected.actualCost||b.cost!==expected.cost)fail('bill_cost_invalid','Custo da proposta não corresponde às sessões e produtos entregues.');}}
+ const active=activeWorkspace(next);
+ for(const b of next.bills){if(b.visitId){const v=get(next,'visits',b.visitId);if(v?.billId!==b.id||v.status!=='concluido')fail('visit_bill_invalid','Cobrança de consulta sem vínculo recíproco exclusivo.');if(b.actualCost!==v.actualCost||b.cost!==v.actualCost)fail('bill_cost_invalid','Custo de cobrança não corresponde à consulta.');}if(b.quoteId&&get(active,'quotes',b.quoteId)){const expected=quoteExecutionCosts(active,b.quoteId),prior=get(old,'bills',b.id),costChanged=!prior||['actualCost','cost','costKind'].some(k=>b[k]!==prior[k]);if(costChanged&&(b.actualCost!==expected.actualCost||b.cost!==expected.cost||b.costKind!==expected.costKind))fail('bill_cost_invalid','Custo da proposta não corresponde às sessões e produtos entregues.');}}
  return next;
 }
 

@@ -2,6 +2,7 @@
 const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const dateLabel=value=>String(value).split('-').reverse().join('/');
 const keyFor=(visitId,photoId)=>JSON.stringify([visitId,photoId]);
+export const COMPARISON_LAYOUTS=Object.freeze({fullhd:{width:1920,height:1080,label:'Horizontal · 1920 × 1080'},feed:{width:1080,height:1350,label:'Feed vertical · 1080 × 1350'},story:{width:1080,height:1920,label:'Stories · 1080 × 1920'}});
 
 export function comparisonPhotos(state,patientId){
   if(!state.patients.some(patient=>patient.id===patientId))throw Error('Paciente não encontrada.');

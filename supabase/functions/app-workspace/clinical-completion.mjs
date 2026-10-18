@@ -1,6 +1,7 @@
 import {fail,hash,stable,uuid,validId} from './rules.mjs';
 import {completeVisit,procedureDocumentIds,completionProcedures} from '../_shared/app-workspace-domain/operations-domain.mjs';
 import {validCPF} from '../_shared/app-workspace-domain/patients-domain.mjs';
+import {activeWorkspace,mergeActiveWorkspace} from '../_shared/app-workspace-domain/recycle-bin.mjs';
 import {describeClinicalSource} from './clinical-bridge.mjs';
 
 export const CLINICAL_COMPLETION_ACTIONS=Object.freeze(['preparar_conclusao_clinica','concluir_consulta_clinica','status_conclusao_clinica']);
@@ -47,7 +48,7 @@ export function createClinicalCompletion({repository,authorize,validateTransitio
  async function inspect(p,ctx){
   const request=input(p),row=await repository.load(ctx.clinicId);
   if(!row||row.revision!==request.expected_revision)fail('revision_conflict','A consulta mudou. Reabra a revisão antes de confirmar.',409);
-  const state=row.state,visit=state.visits.find(v=>v.id===request.visit_id&&v.patientId===request.patient_id),patient=state.patients.find(p=>p.id===request.patient_id);
+  const canonical=row.state,state=activeWorkspace(canonical),visit=state.visits.find(v=>v.id===request.visit_id&&v.patientId===request.patient_id),patient=state.patients.find(p=>p.id===request.patient_id);
   if(!visit||!patient)fail('clinical_visit_missing','Consulta e paciente não encontradas.',404);
   if(visit.lockedAt||['concluido','cancelado'].includes(visit.status))fail('clinical_visit_locked','A consulta já foi encerrada. Preserve o histórico.',409);
   const procedure=visit.procedureSnapshot;
@@ -88,12 +89,13 @@ export function createClinicalCompletion({repository,authorize,validateTransitio
   // A preview always exercises stock, billing and immutable-history rules, even
   // when human setup remains pending. No changes are written during this pass.
   const stamp=now(),today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo'}).format(new Date(stamp));
-  const next=structuredClone(state);let result;
+  const next=structuredClone(canonical),edited=structuredClone(state);let result;
   try{
-   result=completeVisit(next,{operationId:request.operation_id,visitId:visit.id,procedureId:procedure.id,consumptions:request.consumptions,quoteId:request.quote_id,itemId:request.item_id,sessions:request.sessions,...(request.quoteItems!==undefined?{quoteItems:request.quoteItems}:{}),now:stamp,today},{documentCheck:()=>true});
-   validateTransition(state,next,{photos:await repository.photos(ctx.clinicId),now:stamp,clinicalCompletions:new Set([visit.id])});
+   result=completeVisit(edited,{operationId:request.operation_id,visitId:visit.id,procedureId:procedure.id,consumptions:request.consumptions,quoteId:request.quote_id,itemId:request.item_id,sessions:request.sessions,...(request.quoteItems!==undefined?{quoteItems:request.quoteItems}:{}),now:stamp,today},{documentCheck:()=>true});
+   mergeActiveWorkspace(next,edited);
+   validateTransition(canonical,next,{photos:await repository.photos(ctx.clinicId),now:stamp,clinicalCompletions:new Set([visit.id])});
   }catch(error){blockers.push({code:error.code||'clinical_operational_pending',message:error.message||'Revise materiais, valores e registro antes de concluir.'});}
-  const reviewHash=await hash(stable({request,state_hash:row.state_hash||await hash(stable(state)),profile,policies,documents,declaration_version:CLINICAL_DECLARATION_VERSION}));
+  const reviewHash=await hash(stable({request,state_hash:row.state_hash||await hash(stable(canonical)),profile,policies,documents,declaration_version:CLINICAL_DECLARATION_VERSION}));
   return {request,row,next,result,profile,policy,policies,documents,reviewHash,stamp,blockers,patientName:patient.name,procedureName:procedures.map(p=>p.name).join(' + ')};
  }
  return async function clinicalCompletion(p,ctx,req){

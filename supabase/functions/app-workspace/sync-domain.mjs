@@ -4,11 +4,11 @@ import {createHash} from 'node:crypto';
 const source=new URL('../../../painel/piloto-simples/',import.meta.url);
 const target=new URL('../_shared/app-workspace-domain/',import.meta.url);
 const sha=x=>createHash('sha256').update(x).digest('hex');
-const copy=['operations-domain.mjs','clinic-domain.mjs','finance-domain.mjs','documents-domain.mjs','visit-workflow.mjs','facial-study-domain.mjs','patients-domain.mjs'];
+const copy=['operations-domain.mjs','clinic-domain.mjs','finance-domain.mjs','documents-domain.mjs','visit-workflow.mjs','facial-study-domain.mjs','patients-domain.mjs','recycle-bin.mjs'];
 const transforms={
  'domain.mjs':text=>text.slice(0,text.indexOf('export function seed()')),
  'compare.mjs':text=>text.slice(0,text.indexOf('async function imageFromUrl')),
- 'comparison-library.mjs':text=>text.slice(0,text.indexOf('export function comparisonRecordDraft')).replace('comparisonPhotos,comparisonSelection,resolveComparison,mountComparison','comparisonPhotos,comparisonSelection,resolveComparison').replace(/^import .*feature-ui\.mjs.*\r?\n/m,''),
+ 'comparison-library.mjs':text=>text.slice(0,text.indexOf('export function comparisonRecordDraft')).replace('comparisonPhotos,comparisonSelection,resolveComparison,mountComparison','comparisonPhotos,comparisonSelection,resolveComparison').replace(/^import .*(?:feature-ui|recycle-ui)\.mjs.*\r?\n/gm,''),
  'backup.mjs':text=>text.slice(0,text.indexOf('async function verifySignatures')),
 };
 const check=process.argv.includes('--check'),manifest={format:1,source:'painel/piloto-simples',files:[]};

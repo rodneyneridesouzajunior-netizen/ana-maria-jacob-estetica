@@ -1,3 +1,4 @@
+import {openRecycleConfirmation} from './recycle-ui.mjs';
 import {comparisonPhotos,comparisonSelection,resolveComparison,mountComparison} from './compare.mjs';
 import {escapeHTML as e,input,textArea,featureDialog} from './feature-ui.mjs';
 
@@ -125,9 +126,8 @@ export function mountComparisonLibrary(root,{getState,patientId,readPhoto,mutate
   if(!event.target.matches('[data-library-form]'))return;event.preventDefault();if(disposed||editorReadonly||isBusy()||!draft)return;collect();const value=structuredClone(draft),options={expectedVersion,operationId};const form=event.target;busy=true;form.inert=true;
   try{await mutate(s=>saveComparisonRecord(s,value,options));if(disposed)return;const saved=getState().comparisons.find(c=>c.id===value.id&&c.patientId===patientId);if(!saved)throw Error('Não foi possível reler a comparação salva. Mantenha este rascunho e confira o armazenamento.');dirty=false;draft=null;refresh();begin(saved);tell((storageMode==='clinic-server'?'Comparação confirmada no servidor.':'Comparação salva no armazenamento local.')+' Os originais e as versões anteriores foram preservados.');if(onSaved){root.querySelector('[data-library-form]').inert=true;await onSaved(saved);}}catch(err){if(!disposed)error(err.message);}finally{busy=false;if(!disposed){const activeForm=root.querySelector('[data-library-form]');if(activeForm)activeForm.inert=false;}}
  }
- function remove(record){
-  const op=crypto.randomUUID();deleteDialog=featureDialog({title:'Excluir comparação do uso atual',html:`<p>As versões anteriores e as fotografias originais serão preservadas. Esta ação não apaga fotos do prontuário.</p>${textArea('Motivo','reason','','required minlength="5" maxlength="300"')}`,submitLabel:'Excluir do uso atual',onSubmit:async values=>{if(disposed)throw Error('A biblioteca foi fechada. Reabra a comparação.');busy=true;try{await mutate(s=>deleteComparisonRecord(s,{id:record.id,patientId,expectedVersion:versionOf(record),reason:String(values.get('reason')||''),operationId:op}));if(disposed)return;draft=null;dirty=false;refresh();tell('Comparação excluída do uso atual. O histórico e os originais foram preservados.');}finally{busy=false;}}});
- }
+ function remove(record){deleteDialog=openRecycleConfirmation({getState,mutate,notify:tell,rerender:async()=>{draft=null;dirty=false;refresh();},target:{type:'comparisons',id:record.id}});}
+
  function onClick(event){
   const button=event.target.closest('[data-library]');if(!button||!root.contains(button)||disposed)return;const action=button.dataset.library;
   if(!canLeave())return;

@@ -1,3 +1,4 @@
+import {activeWorkspace,mergeActiveWorkspace,moveToRecycleBin} from '../recycle-bin.mjs';
 import {prepareWorkspaceChange,applyPreparedWorkspaceChange} from '../action-confirmation.mjs';
 import fs from 'node:fs/promises';
 import vm from 'node:vm';
@@ -23,14 +24,14 @@ function harness(){
    if(!elements.has(id))elements.set(id,{id,value:'',textContent:'',innerHTML:'',disabled:false,hidden:false,style:{},dataset:{},classList:{toggle(){return false;}},reset(){},focus(){},addEventListener(){},querySelector(){return el('submit');},showModal(){this.open=true;},close(){this.open=false;}});
    return elements.get(id);
  };
- const document={getElementById:el,querySelector:selector=>selector.includes('undo-map')?el('undo'):null,querySelectorAll:()=>[],addEventListener:(type,fn)=>{const list=listeners.get(type)||[];list.push(fn);listeners.set(type,list);},visibilityState:'visible'};
- const context=vm.createContext({prepareWorkspaceChange,applyPreparedWorkspaceChange,requestActionCode:async()=>{},...rules,assertVisitEditable,fittedPhotoSize,MAP_ZOOM_LEVELS,isConnected:()=>false,structuredClone,crypto:webcrypto,console,document,location:{hash:'#paciente/demo-marina/demo-consulta/mapa'},history:{replaceState(){}},window:{addEventListener(){}},confirm:()=>confirmAnswer,setTimeout:()=>0,clearTimeout(){},load:async()=>structuredClone(workspace),getPhoto:async()=>null,commit:(revision,update)=>new Promise((resolve,reject)=>queued.push(()=>{
-   try{assert.equal(revision,workspace.revision);const next=structuredClone(workspace);update(next);next.revision++;workspace=next;resolve(structuredClone(next));}catch(error){reject(error);}
+ const document={getElementById:id=>id==='cloud-technical-controls'?null:el(id),querySelector:selector=>selector.includes('undo-map')?el('undo'):null,querySelectorAll:()=>[],addEventListener:(type,fn)=>{const list=listeners.get(type)||[];list.push(fn);listeners.set(type,list);},visibilityState:'visible'};
+const context=vm.createContext({openRecycleConfirmation:({mutate,target,notify})=>mutate(s=>moveToRecycleBin(s,target)).catch(e=>notify(e.message,true)),renderRecycleTools:()=>'',renderRecycleBin:()=>'',mountRecycleUI:()=>()=>{},prepareWorkspaceChange,applyPreparedWorkspaceChange,requestActionCode:async()=>{},...rules,assertVisitEditable,fittedPhotoSize,MAP_ZOOM_LEVELS,isConnected:()=>false,structuredClone,crypto:webcrypto,console,document,location:{hash:'#paciente/demo-marina/demo-consulta/mapa'},history:{replaceState(){}},window:{addEventListener(){}},confirm:()=>confirmAnswer,setTimeout:()=>0,clearTimeout(){},load:async()=>structuredClone(workspace),getPhoto:async()=>null,commit:(revision,update)=>new Promise((resolve,reject)=>queued.push(()=>{
+   try{assert.equal(revision,workspace.revision);const next=structuredClone(workspace),view=activeWorkspace(next);update(view);mergeActiveWorkspace(next,view);next.revision++;workspace=next;resolve(activeWorkspace(next));}catch(error){reject(error);}
  }))});
  vm.runInContext(source,context);
  context.initial=structuredClone(workspace);
  vm.runInContext("state=initial;patientId='demo-marina';visitId='demo-consulta';photoId='demo-foto';route='paciente';tab='mapa';selectedId='a';",context);
- return {context,el,listeners,run:code=>vm.runInContext(code,context),pendingWrites:()=>queued.length,flush:async()=>{await new Promise(resolve=>setImmediate(resolve));assert.equal(queued.length,1,'O handler deve ter iniciado exatamente uma transação.');return queued.shift()();},points:()=>workspace.visits[0].maps['demo-foto'].points,workspace:()=>workspace,confirm:value=>confirmAnswer=value};
+ return {context,el,listeners,run:code=>vm.runInContext(code,context),pendingWrites:()=>queued.length,flush:async()=>{await new Promise(resolve=>setImmediate(resolve));assert.equal(queued.length,1,'O handler deve ter iniciado exatamente uma transação.');return queued.shift()();},points:()=>activeWorkspace(workspace).visits[0].maps['demo-foto'].points,workspace:()=>workspace,confirm:value=>confirmAnswer=value};
 }
 const actionEvent=action=>({target:{closest:selector=>selector==='[data-action]'?{dataset:{action}}:null}});
 const submitEvent=id=>({target:{id},preventDefault(){}});
@@ -113,9 +114,9 @@ test('consulta concluída recusa alteração de notas mesmo por submit direto',a
  const before=h.workspace().visits[0].notes,promise=h.listeners.get('submit')[0](submitEvent('record-form'));await h.flush();await promise;
  assert.equal(h.workspace().visits[0].notes,before);assert.match(h.el('toast').textContent,/conclu|adendo/i);
 });
-test('consulta concluída recusa excluir marcação mesmo por ação direta',async()=>{
+test('a chart completed after the editor opened rejects the stale deletion and preserves the original',async()=>{
  const h=harness();h.workspace().visits[0].status='concluido';const promise=h.listeners.get('click')[0](actionEvent('delete-point'));await h.flush();await promise;
- assert.deepEqual(h.points().map(p=>p.id),['a','b']);assert.match(h.el('toast').textContent,/conclu|adendo/i);
+ assert.deepEqual(h.points().map(p=>p.id),['a','b']);assert.match(h.el('toast').textContent,/mudou|conclu/i);assert.equal(h.workspace().recycleBin,undefined);
 });
 test('rascunho privado e operação remota impedem abandonar a integração sem conferência',()=>{
  const h=harness();h.run('integrationHandle={isDirty:()=>true,isBusy:()=>false}');h.confirm(false);

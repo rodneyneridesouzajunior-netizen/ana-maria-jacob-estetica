@@ -4,8 +4,8 @@
   "files": [
     {
       "name": "operations-domain.mjs",
-      "sourceSha256": "d6c34d078e245cee91f2801f031262cc34bcb3f45308c2355d4cd58c1957774b",
-      "generatedSha256": "6e5aa79a2b4f39f38315ba790e1390e664e6b47d9ea2a7ef1f6d17a4f58f3829",
+      "sourceSha256": "42926269502693fdff6e0effba0210cab5bfd28f9f93512ff7f523743949db6f",
+      "generatedSha256": "d807c4b02561e58f280683f1274fd1af2340fcfc82db5d28cd6c073d3ab28dfb",
       "mode": "exact-copy"
     },
     {
@@ -45,6 +45,12 @@
       "mode": "exact-copy"
     },
     {
+      "name": "recycle-bin.mjs",
+      "sourceSha256": "f1c2dfff887e25b53c620d39d6495417536059ab9fed2e1cd1070e1e903ea40b",
+      "generatedSha256": "e76b37d8997b703614603cbe3779b828975f5516d0a35a4093cd1efc3955618a",
+      "mode": "exact-copy"
+    },
+    {
       "name": "domain.mjs",
       "sourceSha256": "76ca10c2332468d325d817d238ffa5277b9e463c71e48b1de9ca60d03ecbe0b4",
       "generatedSha256": "59a99d9834f37cfeea9c65336eb62fa46f54c635b14046eebead134876248bd8",
@@ -52,20 +58,20 @@
     },
     {
       "name": "compare.mjs",
-      "sourceSha256": "26f5a0fe1614d0bb3b66496ce3f93bdcf4e73be8ef2c59fb53d3eee9df32ede4",
-      "generatedSha256": "42b447eef536b277a55fd74ce6a8ad2ceec9dd56a0bb09927cdb0f30561c7cac",
+      "sourceSha256": "27b6119ef99a792946469f5416619d4900326d8063585b49f7b0d28b84cd7d21",
+      "generatedSha256": "bfce7da2f823912fb5e2c8f74fae70737e6654c67e0730814f4a5619c3259ee1",
       "mode": "pure-prefix"
     },
     {
       "name": "comparison-library.mjs",
-      "sourceSha256": "43660999e42edbe5280a59a3d1738d28d6e2949a7e0aaa2c9cb2e3cbf27f4947",
+      "sourceSha256": "33d13e02ae63ed273c32d53bba2a940e6546917fc331fd3b5fe5bd8bd8e990a9",
       "generatedSha256": "2632c038344117742d01e72dcb34be121ff962223128fc79252ef4e488a0d67a",
       "mode": "pure-prefix"
     },
     {
       "name": "backup.mjs",
-      "sourceSha256": "5750b527805dcce6626a77ba18a1d2c481b625e88696d09a42899d045040f0b6",
-      "generatedSha256": "95216331e6e3962a9a2f75f35beb2fd88c08ba192be5ddb347f3e940f3aaf53f",
+      "sourceSha256": "497147e12029558f4da20e6121509c324446f6597338c80de44115696a7aaf73",
+      "generatedSha256": "b5c3d3f1564b43cf05e8be3bbfc8be96c52b93104f45cf3edfec5f997b8e7e11",
       "mode": "pure-prefix"
     }
   ]

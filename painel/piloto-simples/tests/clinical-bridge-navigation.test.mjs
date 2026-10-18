@@ -13,7 +13,7 @@ const source=(await fs.readFile(new URL('../app.mjs',import.meta.url),'utf8')).r
 const html=await fs.readFile(new URL('../connected.html',import.meta.url),'utf8');
 function setup(t,hash='#financeiro'){
  const dom=new JSDOM(html,{url:'https://example.invalid/connected.html'+hash}),w=dom.window;
- const workspace=rules.seed(),context=vm.createContext({prepareWorkspaceChange,applyPreparedWorkspaceChange,requestActionCode:async()=>{},...rules,areas,structuredClone,crypto:webcrypto,document:w.document,window:w,location:w.location,history:w.history,confirm:()=>false,setTimeout:()=>0,clearTimeout(){},isConnected:()=>true,load:async()=>structuredClone(workspace),renderIntegrationPage:()=>'',documentsSatisfied:()=>false});
+ const workspace=rules.seed(),context=vm.createContext({renderRecycleTools:()=>'',renderRecycleBin:()=>'',mountRecycleUI:()=>()=>{},prepareWorkspaceChange,applyPreparedWorkspaceChange,requestActionCode:async()=>{},...rules,areas,structuredClone,crypto:webcrypto,document:w.document,window:w,location:w.location,history:w.history,confirm:()=>false,setTimeout:()=>0,clearTimeout(){},isConnected:()=>true,load:async()=>structuredClone(workspace),renderIntegrationPage:()=>'',documentsSatisfied:()=>false});
  vm.runInContext(source,context);t.after(()=>w.close());return{context,dom,run:code=>vm.runInContext(code,context)};
 }
 test('inicialização preserva hash Financeiro; não há redirecionamento silencioso para Início',async t=>{
