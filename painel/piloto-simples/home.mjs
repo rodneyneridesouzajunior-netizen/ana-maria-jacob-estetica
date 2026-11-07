@@ -20,6 +20,8 @@ export function homeData(state,now=new Date()){
   const dailyContribution=knownDailyCosts?daily.billed-daily.variableCost:null;
   const series=Array.from({length:6},(_,i)=>{const day=new Date(now.getFullYear(),now.getMonth()-5+i,1),key=dateKey(day).slice(0,7),report=financeReport({...state},key===month?{period:'month',today}:key);return{key,label:day.toLocaleDateString('pt-BR',{month:'short'}).replace('.',''),total:report.billed,received:report.received,grossReceived:report.grossReceived,reversed:report.reversed};});
   const groups=new Map();for(const visit of state.visits){const name=visit.service||'Atendimento sem nome';groups.set(name,(groups.get(name)||0)+1);}
+  const todayAppointments=state.appointments.filter(item=>item.date===today&&item.status!=='cancelado')
+    .sort((first,second)=>String(first.time).localeCompare(String(second.time)));
   return{
     today,month,series,
     billedToday:daily.billed,receivedToday:daily.received,billCountToday:dailyBills.length,
@@ -28,7 +30,7 @@ export function homeData(state,now=new Date()){
     billedMonth:financial.billed,
     receivedMonth:financial.received,grossReceivedMonth:financial.grossReceived,reversedMonth:financial.reversed,
     outstanding:financial.outstanding,
-    todayCount:state.appointments.filter(item=>item.date===today&&item.status!=='cancelado').length,
+    todayCount:todayAppointments.length,todayAppointments:todayAppointments.slice(0,5),
     patientCount:state.patients.length,
     upcoming:state.appointments.filter(item=>['agendado','confirmado'].includes(item.status)&&(item.date>today||item.date===today&&item.time>=clock)).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).slice(0,4),
     procedures:[...groups].map(([name,count])=>({name,count})).sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,'pt-BR')).slice(0,5),
@@ -51,7 +53,7 @@ function serviceTone(service){
   const text=String(service||'').normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
   return /\bavalia/.test(text)?'avaliacao':/\bretorno\b/.test(text)?'retorno':'procedimento';
 }
-const statusText={rascunho:'Rascunho',concluido:'Concluído',cancelado:'Cancelado'};
+const statusText={agendado:'A confirmar',confirmado:'Confirmado',em_atendimento:'Em atendimento',rascunho:'Rascunho',concluido:'Concluído',cancelado:'Cancelado'};
 const statusTone=status=>status==='concluido'?'complete':status==='cancelado'?'cancelled':'draft';
 
 function mobileDaySummary(data){
@@ -61,8 +63,13 @@ function mobileDaySummary(data){
   return `<section class="amj-day-summary" aria-labelledby="amj-day-summary-title"><div class="amj-day-summary-top"><span>${icon('wallet')} Movimento de hoje</span><span class="amj-day-count">${data.todayCount} na agenda</span></div><h2 id="amj-day-summary-title">Faturamento de hoje</h2><strong class="amj-day-amount amount" data-amount-size="${amountSize}">${billed}</strong><p class="amj-day-caption">${data.billCountToday} ${data.billCountToday===1?'cobrança registrada':'cobranças registradas'}</p><dl class="amj-day-metrics">${details.map(([label,value])=>`<div><dt>${label}</dt><dd class="amount">${value}</dd></div>`).join('')}</dl><details class="amj-day-definitions"><summary>Entenda os valores ${icon('plus')}</summary><p>Faturamento é o valor cobrado; recebido desconta os estornos do dia. Ticket é a média por cobrança. Contribuição e margem consideram apenas os custos registrados nas cobranças, antes de despesas fixas e tributos. Não representam lucro líquido. “—” indica ausência de base para calcular.</p></details></section>`;
 }
 
-function upcomingRows(state,items){
-  return items.length?items.map((item,index)=>`<article class="sp-next-row ${index===0?'sp-next-first':''}" data-service-tone="${serviceTone(item.service)}"><div class="sp-next-time"><strong>${esc(item.time)}</strong><span>${shortDate(item.date)}</span></div><div class="sp-next-person"><strong>${esc(patientName(state,item.patientId))}</strong><span>${esc(item.service)}</span><small><i aria-hidden="true"></i>${item.status==='confirmado'?'Confirmado':'A confirmar'} · ${esc(item.duration)} min</small></div><button type="button" class="sp-open-button" data-action="attend" data-id="${esc(item.id)}" aria-label="Abrir atendimento de ${esc(patientName(state,item.patientId))}">${icon('arrow')}</button></article>`).join(''):`<div class="sp-empty"><span class="sp-empty-symbol" aria-hidden="true">${icon('calendar')}</span><strong>Seu próximo horário começa aqui.</strong><p>Nenhum atendimento futuro agendado.</p><button type="button" data-action="new-appointment" class="sp-inline-action">Agendar atendimento ${icon('arrow')}</button></div>`;
+function todayRows(state,items){
+  if(!items.length)return `<div class="sp-empty"><span class="sp-empty-symbol" aria-hidden="true">${icon('calendar')}</span><strong>Nenhum atendimento para hoje.</strong><p>Consulte os próximos horários ou agende um atendimento.</p></div>`;
+  return items.map((item,index)=>{
+    const name=esc(patientName(state,item.patientId)),id=esc(item.id);
+    const editable=['agendado','confirmado'].includes(item.status);
+    return `<article class="sp-next-row ${index===0?'sp-next-first':''}" data-service-tone="${serviceTone(item.service)}"><div class="sp-next-time"><strong>${esc(item.time)}</strong></div><div class="sp-next-person"><strong>${name}</strong><span>${esc(item.service)}</span><small><i aria-hidden="true"></i>${esc(statusText[item.status]||item.status)} · ${esc(item.duration)} min</small></div><div class="sp-care-row-actions">${editable?`<button type="button" class="sp-care-reschedule" data-action="edit-appointment" data-id="${id}" aria-label="Reagendar ${name}">Reagendar</button>`:''}<button type="button" class="sp-open-button" data-action="attend" data-id="${id}" aria-label="Abrir atendimento de ${name}">${icon('arrow')}</button></div></article>`;
+  }).join('');
 }
 function recentRows(state,items){
   return items.map(visit=>{const bills=state.bills.filter(bill=>(bill.visitId===visit.id||bill.id===visit.billId)&&!bill.cancelledAt),total=bills.reduce((sum,bill)=>sum+bill.total,0),packageBill=bills.some(bill=>bill.quoteId);return `<tr><td><strong>${esc(patientName(state,visit.patientId))}</strong></td><td><span class="sp-service-name" data-service-tone="${serviceTone(visit.service)}">${esc(visit.service)}</span></td><td>${shortDate(visit.date)}</td><td class="amount">${bills.length?money(total)+(packageBill?'<small>Total do orçamento vinculado</small>':''):'Sem cobrança vinculada'}</td><td><span class="sp-record-status" data-status-tone="${statusTone(visit.status)}">${esc(statusText[visit.status]||visit.status)}</span></td><td><a class="sp-table-open" href="#paciente/${encodeURIComponent(visit.patientId)}/${encodeURIComponent(visit.id)}/registro" aria-label="Abrir consulta de ${esc(patientName(state,visit.patientId))}, ${shortDate(visit.date)}">Abrir ${icon('arrow')}</a></td></tr>`;}).join('');
@@ -74,16 +81,30 @@ export function renderHome(state,now=new Date()){
   const metrics=[{label:'Recebido líquido · até hoje',value:money(data.receivedMonth),icon:'wallet'},{label:'A receber · total',value:money(data.outstanding),icon:'wallet'},{label:'Na agenda hoje',value:data.todayCount,icon:'calendar'},{label:'Pacientes cadastradas',value:data.patientCount,icon:'people'}];
   const alerts=getClinicAlerts(state,now),alertPanel=alerts.length?`<details class="sp-home-card clinic-section" data-clinic-section="Avisos do início"><summary><span><strong>${alerts.length} aviso(s) interno(s)</strong><small>Retornos e horários próximos. Sem envio de mensagens.</small></span><span aria-hidden="true" class="clinic-disclosure">＋</span></summary><div class="clinic-section-body">${renderClinicAlerts(state,now)}</div></details>`:'';
   return `<div class="sp-home sp-home-refined">
+    <section class="sp-hero sp-care-intro" aria-labelledby="sp-home-title">
+      <div class="sp-hero-heading"><div><p class="sp-hero-date">${icon('calendar')}${esc(now.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'}))}</p><h1 id="sp-home-title">${greeting}, Ana Maria Jacob.</h1><p>Seu atendimento e sua gestão, no mesmo lugar.</p></div></div>
+    </section>
+    <section class="sp-care-priorities" aria-label="Prioridades de atendimento">
+      <article class="sp-home-card sp-care-docs">
+        <div class="sp-card-title"><div><span class="sp-section-kicker">Fichas das pacientes</span><h2>Anamneses</h2></div><span class="sp-card-icon" aria-hidden="true">${icon('document')}</span></div>
+        <p class="sp-care-doc-copy">${isConnected()?'Busque pelo nome da paciente e abra a ficha original preenchida.':'Consulte os documentos das pacientes e os modelos disponíveis.'}</p>
+        <div class="sp-care-links"><a class="primary" href="${isConnected()?'#originais/anamneses':'#documentos'}">${isConnected()?'Anamneses preenchidas':'Anamneses e termos'}</a></div>
+      </article>
+      <section class="sp-home-card sp-next">
+        <div class="sp-card-title"><div><span class="sp-section-kicker">Sua agenda</span><h2>Agenda de hoje</h2>${data.todayCount>data.todayAppointments.length?`<p>Mostrando ${data.todayAppointments.length} de ${data.todayCount} horários.</p>`:''}</div></div>
+        <div class="sp-care-links"><button type="button" class="primary" data-action="new-appointment">${icon('plus')} Agendar atendimento</button><a class="secondary" href="#agenda/hoje">Ver agenda de hoje</a></div>
+        <div class="sp-next-list">${todayRows(state,data.todayAppointments)}</div>
+        <div class="sp-care-links"><a class="secondary" href="#agenda/proximos">Próximos horários</a><a class="secondary" href="#agenda/aguardando">Aguardando confirmação</a></div>
+      </section>
+    </section>
     <div class="sp-overview">
-      <section class="sp-hero" aria-labelledby="sp-home-title">
-        <div class="sp-hero-heading"><div><p class="sp-hero-date">${icon('calendar')}${esc(now.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'}))}</p><h1 id="sp-home-title">${greeting}, Ana Maria Jacob.</h1><p>Seu atendimento e sua gestão, no mesmo lugar.</p></div><div class="sp-hero-actions"><a class="sp-hero-primary" href="#agenda">${icon('calendar')} Abrir agenda</a><button type="button" class="sp-hero-secondary" data-action="new-appointment">${icon('plus')} Agendar atendimento</button></div></div>
+      <section class="sp-hero" aria-label="Indicadores financeiros">
         ${mobileDaySummary(data)}
         <div class="sp-hero-body"><div class="sp-billed"><span class="sp-hero-value-label">Faturamento de ${esc(monthLabel)}</span><strong class="sp-hero-value amount">${money(data.billedMonth)}</strong><small>Cobranças registradas no mês até hoje</small></div><div class="sp-hero-metrics">${metrics.map(metric=>`<div><span class="sp-mini-label">${icon(metric.icon)}${metric.label}</span><strong class="amount">${metric.value}</strong></div>`).join('')}</div></div>
       </section>
       <div class="sp-goal-wrap"><span class="sp-goal-icon" aria-hidden="true">${icon('target')}</span>${renderGoalCard(state,{month:data.month,today:data.today})}</div>
     </div>
     <div class="sp-home-grid">
-      <section class="sp-home-card sp-next"><div class="sp-card-title"><div><span class="sp-section-kicker">Sua agenda</span><h2>Próximos horários</h2></div><a href="#agenda" aria-label="Ver a agenda completa">Ver agenda ${icon('arrow')}</a></div><div class="sp-next-list">${upcomingRows(state,data.upcoming)}</div><a class="sp-card-footer" href="#agenda">Horários livres e retornos ${icon('arrow')}</a></section>
       <section class="sp-home-card sp-revenue"><div class="sp-card-title"><div><span class="sp-section-kicker">Visão financeira</span><h2>Faturamento</h2><p>Seis meses · mês atual até hoje</p></div><span class="sp-card-icon" aria-hidden="true">${icon('wallet')}</span></div><div class="sp-revenue-total"><strong class="amount">${money(data.billedMonth)}</strong><span>mês até hoje</span></div>${revenueChart(data.series)}<a class="sp-card-footer" href="#financeiro">Recebimentos e despesas ${icon('arrow')}</a></section>
       <section class="sp-home-card sp-procedures"><div class="sp-card-title"><div><span class="sp-section-kicker">Visão dos registros</span><h2>Procedimentos</h2></div><span class="sp-card-icon sp-card-icon-gold" aria-hidden="true">${icon('document')}</span></div><ol class="sp-procedure-list">${data.procedures.map((item,index)=>`<li><div><span class="sp-procedure-rank">${index+1}</span><strong>${esc(item.name)}</strong><span class="sp-procedure-count">${item.count}</span></div><span class="sp-procedure-track" aria-hidden="true"><span style="width:${item.count/topProcedure*100}%"></span></span></li>`).join('')}</ol>${data.procedures.length?'':`<div class="sp-empty"><strong>Seus registros aparecerão aqui.</strong><p>Cadastre a paciente e abra sua primeira consulta.</p><a class="sp-inline-action" href="#pacientes">Abrir prontuários ${icon('arrow')}</a></div>`}<p class="sp-procedure-note">Inclui rascunhos de consulta. Não indica procedimentos concluídos.</p><a class="sp-card-footer" href="#catalogo">Consultar catálogo ${icon('arrow')}</a></section>
     </div>

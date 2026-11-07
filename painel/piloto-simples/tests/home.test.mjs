@@ -66,15 +66,15 @@ test('início vazio oferece caminhos reais sem inventar agenda, procedimento ou 
   assert.equal(getHomeData,homeData);assert.equal(data.billedMonth,0);assert.equal(data.receivedMonth,0);
   assert.equal(data.upcoming.length,0);assert.equal(data.procedures.length,0);assert.equal(data.recent.length,0);
   assert.ok(data.series.every(item=>item.total===0));
-  assert.match(html,/Nenhum atendimento futuro agendado/);assert.match(html,/Nenhuma consulta cadastrada/);
+  assert.match(html,/Nenhum atendimento para hoje/);assert.match(html,/Nenhuma consulta cadastrada/);
   assert.match(html,/data-action="new-appointment"/);assert.match(html,/data-action="new-patient"/);
-  for(const route of ['agenda','financeiro','pacientes','catalogo','clinica'])assert.ok(html.includes(`href="#${route}"`));
+  for(const route of ['agenda/hoje','agenda/proximos','agenda/aguardando','financeiro','pacientes','catalogo','clinica'])assert.ok(html.includes(`href="#${route}"`));
   assert.doesNotMatch(html,/<progress|class="sp-chart-bar"/);
   assert.match(html,/nenhuma medida acima representa lucro/);
 });
 
 test('situações e tipos mantêm texto legível, além das cores, e abertura vinculada à consulta',()=>{
-  const state=fixture();state.visits[0].status='concluido';state.visits[1].status='cancelado';
+  const state=fixture();state.visits[0].status='concluido';state.visits[1].status='cancelado';state.appointments[1].status='agendado';
   const html=renderHome(state,now);
   assert.match(html,/data-status-tone="complete">Concluído/);assert.match(html,/data-status-tone="cancelled">Cancelado/);
   assert.match(html,/data-service-tone="avaliacao"/);assert.match(html,/data-service-tone="retorno"/);

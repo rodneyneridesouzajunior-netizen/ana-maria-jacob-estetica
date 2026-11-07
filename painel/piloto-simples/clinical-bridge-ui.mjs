@@ -80,37 +80,44 @@ export function validateOpenedOriginal(result,selected){
 }
 
 function officialForms(){return`<details class="cb-official"><summary>Formulários oficiais para a paciente</summary><p>Abrem os formulários existentes. Nenhuma mensagem é enviada por esta tela.</p><div class="cb-form-links">${OFFICIAL_CLINICAL_FORMS.map(f=>`<a class="secondary" href="${f.url}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">${e(f.label)} ↗</a>`).join('')}</div></details>`;}
-export function renderClinicalBridge({section='documents',context=null}={}){
+export function renderClinicalBridge({section='documents',context=null,documentFilter}={}){
   const documents=section!=='requests';
-  return`<section class="clinical-bridge" aria-label="Documentos originais e solicitações do site"><header class="cb-heading"><div><p class="eyebrow">ÁREA PRIVADA</p><h2>${documents?'Documentos recebidos':'Solicitações do site'}</h2><p>Consulte os registros originais recebidos pela clínica.</p></div><a class="secondary" href="${official}/painel/" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Painel operacional ↗</a></header>
-    <nav class="cb-tabs" aria-label="Consultar origem"><button type="button" data-cb="section" data-section="documents" aria-pressed="${documents}">Documentos originais</button><button type="button" data-cb="section" data-section="requests" aria-pressed="${!documents}">Pedidos do site</button></nav>
+  const anamneses=documents&&documentFilter==='anamnese';
+  return`<section class="clinical-bridge" aria-label="Documentos originais e solicitações do site"><header class="cb-heading"><div><p class="eyebrow">ÁREA PRIVADA</p><h2>${anamneses?'Anamneses preenchidas':documents?'Documentos recebidos':'Solicitações do site'}</h2><p>${anamneses?'Busque pelo nome da paciente e consulte a ficha recebida pela clínica.':'Consulte os registros originais recebidos pela clínica.'}</p></div>${anamneses?'<a class="secondary" href="#originais">Todos os documentos</a>':`<a class="secondary" href="${official}/painel/" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Painel operacional ↗</a>`}</header>
+    <nav class="cb-tabs" aria-label="Consultar origem"><button type="button" data-cb="section" data-section="documents" aria-pressed="${documents}">${documentFilter==='anamnese'?'Anamneses':'Documentos originais'}</button><button type="button" data-cb="section" data-section="requests" aria-pressed="${!documents}">Pedidos do site</button></nav>
     ${context?.visitId?`<p class="cb-context">Consulta selecionada: ${e(context.visitLabel||context.visitId)} · ${e(context.patientName||'Paciente do prontuário')}. A busca consulta originais da clínica; aparecer nesta lista não vincula o documento à paciente.</p>`:''}
     <div data-cb-controls></div><p class="cb-feedback" data-cb-feedback role="status" aria-live="polite"></p><div data-cb-link-editor></div><div data-cb-content></div><div data-cb-page></div>
-    <div data-cb-forms ${documents?'':'hidden'}>${officialForms()}</div><p class="cb-limits" data-cb-limits>${documents?'Recebido, vinculado e revisado são situações diferentes. Receber ou vincular um documento não autoriza um procedimento. A assinatura de demonstração permanece indisponível no ambiente conectado.':'Uma solicitação recebida ou aceita no CRM não confirma horário. A confirmação operacional continua no painel da clínica.'}</p></section>`;
+    <div data-cb-forms ${documents&&!anamneses?'':'hidden'}>${anamneses?'':officialForms()}</div><p class="cb-limits" data-cb-limits>${documents?'Recebido, vinculado e revisado são situações diferentes. Receber ou vincular um documento não autoriza um procedimento. A assinatura de demonstração permanece indisponível no ambiente conectado.':'Uma solicitação recebida ou aceita no CRM não confirma horário. A confirmação operacional continua no painel da clínica.'}</p></section>`;
 }
 
-function documentCards(docs,links,linksKnown,context,capabilities){return docs.length?`<div class="cb-records">${docs.map(d=>{
+function documentCards(docs,links,linksKnown,context,capabilities,anamneses){return docs.length?`<div class="cb-records">${docs.map(d=>{
   const link=linksKnown&&links.find(l=>l.source_kind===d.source_kind&&l.source_id===d.source_id&&l.patient_id===context?.patientId&&l.visit_id===context?.visitId&&l.status==='vinculado_recebido');
   const validLink=link?.available===true&&link.current_identity_matches===true;
   const received=d.status==='recebido'?'Recebido':d.status==='legado'?'Registro legado':'Estado de recebimento não confirmado';
   return`<article class="cb-record"><div class="cb-record-top"><div><span class="cb-kind">${d.source_kind==='anamnese'?'Anamnese':'Termo / documento'}</span><h3>${e(d.identity.name)}</h3><p>${e(d.title)}</p></div><span class="cb-date">${day(d.received_at)}</span></div><div class="cb-identifiers">${d.identity.cpf_masked?`<span>CPF: ${e(d.identity.cpf_masked)}</span>`:''}${d.identity.phone_masked?`<span>Telefone: ${e(d.identity.phone_masked)}</span>`:''}</div>
     <ul class="cb-state-list"><li>${e(received)}${d.archived?' · arquivado':''}${d.withdrawn?' · retirado':''}</li><li>${validLink?'Vinculado a esta consulta':link?'Vínculo histórico indisponível para a identidade atual':context?.visitId?(linksKnown?'Sem vínculo nesta consulta':'Vínculo ainda não consultado'):'Vínculo: abra uma consulta para conferir'}</li><li>A confirmação profissional é feita na conclusão do atendimento</li></ul>
     <div class="cb-record-actions"><button class="secondary" type="button" data-cb="pdf" data-key="${e(d.key)}" ${(d.pdf_access==='unavailable'||!d.source_fingerprint&&!d.legacyPdf)?'disabled':''}>${d.pdf_access==='historical'?'Abrir PDF histórico':'Abrir PDF original'} ↗</button>${!link&&context?.visitId&&d.eligible_for_link&&capabilities?.link_received&&!context.locked?`<button class="primary" type="button" data-cb="link" data-key="${e(d.key)}">Vincular original</button>`:''}${link?'<span class="cb-link-note">O vínculo preserva o original; não substitui revisão ou assinatura profissional.</span>':''}</div>${d.pdf_access==='historical'?'<p class="cb-link-note">PDF histórico preservado. Este registro não possui a verificação de recebimento e assinatura do sistema atual; a leitura não libera vínculo ou procedimento.</p>':d.pdf_access==='unavailable'?'<p class="cb-link-note">PDF indisponível neste registro. Confira o original no painel operacional.</p>':''}${context?.visitId&&!link&&!d.eligible_for_link?'<p class="cb-link-note">Vínculo indisponível: confira identidade, recebimento e integridade do original no painel da clínica.</p>':''}</article>`;
-  }).join('')}</div>`:'<div class="cb-empty"><h3>Nenhum documento retornado</h3><p>Confira a busca e os filtros. Os formulários oficiais continuam disponíveis abaixo.</p></div>';}
+  }).join('')}</div>`:anamneses?'<div class="cb-empty"><h3>Nenhuma anamnese encontrada</h3><p>Confira o nome da paciente ou consulte todos os documentos.</p></div>':'<div class="cb-empty"><h3>Nenhum documento retornado</h3><p>Confira a busca e os filtros. Os formulários oficiais continuam disponíveis abaixo.</p></div>';}
 function requestCards(rows){return rows.length?`<div class="cb-records">${rows.map(r=>`<article class="cb-record"><div class="cb-record-top"><div><span class="cb-kind">Solicitação do site</span><h3>${e(r.name)}</h3><p>${e(r.interest||'Interesse não informado')}</p></div><span class="cb-date">${day(r.receivedAt)}</span></div><p>${e(r.phone||'Telefone não informado')}</p><dl class="cb-request-data"><div><dt>Data de preferência</dt><dd>${day(r.preferredDate)}</dd></div><div><dt>Período</dt><dd>${e(r.period||'Não informado')}</dd></div><div><dt>Situação no CRM</dt><dd>${e(requestStatus[r.status]||'Não informada')}</dd></div><div><dt>Consentimento de contato</dt><dd>${r.consent?'Registrado':'Não confirmado'}</dd></div></dl><p class="cb-link-note">Sem confirmação de agenda por esta tela.</p></article>`).join('')}</div>`:'<div class="cb-empty"><h3>Nenhuma solicitação neste filtro</h3><p>Pedidos de preferência de horário aparecem aqui após recebimento pelo site.</p></div>';}
 
-export function mountClinicalBridge(host,{service,section='documents',getContext=()=>null,reloadContext,notify=()=>{},openWindow=(...args)=>window.open(...args),confirmDiscard=message=>host.ownerDocument.defaultView.confirm(message)}={}){
+export function mountClinicalBridge(host,{service,section='documents',documentFilter,getContext=()=>null,reloadContext,notify=()=>{},openWindow=(...args)=>window.open(...args),confirmDiscard=message=>host.ownerDocument.defaultView.confirm(message)}={}){
   let disposed=false,invalidated=false,generation=0,busy=false,opening=false,currentSection=section==='requests'?'requests':'documents',query='',status='pending',offset=0,
     documents=[],requests=[],links=[],linksKnown=false,capabilities={},draft=null,saving=false,page={limit:25,offset:0,hasMore:false,total:null};
   const openedWindows=new Set();
+  const documentOffsets=[0];
+  const showingAnamneses=()=>currentSection==='documents'&&documentFilter==='anamnese';
+  const resetPage=()=>{offset=0;documentOffsets.length=1;};
   const eventTarget=host.ownerDocument?.defaultView;
   const emit=(message,error=false)=>{const el=host.querySelector('[data-cb-feedback]');if(el){el.textContent=message;el.dataset.error=String(error);}notify(message,error);};
   const context=()=>{const c=getContext()||null;return c?.patientId&&c?.visitId?{patientId:String(c.patientId),visitId:String(c.visitId),patientName:c.patientName,visitLabel:c.visitLabel,revision:c.revision,locked:c.locked===true,cpfMasked:c.cpfMasked,birthDate:c.birthDate}:null;};
   const contextKey=()=>{const c=context();return c?c.patientId+'/'+c.visitId:'';};
-  const fields=()=>{host.querySelector('[data-cb-controls]').innerHTML=currentSection==='documents'?`<form data-cb-search class="cb-controls"><label>Buscar documento ou paciente<input name="search" type="search" maxlength="120" value="${e(query)}" autocomplete="off"></label><button class="secondary" type="submit">Buscar</button><button class="subtle" type="button" data-cb="refresh">Atualizar</button></form>`:`<div class="cb-controls"><label>Situação da solicitação<select data-cb-status>${[['pending','Pendentes'],['accepted','Recebidas no CRM'],['archived','Arquivadas'],['all','Todas']].map(([value,label])=>`<option value="${value}" ${value===status?'selected':''}>${label}</option>`).join('')}</select></label><button class="subtle" type="button" data-cb="refresh">Atualizar</button></div>`;};
-  function drawShell(){host.innerHTML=renderClinicalBridge({section:currentSection,context:context()});fields();}
-  function draw(){if(disposed||invalidated)return;host.querySelector('[data-cb-content]').innerHTML=currentSection==='documents'?documentCards(documents,links,linksKnown,context(),capabilities):requestCards(requests);
-    host.querySelector('[data-cb-page]').innerHTML=`<div class="cb-pagination"><span>${(currentSection==='documents'?documents:requests).length} registro(s) nesta página${page.total===null?'':' · '+page.total+' no filtro'}</span><div><button type="button" class="secondary" data-cb="previous" ${page.offset===0?'disabled':''}>Anterior</button><button type="button" class="secondary" data-cb="next" ${!page.hasMore?'disabled':''}>Próxima</button></div></div>`;
+  const fields=()=>{host.querySelector('[data-cb-controls]').innerHTML=currentSection==='documents'?`<form data-cb-search class="cb-controls"><label>${showingAnamneses()?'Buscar pelo nome da paciente':'Buscar documento ou paciente'}<input name="search" type="search" maxlength="120" value="${e(query)}" autocomplete="off"></label><button class="secondary" type="submit">Buscar</button><button class="subtle" type="button" data-cb="refresh">Atualizar</button></form>`:`<div class="cb-controls"><label>Situação da solicitação<select data-cb-status>${[['pending','Pendentes'],['accepted','Recebidas no CRM'],['archived','Arquivadas'],['all','Todas']].map(([value,label])=>`<option value="${value}" ${value===status?'selected':''}>${label}</option>`).join('')}</select></label><button class="subtle" type="button" data-cb="refresh">Atualizar</button></div>`;};
+  function drawShell(){host.innerHTML=renderClinicalBridge({section:currentSection,context:context(),documentFilter});fields();}
+  function draw(){if(disposed||invalidated)return;
+    const anamneses=showingAnamneses();
+    const hasPrevious=anamneses?documentOffsets.length>1:page.offset>0;
+    host.querySelector('[data-cb-content]').innerHTML=currentSection==='documents'?documentCards(documents,links,linksKnown,context(),capabilities,anamneses):requestCards(requests);
+    host.querySelector('[data-cb-page]').innerHTML=`<div class="cb-pagination"><span>${(currentSection==='documents'?documents:requests).length} registro(s) nesta página${page.total===null?'':' · '+page.total+' no filtro'}</span><div><button type="button" class="secondary" data-cb="previous" ${hasPrevious?'':'disabled'}>Anterior</button><button type="button" class="secondary" data-cb="next" ${!page.hasMore?'disabled':''}>Próxima</button></div></div>`;
   }
   async function refresh(){
     if(disposed||invalidated||draft||saving)return;const rev=++generation,c=context(),binding=contextKey(),requestedSection=currentSection;busy=true;documents=[];requests=[];links=[];linksKnown=false;capabilities={};
@@ -119,10 +126,25 @@ export function mountClinicalBridge(host,{service,section='documents',getContext
       if(!service)throw Error('A consulta dos originais ainda não está conectada nesta sessão. Use o painel operacional.');
       if(requestedSection==='documents'){
         if(typeof service.listDocuments!=='function')throw Error('Consulta de documentos indisponível nesta sessão.');
-        const result=await service.listDocuments({...(c?{patient_id:c.patientId,visit_id:c.visitId}:{}),search:query,limit:25,offset});
-        if(disposed||invalidated||rev!==generation||binding!==contextKey())return;
-        const loaded=normalizeBridgeDocuments(result,{source:service.source||'workspace'});documents=loaded.documents;page=loaded.pagination;capabilities=loaded.capabilities;
-        if(service.source==='legacy'&&query){const needle=query.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();documents=documents.filter(d=>(d.identity.name+' '+d.title).normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase().includes(needle));page.total=documents.length;}
+        const anamneses=showingAnamneses();
+        let requestedOffset=anamneses?documentOffsets.at(-1):offset;
+        for(;;){
+          if(requestedOffset>10000)throw Error('A busca encontrou muitos documentos. Refine pelo nome da paciente.');
+          const result=await service.listDocuments({...(c?{patient_id:c.patientId,visit_id:c.visitId}:{}),search:query,limit:25,offset:requestedOffset});
+          if(disposed||invalidated||rev!==generation||binding!==contextKey())return;
+          const loaded=normalizeBridgeDocuments(result,{source:service.source||'workspace'});
+          documents=loaded.documents;page=loaded.pagination;capabilities=loaded.capabilities;
+          if(service.source==='legacy'&&query){
+            const normalized=value=>value.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
+            documents=documents.filter(d=>normalized(anamneses?d.identity.name:d.identity.name+' '+d.title).includes(normalized(query)));
+            page.total=documents.length;
+          }
+          if(!anamneses)break;
+          documents=documents.filter(d=>d.source_kind==='anamnese'&&!d.archived&&!d.withdrawn&&['recebido','legado'].includes(d.status));
+          page={...page,offset:requestedOffset,total:null};
+          if(documents.length||!page.hasMore)break;
+          requestedOffset+=page.limit;
+        }
         if(c&&typeof service.listLinks==='function'){
           const linked=await service.listLinks({patient_id:c.patientId,visit_id:c.visitId});
           if(disposed||invalidated||rev!==generation||binding!==contextKey())return;
@@ -206,13 +228,20 @@ export function mountClinicalBridge(host,{service,section='documents',getContext
     finally{opening=false;}
   }
   function invalidate(){if(disposed)return;invalidated=true;generation++;busy=false;opening=false;saving=false;draft=null;documents=[];requests=[];links=[];capabilities={};for(const w of openedWindows){try{w.close();}catch{}}openedWindows.clear();host.removeAttribute('aria-busy');host.innerHTML='<p class="cb-empty" role="status">Acesso encerrado. Os documentos e solicitações foram retirados desta tela.</p>';}
-  const click=event=>{const b=event.target.closest('[data-cb]');if(!b||!host.contains(b)||disposed||invalidated||saving)return;const action=b.dataset.cb;if(action==='cancel-link'){if(draft&&confirmDiscard('Descartar a seleção e o motivo ainda não vinculados?'))discard();return;}if(action==='resolve-link'){void saveLink('resolve');return;}if(action==='retry-link'){void saveLink('retry');return;}if(action==='refresh-link'){void refreshDraft();return;}if(action==='pdf'){void openPDF(b.dataset.key);return;}if(draft){emit('Conclua ou cancele a seleção do original antes de alterar a busca.',true);return;}if(action==='link'){chooseLink(b.dataset.key);return;}if(action==='section'){if(opening)return;currentSection=b.dataset.section==='requests'?'requests':'documents';offset=0;drawShell();void refresh();}else if(action==='refresh'&&!opening)void refresh();else if(action==='previous'&&!busy&&!opening){offset=Math.max(0,page.offset-page.limit);void refresh();}else if(action==='next'&&!busy&&!opening&&page.hasMore){offset=page.offset+page.limit;void refresh();}};
-  const submit=event=>{if(event.target.matches('[data-cb-link-form]')){event.preventDefault();void saveLink();return;}if(!event.target.matches('[data-cb-search]'))return;event.preventDefault();if(disposed||invalidated||opening||draft)return;query=String(new FormData(event.target).get('search')||'').trim().slice(0,120);offset=0;void refresh();};
+  function movePage(direction){
+    if(showingAnamneses()){
+      if(direction<0&&documentOffsets.length>1)documentOffsets.pop();
+      if(direction>0)documentOffsets.push(page.offset+page.limit);
+    }else offset=Math.max(0,page.offset+direction*page.limit);
+    void refresh();
+  }
+  const click=event=>{const b=event.target.closest('[data-cb]');if(!b||!host.contains(b)||b.disabled||disposed||invalidated||saving)return;const action=b.dataset.cb;if(action==='cancel-link'){if(draft&&confirmDiscard('Descartar a seleção e o motivo ainda não vinculados?'))discard();return;}if(action==='resolve-link'){void saveLink('resolve');return;}if(action==='retry-link'){void saveLink('retry');return;}if(action==='refresh-link'){void refreshDraft();return;}if(action==='pdf'){void openPDF(b.dataset.key);return;}if(draft){emit('Conclua ou cancele a seleção do original antes de alterar a busca.',true);return;}if(action==='link'){chooseLink(b.dataset.key);return;}if(action==='section'){if(opening)return;currentSection=b.dataset.section==='requests'?'requests':'documents';resetPage();drawShell();void refresh();}else if(action==='refresh'&&!opening)void refresh();else if(action==='previous'&&!busy&&!opening)movePage(-1);else if(action==='next'&&!busy&&!opening&&page.hasMore)movePage(1);};
+  const submit=event=>{if(event.target.matches('[data-cb-link-form]')){event.preventDefault();void saveLink();return;}if(!event.target.matches('[data-cb-search]'))return;event.preventDefault();if(disposed||invalidated||opening||draft)return;query=String(new host.ownerDocument.defaultView.FormData(event.target).get('search')||'').trim().slice(0,120);resetPage();void refresh();};
   const change=event=>{if(event.target.closest('[data-cb-link-form]')){captureDraft(event.target.closest('form'));return;}if(!event.target.matches('[data-cb-status]')||disposed||invalidated||opening||draft)return;status=event.target.value;offset=0;void refresh();};
   host.addEventListener('click',click);host.addEventListener('submit',submit);host.addEventListener('change',change);host.addEventListener('input',change);eventTarget?.addEventListener('amj:connection-invalidated',invalidate);
   const unsubscribe=service?.session?.subscribe?.(invalidate);drawShell();
   const ready=refresh();
-  return Object.freeze({ready,refresh,isDirty:()=>!!draft,isBusy:()=>saving||service?.isLinkBusy?.()===true,hasUncertain:uncertain,discard,setSection(value){if(disposed||invalidated||opening||draft||saving)return;currentSection=value==='requests'?'requests':'documents';offset=0;drawShell();return refresh();},invalidate,
+  return Object.freeze({ready,refresh,isDirty:()=>!!draft,isBusy:()=>saving||service?.isLinkBusy?.()===true,hasUncertain:uncertain,discard,setSection(value){if(disposed||invalidated||opening||draft||saving)return;currentSection=value==='requests'?'requests':'documents';resetPage();drawShell();return refresh();},invalidate,
     dispose(){if(disposed)return;invalidate();disposed=true;generation++;unsubscribe?.();eventTarget?.removeEventListener('amj:connection-invalidated',invalidate);host.removeEventListener('click',click);host.removeEventListener('submit',submit);host.removeEventListener('change',change);host.removeEventListener('input',change);host.replaceChildren();},
   });
 }

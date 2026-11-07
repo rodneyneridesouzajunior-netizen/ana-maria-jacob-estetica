@@ -56,6 +56,124 @@
 .sp-home .sp-card-title>a{display:inline-flex;align-items:center;justify-content:flex-end;gap:5px;font-size:13px;color:var(--sp-ink);font-weight:600;min-height:44px;white-space:nowrap}
 .sp-home .sp-card-title>a svg{width:16px;height:16px}
 .sp-home .sp-card-icon{display:flex;color:var(--ui-champagne-ink,#8b765a);padding-top:6px}
+.sp-home .sp-hero.sp-care-intro {
+  padding: 4px 0 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.sp-home .sp-care-priorities {
+  --sp-care-pad: clamp(18px, 2.1vw, 26px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.65fr);
+  align-items: start;
+  gap: 24px;
+}
+
+.sp-home .sp-care-priorities .sp-card-title {
+  padding: var(--sp-care-pad) var(--sp-care-pad) 14px;
+}
+
+.sp-home .sp-home-card.sp-care-docs {
+  background: linear-gradient(145deg, #fffdfa, #fbefe9);
+  border-color: #d7bbb1;
+}
+
+.sp-home .sp-care-docs > .sp-care-doc-copy {
+  max-width: 42ch;
+  padding-inline: var(--sp-care-pad);
+  margin: 0 0 14px;
+}
+
+.sp-home .sp-care-docs .sp-care-doc-copy {
+  color: var(--sp-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.sp-home .sp-care-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sp-home .sp-care-priorities .sp-home-card > .sp-care-links {
+  padding: 0 var(--sp-care-pad) 14px;
+}
+
+.sp-home .sp-care-priorities .sp-home-card > .sp-care-links:last-child {
+  padding-bottom: var(--sp-care-pad);
+}
+
+.sp-home :is(.sp-care-links > a, .sp-care-links > button, .sp-care-reschedule) {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 12px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.25;
+  white-space: normal;
+  text-align: center;
+}
+
+.sp-home .sp-care-reschedule {
+  border: 1px solid var(--ui-control-edge, #918b83);
+  background: var(--sp-surface);
+  color: var(--sp-ink);
+}
+
+.sp-home .sp-care-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.sp-home .sp-care-priorities ~ .sp-home-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sp-home .sp-care-priorities ~ .sp-home-grid .sp-procedures {
+  grid-column: auto;
+}
+
+@media (hover: hover) {
+  .sp-home .sp-care-reschedule:hover { background: var(--sp-warm); }
+}
+
+@media (max-width: 760px) {
+  .sp-home .sp-care-priorities,
+  .sp-home .sp-care-priorities ~ .sp-home-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+}
+
+@container amj-home (max-width: 760px) {
+  .sp-home .sp-care-priorities,
+  .sp-home .sp-care-priorities ~ .sp-home-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+}
+
+@container amj-home-card (max-width: 425px) {
+  .sp-home .sp-care-priorities .sp-next-row {
+    display: grid;
+    grid-template-columns: 54px minmax(0, 1fr);
+    align-items: start;
+    gap: 8px 12px;
+  }
+
+  .sp-home .sp-care-row-actions { grid-column: 2; }
+}
+
 .sp-home .sp-next-list{padding:0 20px 12px}
 .sp-home .sp-next-row{--service-ink:#6c5c4b;display:flex;align-items:center;gap:12px;padding:16px 6px;border-top:1px solid var(--sp-line);min-width:0}
 .sp-home [data-service-tone="avaliacao"]{--service-ink:#366078}

@@ -46,6 +46,42 @@ test('originais e formulários ficam legíveis sem HTML de dados e sem afirmaç�
  for(const a of f.host.querySelectorAll('.cb-form-links a')){assert.equal(new URL(a.href).origin,'https://anamariajacob.com.br');assert.match(a.rel,/noreferrer/);}
  assert.equal(OFFICIAL_CLINICAL_FORMS.some(f=>f.url.endsWith('/anamnese/')),true);
 });
+test('atalho de anamneses busca pelo nome, atravessa páginas de termos e abre o PDF histórico',async t=>{
+ const history={...original(),identity:{name:'Ana Exemplo'},status:'legado',pdf_access:'historical',pdf_sha256:null,eligible_for_link:false};
+ const term={...original(),source_kind:'documento_clinico',identity:{name:'Termo Exemplo'}};
+ const archived={...original(),source_id:'archived',archived:true,identity:{name:'Arquivo Exemplo'}};
+ const draft={...original(),source_id:'draft',status:'processando',identity:{name:'Rascunho Exemplo'}};
+ const second={...original(),source_id:'another',identity:{name:'Próxima Exemplo'}};
+ const calls=[];
+ const f=fixture(t,{documentFilter:'anamnese',getContext:()=>null,service:{
+  listDocuments:async p=>{
+   calls.push(p);
+   const rows=p.offset===0?[term,archived,draft]:p.offset===25?[history]:[second];
+   return {...listed(),documents:rows,pagination:{limit:25,offset:p.offset,has_more:p.offset<50}};
+  },
+  openDocument:async p=>{
+   assert.equal(p.source_kind,'anamnese');
+   assert.equal(p.source_id,sourceId);
+   return {document:history,pdf:{url:pdfURL(),sha256:'c'.repeat(64),expires_in:120,integrity:'historical_file_only'}};
+  },
+ }});
+ await f.handle.ready;
+ assert.deepEqual(calls.map(p=>p.offset),[0,25]);
+ assert.match(f.host.querySelector('h2').textContent,/Anamneses preenchidas/);
+ assert.match(f.host.textContent,/Ana Exemplo/);
+ assert.doesNotMatch(f.host.textContent,/Termo Exemplo|Arquivo Exemplo|Rascunho Exemplo/);
+ assert.equal(f.host.querySelector('[data-cb="previous"]').disabled,true);
+ f.host.querySelector('[data-cb="next"]').click();await tick();
+ assert.match(f.host.textContent,/Próxima Exemplo/);
+ f.host.querySelector('[data-cb="previous"]').click();await tick();
+ assert.match(f.host.textContent,/Ana Exemplo/);
+ const form=f.host.querySelector('[data-cb-search]');form.elements.search.value='Ana';
+ form.dispatchEvent(new f.dom.window.Event('submit',{bubbles:true,cancelable:true}));await tick();
+ assert.equal(calls.at(-1).search,'Ana');
+ assert.equal(f.host.querySelector('[data-cb="previous"]').disabled,true);
+ f.host.querySelector('[data-cb="pdf"]').click();await tick();
+ assert.equal(f.opened[0].url,pdfURL());
+});
 test('vínculo de identidade antiga nunca aparece como vínculo atual válido',async t=>{
  const link={...original(),patient_id:'patient',visit_id:'visit',status:'vinculado_recebido',current_identity_matches:false,available:false,clinical_authorization:false};
  const f=fixture(t,{service:{listLinks:async()=>({links:[link]})}});await f.handle.ready;
