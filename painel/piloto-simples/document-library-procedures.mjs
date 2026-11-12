@@ -415,55 +415,424 @@ export const ADDITIONAL_PROCEDURE_MODELS = Object.freeze([
     ]
   },
   {
-    "id": "amj-termo-lipoescultura-pescoco-20261016",
-    "title": "Consentimento — Lipoescultura Cirúrgica de Pescoço",
+    "id": "amj-termo-intradermoterapia-20261112",
+    "title": "Consentimento — Intradermoterapia",
     "kind": "termo",
-    "source": "Conteúdo específico para revisão pelo responsável cirúrgico. Definir operação, equipe, ambiente e anestesia antes de emitir.",
-    "body": "As declarações gerais estão na anamnese obrigatória, sem repetição neste termo. A autorização de imagem é independente. Este documento trata somente do procedimento descrito. O plano, os produtos, as regiões e as orientações individuais precisam estar definidos e esclarecidos antes da confirmação. Lipoaspiração submentoniana, retirada de pele, correção muscular e enxertia não são operações equivalentes. A descrição da operação e das intervenções associadas deve constar do plano cirúrgico individual, elaborado pelo responsável.",
+    "source": "Conteúdo específico para revisão da profissional; adequar ao produto e ao plano individual.",
+    "body": "As declarações gerais estão na anamnese obrigatória, sem repetição neste termo. A autorização de imagem é independente. Este documento trata somente do procedimento descrito. O plano, os produtos, as regiões e as orientações individuais precisam estar definidos e esclarecidos antes da confirmação.",
     "blocks": [
       {
         "id": "objetivo",
-        "title": "Operação e área definidas",
-        "body": "O objetivo é modificar o contorno cervical conforme a operação descrita no plano. Quando houver lipoaspiração, trata-se de retirada de gordura localizada; isso não assegura correção da flacidez de pele ou de alterações musculares. Procedimentos associados devem ser identificados e explicados separadamente."
+        "title": "O que é e para que serve",
+        "body": "A intradermoterapia estética aplica pequenas quantidades de uma substância ou formulação por injeções superficiais na pele, no corpo ou no couro cabeludo, em pontos definidos após avaliação. A modalidade (facial, corporal ou capilar), a substância, a concentração, o volume e o número de sessões são definidos pela profissional e informados antes de cada sessão. Este termo não abrange aplicação intramuscular."
       },
       {
         "id": "alternativas",
         "title": "Alternativas e limites",
-        "body": "As opções podem incluir não operar, adiar ou discutir outras abordagens adequadas à causa da queixa. O resultado depende da anatomia e da cicatrização; pode haver assimetrias, irregularidades, flacidez residual e necessidade de revisão. Não há promessa de contorno perfeito nem de ausência de cicatriz."
+        "body": "É possível não realizar, adiar ou optar por cuidados não injetáveis ou outros tratamentos. A resposta pode ser discreta, temporária, desigual ou inexistente; não há garantia de resultado, duração ou número de sessões. Iniciar uma sessão não obriga a realizar as seguintes."
       },
       {
         "id": "riscos",
-        "title": "Riscos cirúrgicos relevantes",
-        "body": "Podem ocorrer dor, inchaço, hematomas, sangramento, acúmulo de líquido, infecção, alterações persistentes de sensibilidade, lesão de estruturas próximas, dificuldade de cicatrização, perda de pele e cicatrizes desfavoráveis. Dependendo da operação, lesão nervosa pode alterar movimentos da face ou do lábio. Anestesia, trombose e complicações cardíacas ou pulmonares podem produzir consequências graves. Uma revisão cirúrgica pode ser necessária."
+        "title": "Riscos e possíveis intercorrências",
+        "body": "Podem ocorrer dor, ardor, vermelhidão, inchaço, coceira, pequenos caroços, sangramento e hematomas, em geral temporários. Também podem ocorrer inflamação persistente, infecção, manchas, cicatriz, queloide, irregularidade e reação ao produto. Raramente pode haver reação alérgica grave, comprometimento vascular, necrose ou reação sistêmica que exija atendimento imediato. Os riscos específicos dependem da substância proposta e serão explicados antes de cada sessão."
       },
       {
         "id": "cuidados",
-        "title": "Preparação, alta e acompanhamento",
-        "body": "O responsável deve fornecer orientações escritas de preparo, anestesia, curativos, drenos quando presentes, medicações, atividade, acompanhamento e contato de urgência. Não aplicar compressas, massagear ou modificar curativos por conta própria; cuidados variam com a operação. A alta precisa incluir as restrições e a necessidade de acompanhante quando indicada."
+        "title": "Cuidados antes e depois",
+        "body": "Seguir as orientações individuais para a substância e a região. Não manipular a região nem aplicar produtos não orientados. Cuidados com sol, calor, exercício, lavagem e retorno variam conforme o local e serão informados. Avisar antes de cada sessão sobre febre, infecção, ferida ou medicamento novo."
       },
       {
         "id": "alertas",
-        "title": "Sinais de urgência",
-        "body": "Inchaço súbito ou rapidamente crescente no pescoço, sangramento importante, dificuldade de respirar ou engolir, dor no peito ou desmaio exigem atendimento imediato. Febre, secreção, piora da dor ou alteração progressiva da pele precisam de avaliação sem esperar o retorno. Não tentar resolver esses sinais apenas por mensagem. Em uma emergência, procure um pronto-socorro ou acione o SAMU pelo 192; não espere resposta da clínica por mensagem."
+        "title": "Quando avisar ou buscar assistência",
+        "body": "Dor forte ou crescente, mudança importante da cor da pele, secreção, febre, vermelhidão que se espalha, falta de ar, inchaço de face ou garganta ou desmaio precisam de avaliação imediata. Em uma emergência, procure um pronto-socorro ou acione o SAMU pelo 192; não espere resposta da clínica por mensagem. Depois, comunique a clínica pelo (31) 99584-4803."
+      },
+      {
+        "id": "rastreabilidade",
+        "title": "Produto e registro",
+        "body": "Antes de cada sessão serão registrados a substância ou formulação, fabricante ou fornecedor, lote, validade, regularização, região, volume e data. Tenho direito de saber o que será aplicado antes de decidir; troca de substância, via ou finalidade exige nova explicação e concordância."
       },
       {
         "id": "decisao",
-        "title": "Decisão restrita à operação descrita",
-        "body": "Posso pedir esclarecimentos, adiar ou recusar o procedimento antes de sua realização e solicitar uma cópia deste documento. A confirmação e a assinatura dizem respeito somente ao plano descrito, após esclarecimento das dúvidas. Não autorizam divulgação de imagens nem outros procedimentos. Se ainda houver dúvida, devo conversar com a equipe antes de confirmar. Esta assinatura não substitui avaliação cirúrgica, anestésica ou a confirmação das condições do local e da equipe."
+        "title": "Decisão sobre a intradermoterapia descrita",
+        "body": "Posso pedir esclarecimentos, adiar ou recusar o procedimento antes de sua realização, sem precisar justificar, e recebo uma cópia deste documento. A confirmação e a assinatura dizem respeito somente ao plano descrito, após esclarecimento das dúvidas. Não autorizam divulgação de imagens nem outros procedimentos. Aceito a assinatura eletrônica deste documento, com registro de data, hora, dispositivo e integridade do conteúdo, como manifestação válida da minha vontade."
       }
     ],
     "questions": [
       {
-        "id": "objetivo_especifico",
-        "label": "Qual alteração do pescoço você deseja tratar e quais dúvidas quer discutir com o responsável cirúrgico?",
-        "type": "long",
-        "required": false
+        "id": "modalidade",
+        "label": "Qual modalidade foi conversada com a profissional?",
+        "type": "select",
+        "required": true,
+        "options": [
+          "Facial",
+          "Corporal",
+          "Capilar",
+          "Ainda não definida"
+        ]
       },
       {
-        "id": "escopo_compreendido",
-        "label": "Qual operação e quais procedimentos associados você entendeu que foram propostos? Não use esta resposta para substituir a descrição do responsável.",
+        "id": "intradermo_anterior",
+        "label": "Já fez intradermoterapia antes?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "intradermo_reacao",
+        "label": "Já teve reação, mancha ou caroço após alguma aplicação injetável na pele?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "capilar_medicamento",
+        "label": "Usa algum medicamento ou loção para queda de cabelo (por exemplo, minoxidil ou finasterida)?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "duvidas_especificas",
+        "label": "Quais dúvidas ou observações sobre este procedimento você quer discutir antes de decidir?",
         "type": "long",
         "required": false
+      }
+    ]
+  },
+  {
+    "id": "amj-termo-peeling-quimico-20261112",
+    "title": "Consentimento — Peeling químico superficial",
+    "kind": "termo",
+    "source": "Conteúdo específico para revisão da profissional; adequar ao produto e ao plano individual.",
+    "body": "As declarações gerais estão na anamnese obrigatória, sem repetição neste termo. A autorização de imagem é independente. Este documento trata somente do procedimento descrito. O plano, os produtos, as regiões e as orientações individuais precisam estar definidos e esclarecidos antes da confirmação.",
+    "blocks": [
+      {
+        "id": "objetivo",
+        "title": "O que é e para que serve",
+        "body": "O peeling químico superficial aplica um ácido ou combinação de ácidos na pele para promover descamação controlada das camadas mais superficiais. Pode ser considerado para textura, oleosidade, manchas superficiais e luminosidade, conforme avaliação. Este termo não abrange peelings médios, profundos ou de fenol."
+      },
+      {
+        "id": "alternativas",
+        "title": "Alternativas e limites",
+        "body": "É possível não realizar, adiar ou optar por cuidados domiciliares, outros tratamentos ou associação de técnicas. O resultado costuma exigir mais de uma sessão, varia conforme o tipo de pele e a adesão aos cuidados e não é garantido. Manchas podem melhorar parcialmente, voltar ou piorar sem fotoproteção."
+      },
+      {
+        "id": "riscos",
+        "title": "Riscos e possíveis intercorrências",
+        "body": "São esperados ardor, vermelhidão, sensibilidade e descamação por alguns dias. Podem ocorrer crostas, inchaço, coceira, sensibilidade prolongada, irritação, reativação de herpes, acne, infecção, manchas escuras ou claras (principalmente com sol ou em peles com tendência a manchar), alteração de textura e, raramente, cicatriz ou reação alérgica."
+      },
+      {
+        "id": "cuidados",
+        "title": "Cuidados antes e depois",
+        "body": "Suspender ácidos, retinoides e esfoliantes na região pelo período orientado antes da sessão. Depois, não arrancar a pele que descama, usar somente os produtos indicados, hidratar e usar protetor solar todos os dias, evitando sol, calor intenso, sauna e piscina pelo tempo orientado."
+      },
+      {
+        "id": "alertas",
+        "title": "Quando avisar ou buscar assistência",
+        "body": "Bolhas, feridas abertas, secreção, dor que aumenta, vesículas de herpes, mancha escura que surge ou reação intensa precisam de avaliação. Falta de ar, inchaço de face ou garganta ou desmaio são emergência. Em uma emergência, procure um pronto-socorro ou acione o SAMU pelo 192; não espere resposta da clínica por mensagem. Depois, comunique a clínica pelo (31) 99584-4803."
+      },
+      {
+        "id": "decisao",
+        "title": "Decisão sobre o peeling químico descrito",
+        "body": "Posso pedir esclarecimentos, adiar ou recusar o procedimento antes de sua realização, sem precisar justificar, e recebo uma cópia deste documento. A confirmação e a assinatura dizem respeito somente ao plano descrito, após esclarecimento das dúvidas. Não autorizam divulgação de imagens nem outros procedimentos. Aceito a assinatura eletrônica deste documento, com registro de data, hora, dispositivo e integridade do conteúdo, como manifestação válida da minha vontade."
+      }
+    ],
+    "questions": [
+      {
+        "id": "acidos_recentes",
+        "label": "Usou ácidos, retinoides (como ácido retinoico) ou esfoliantes na região nos últimos 7 dias?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "manchas_tendencia",
+        "label": "Tem melasma ou costuma ficar com manchas escuras depois de espinhas, machucados ou procedimentos?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "sol_previsto",
+        "label": "Vai se expor ao sol (praia, piscina, trabalho ao ar livre) nas próximas 2 semanas?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "peeling_reacao",
+        "label": "Já teve reação, mancha ou ferida após peeling ou ácido?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "duvidas_especificas",
+        "label": "Quais dúvidas ou observações sobre este procedimento você quer discutir antes de decidir?",
+        "type": "long",
+        "required": false
+      }
+    ]
+  },
+  {
+    "id": "amj-termo-microagulhamento-20261112",
+    "title": "Consentimento — Microagulhamento facial e capilar",
+    "kind": "termo",
+    "source": "Conteúdo específico para revisão da profissional; adequar ao produto e ao plano individual.",
+    "body": "As declarações gerais estão na anamnese obrigatória, sem repetição neste termo. A autorização de imagem é independente. Este documento trata somente do procedimento descrito. O plano, os produtos, as regiões e as orientações individuais precisam estar definidos e esclarecidos antes da confirmação.",
+    "blocks": [
+      {
+        "id": "objetivo",
+        "title": "O que é e para que serve",
+        "body": "O microagulhamento produz microperfurações controladas na pele ou no couro cabeludo com agulhas finas, para estimular a renovação da pele e, quando indicado, favorecer a ação de produtos aplicados. Pode ser considerado para textura, cicatrizes de acne, poros, linhas finas ou queda de cabelo, conforme avaliação. A profundidade, a região e os produtos associados são definidos e informados pela profissional."
+      },
+      {
+        "id": "alternativas",
+        "title": "Alternativas e limites",
+        "body": "É possível não realizar, adiar ou optar por outros tratamentos. Em geral são necessárias várias sessões; a melhora é gradual, pode ser parcial e não é garantida. No couro cabeludo, a resposta depende da causa da queda, que pode exigir avaliação médica."
+      },
+      {
+        "id": "riscos",
+        "title": "Riscos e possíveis intercorrências",
+        "body": "São esperados vermelhidão, sensibilidade, inchaço leve e pequenos pontos de sangramento nas primeiras horas ou dias. Podem ocorrer hematomas, descamação, acne, reativação de herpes, infecção, manchas escuras ou claras, marcas de linhas do aparelho, reação a produtos aplicados e, raramente, cicatriz ou reação alérgica."
+      },
+      {
+        "id": "cuidados",
+        "title": "Cuidados antes e depois",
+        "body": "Não usar maquiagem, ácidos ou produtos não indicados na região pelo tempo orientado. Manter a pele limpa, usar somente os produtos recomendados e protetor solar diário, evitando sol, piscina, sauna e exercício intenso no período orientado. No couro cabeludo, seguir a orientação sobre lavagem e produtos."
+      },
+      {
+        "id": "alertas",
+        "title": "Quando avisar ou buscar assistência",
+        "body": "Secreção, dor que aumenta, febre, vesículas de herpes, manchas que surgem ou reação intensa precisam de avaliação. Falta de ar, inchaço de face ou garganta ou desmaio são emergência. Em uma emergência, procure um pronto-socorro ou acione o SAMU pelo 192; não espere resposta da clínica por mensagem. Depois, comunique a clínica pelo (31) 99584-4803."
+      },
+      {
+        "id": "decisao",
+        "title": "Decisão sobre o microagulhamento descrito",
+        "body": "Posso pedir esclarecimentos, adiar ou recusar o procedimento antes de sua realização, sem precisar justificar, e recebo uma cópia deste documento. A confirmação e a assinatura dizem respeito somente ao plano descrito, após esclarecimento das dúvidas. Não autorizam divulgação de imagens nem outros procedimentos. Aceito a assinatura eletrônica deste documento, com registro de data, hora, dispositivo e integridade do conteúdo, como manifestação válida da minha vontade."
+      }
+    ],
+    "questions": [
+      {
+        "id": "regiao",
+        "label": "Qual região foi conversada com a profissional?",
+        "type": "select",
+        "required": true,
+        "options": [
+          "Rosto",
+          "Couro cabeludo",
+          "Corpo",
+          "Ainda não definida"
+        ]
+      },
+      {
+        "id": "manchas_tendencia",
+        "label": "Tem melasma ou costuma ficar com manchas escuras depois de espinhas, machucados ou procedimentos?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "acidos_recentes",
+        "label": "Usou ácidos, retinoides ou esfoliantes na região nos últimos 7 dias?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "micro_reacao",
+        "label": "Já fez microagulhamento antes e teve alguma reação ou mancha?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "duvidas_especificas",
+        "label": "Quais dúvidas ou observações sobre este procedimento você quer discutir antes de decidir?",
+        "type": "long",
+        "required": false
+      }
+    ]
+  },
+  {
+    "id": "amj-termo-skinbooster-20261112",
+    "title": "Consentimento — Skinbooster",
+    "kind": "termo",
+    "source": "Conteúdo específico para revisão da profissional; adequar ao produto e ao plano individual.",
+    "body": "As declarações gerais estão na anamnese obrigatória, sem repetição neste termo. A autorização de imagem é independente. Este documento trata somente do procedimento descrito. O plano, os produtos, as regiões e as orientações individuais precisam estar definidos e esclarecidos antes da confirmação.",
+    "blocks": [
+      {
+        "id": "objetivo",
+        "title": "O que é e para que serve",
+        "body": "O skinbooster aplica na pele pequenas quantidades de ácido hialurônico de baixa densidade, isolado ou associado a outros componentes, para hidratação profunda, viço e melhora de textura. Não tem a finalidade de dar volume ou contorno como um preenchedor. O produto, a região e o número de sessões são definidos e informados pela profissional."
+      },
+      {
+        "id": "alternativas",
+        "title": "Alternativas e limites",
+        "body": "É possível não realizar, adiar ou optar por cuidados domiciliares e outros tratamentos. O efeito é temporário, pode exigir sessões de manutenção e varia entre pessoas; não há garantia de resultado ou duração."
+      },
+      {
+        "id": "riscos",
+        "title": "Riscos e possíveis intercorrências",
+        "body": "Podem ocorrer dor, vermelhidão, inchaço, pequenas pápulas (bolinhas) nos pontos de aplicação, hematomas e sensibilidade, em geral temporários. Também podem ocorrer nódulos, infecção, reação inflamatória tardia, reativação de herpes e reação alérgica. Raramente pode haver comprometimento vascular, com risco de necrose de pele, que exige atendimento imediato."
+      },
+      {
+        "id": "cuidados",
+        "title": "Cuidados antes e depois",
+        "body": "Seguir as orientações sobre maquiagem, exercício, calor, sol e massagem nas primeiras horas e dias. Não pressionar nem massagear a região sem orientação. Avisar sobre procedimento odontológico, vacina ou infecção próximos da data."
+      },
+      {
+        "id": "alertas",
+        "title": "Quando avisar ou buscar assistência",
+        "body": "Dor intensa, pele pálida, arroxeada ou rendilhada na região, alteração de visão, secreção, febre ou inchaço que aumenta precisam de avaliação imediata. Falta de ar, inchaço de garganta ou desmaio são emergência. Em uma emergência, procure um pronto-socorro ou acione o SAMU pelo 192; não espere resposta da clínica por mensagem. Depois, comunique a clínica pelo (31) 99584-4803."
+      },
+      {
+        "id": "rastreabilidade",
+        "title": "Produto e registro",
+        "body": "Serão registrados o produto, fabricante, lote, validade, registro na Anvisa, região, volume e data da aplicação."
+      },
+      {
+        "id": "decisao",
+        "title": "Decisão sobre o skinbooster descrito",
+        "body": "Posso pedir esclarecimentos, adiar ou recusar o procedimento antes de sua realização, sem precisar justificar, e recebo uma cópia deste documento. A confirmação e a assinatura dizem respeito somente ao plano descrito, após esclarecimento das dúvidas. Não autorizam divulgação de imagens nem outros procedimentos. Aceito a assinatura eletrônica deste documento, com registro de data, hora, dispositivo e integridade do conteúdo, como manifestação válida da minha vontade."
+      }
+    ],
+    "questions": [
+      {
+        "id": "ah_anterior",
+        "label": "Já aplicou ácido hialurônico (preenchimento ou skinbooster) na região?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "ah_reacao",
+        "label": "Já teve caroço, inflamação ou reação após aplicação de ácido hialurônico?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "preenchedor_permanente",
+        "label": "Tem preenchedor permanente (PMMA, silicone, bioplastia) na região?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "duvidas_especificas",
+        "label": "Quais dúvidas ou observações sobre este procedimento você quer discutir antes de decidir?",
+        "type": "long",
+        "required": false
+      }
+    ]
+  },
+  {
+    "id": "amj-termo-intramuscular-20261112",
+    "title": "Consentimento — Aplicação intramuscular com prescrição",
+    "kind": "termo",
+    "source": "Rascunho para revisão da profissional e orientação jurídica. Base: Res. CFF 760/2023, Portaria SVS/MS 344/1998, Lei 9.965/2000 e Res. CFM 2.333/2023.",
+    "body": "Este termo trata somente da administração intramuscular de medicamento prescrito por outro profissional habilitado, para reposição hormonal ou uso de medicamento controlado. As declarações gerais de saúde estão na anamnese obrigatória. Não abrange prescrição, indicação de dose, finalidade estética ou de desempenho, nem implantes hormonais.",
+    "blocks": [
+      {
+        "id": "objetivo",
+        "title": "O que é este atendimento",
+        "body": "A profissional farmacêutica aplica, por via intramuscular, o medicamento indicado na receita apresentada. A escolha do medicamento, a dose, o intervalo e o acompanhamento do tratamento são de responsabilidade do profissional que prescreveu. A farmacêutica avalia a receita, confere o produto e pode recusar ou adiar a aplicação quando houver dúvida sobre a prescrição, a procedência do medicamento ou a sua segurança."
+      },
+      {
+        "id": "prescricao",
+        "title": "Receita e procedência do medicamento",
+        "body": "A aplicação depende de receita válida, legível e dentro do prazo, com nome, conselho e número do prescritor. Para hormônios anabolizantes e outros medicamentos controlados, é exigida Receita de Controle Especial, com indicação clínica, e a cópia carimbada pela farmácia fica arquivada no prontuário. O medicamento deve ser adquirido pela paciente em farmácia, com nota fiscal, e apresentado lacrado, dentro da validade e com registro na Anvisa. A clínica não fornece, vende nem guarda medicamentos controlados. Não serão aplicados produtos manipulados injetáveis de procedência duvidosa nem hormônios com finalidade estética ou de ganho de desempenho."
+      },
+      {
+        "id": "acompanhamento",
+        "title": "Acompanhamento médico",
+        "body": "A reposição hormonal deve ser indicada a partir de diagnóstico de deficiência e acompanhada pelo prescritor, com exames periódicos. A aplicação na clínica não substitui consultas, exames ou ajustes de dose pelo prescritor."
+      },
+      {
+        "id": "riscos",
+        "title": "Riscos da aplicação",
+        "body": "Podem ocorrer dor, sensibilidade, endurecimento, hematoma e incômodo para movimentar o local por alguns dias. Mais raramente podem ocorrer abscesso ou infecção, lesão de nervo com dor irradiada, dormência ou fraqueza, aplicação acidental em vaso, tosse ou sensação de falta de ar logo após medicamentos oleosos, e reação alérgica, inclusive grave (anafilaxia)."
+      },
+      {
+        "id": "riscos_medicamento",
+        "title": "Efeitos do medicamento",
+        "body": "Os efeitos do medicamento são explicados pelo prescritor e constam da bula. No caso de hormônios, podem incluir aumento do hematócrito (sangue mais espesso), risco de trombose, alterações de colesterol e do fígado, acne, oleosidade, queda de cabelo, alterações de humor, retenção de líquido, alterações na fertilidade e, em mulheres, engrossamento da voz, aumento de pelos e outros sinais de virilização, que podem ser permanentes."
+      },
+      {
+        "id": "observacao",
+        "title": "Observação e cuidados após a aplicação",
+        "body": "Após a aplicação, permaneço na clínica pelo tempo orientado pela profissional para observação. No local, evito massagem vigorosa, calor intenso e atividade física pesada no dia, salvo orientação diferente. O local, o lado, o lote e a validade do medicamento ficam registrados no prontuário."
+      },
+      {
+        "id": "alertas",
+        "title": "Quando avisar ou buscar assistência",
+        "body": "Falta de ar, chiado, inchaço de lábios, língua ou garganta, coceira generalizada, tontura ou desmaio após a aplicação são emergência. Dor, vermelhidão ou calor que aumentam no local, febre ou secreção, dor ou inchaço em uma perna, dor no peito ou fraqueza súbita também precisam de avaliação imediata. Em uma emergência, procure um pronto-socorro ou acione o SAMU pelo 192; não espere resposta da clínica por mensagem. Depois, comunique a clínica pelo (31) 99584-4803."
+      },
+      {
+        "id": "decisao",
+        "title": "Decisão sobre a aplicação descrita",
+        "body": "Posso pedir esclarecimentos, adiar ou recusar a aplicação, sem precisar justificar, e recebo uma cópia deste documento, emitido em duas vias. Declaro que as informações sobre a receita, o prescritor e o medicamento são verdadeiras e que informarei qualquer mudança de saúde ou de tratamento antes de cada aplicação. Aceito a assinatura eletrônica deste documento, com registro de data, hora, dispositivo e integridade do conteúdo, como manifestação válida da minha vontade."
+      }
+    ],
+    "questions": [
+      {
+        "id": "medicamento",
+        "label": "Nome do medicamento prescrito (como está na receita)",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "prescritor_nome",
+        "label": "Nome do profissional que prescreveu",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "prescritor_registro",
+        "label": "Conselho, número e estado do prescritor (ex.: CRM-MG 12345)",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "receita_data",
+        "label": "Data da receita",
+        "type": "date",
+        "required": true
+      },
+      {
+        "id": "finalidade",
+        "label": "Para que foi prescrito?",
+        "type": "select",
+        "required": true,
+        "options": [
+          "Reposição hormonal com diagnóstico de deficiência",
+          "Outro tratamento indicado pelo prescritor",
+          "Não sei informar"
+        ]
+      },
+      {
+        "id": "acompanhamento_exames",
+        "label": "Faz acompanhamento com o prescritor e realizou exames nos últimos 6 meses?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "comprado_farmacia",
+        "label": "O medicamento foi comprado em farmácia, com nota fiscal, e está lacrado?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "aplicacao_anterior",
+        "label": "Já recebeu este medicamento por injeção antes?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "reacao_anterior",
+        "label": "Já teve reação, abscesso, tosse ou falta de ar após uma injeção intramuscular?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "trombose",
+        "label": "Já teve trombose, embolia ou tem tendência a coágulos?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "cancer_hormonal",
+        "label": "Tem ou teve câncer de mama, próstata, útero ou outro sensível a hormônios?",
+        "type": "yesno",
+        "required": true
       },
       {
         "id": "duvidas_especificas",

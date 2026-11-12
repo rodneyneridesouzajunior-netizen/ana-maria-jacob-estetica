@@ -313,22 +313,6 @@ export const CLINIC_DOCUMENT_MODELS = Object.freeze([
         }
       },
       {
-        "id": "proc-8",
-        "label": "Já realizou Depilação a laser?",
-        "type": "yesno",
-        "required": true
-      },
-      {
-        "id": "proc-detalhe-8",
-        "label": "Quando, em qual região e com qual produto realizou Depilação a laser?",
-        "type": "long",
-        "required": false,
-        "condition": {
-          "questionId": "proc-8",
-          "value": "Sim"
-        }
-      },
-      {
         "id": "proc-9",
         "label": "Já realizou Cirurgia plástica facial?",
         "type": "yesno",
@@ -341,142 +325,6 @@ export const CLINIC_DOCUMENT_MODELS = Object.freeze([
         "required": false,
         "condition": {
           "questionId": "proc-9",
-          "value": "Sim"
-        }
-      },
-      {
-        "id": "laser-interesse",
-        "label": "Deseja avaliar depilação a laser neste atendimento?",
-        "type": "yesno",
-        "required": true
-      },
-      {
-        "id": "laser-0",
-        "label": "Tomou sol, foi à praia ou fez bronzeamento artificial nos últimos 15 dias?",
-        "type": "yesno",
-        "required": true,
-        "condition": {
-          "questionId": "laser-interesse",
-          "value": "Sim"
-        }
-      },
-      {
-        "id": "laser-1",
-        "label": "Usou autobronzeador nos últimos 15 dias?",
-        "type": "yesno",
-        "required": true,
-        "condition": {
-          "questionId": "laser-interesse",
-          "value": "Sim"
-        }
-      },
-      {
-        "id": "laser-2",
-        "label": "Depilou com cera, pinça ou linha nos últimos 30 dias?",
-        "type": "yesno",
-        "required": true,
-        "condition": {
-          "questionId": "laser-interesse",
-          "value": "Sim"
-        }
-      },
-      {
-        "id": "laser-3",
-        "label": "Tem tatuagem na área que quer tratar?",
-        "type": "yesno",
-        "required": true,
-        "condition": {
-          "questionId": "laser-interesse",
-          "value": "Sim"
-        }
-      },
-      {
-        "id": "laser-4",
-        "label": "Tem melasma, manchas escuras ou cicatriz escura na área?",
-        "type": "yesno",
-        "required": true,
-        "condition": {
-          "questionId": "laser-interesse",
-          "value": "Sim"
-        }
-      },
-      {
-        "id": "laser-5",
-        "label": "Já fez depilação a laser antes?",
-        "type": "yesno",
-        "required": true,
-        "condition": {
-          "questionId": "laser-interesse",
-          "value": "Sim"
-        }
-      },
-      {
-        "id": "laser-6",
-        "label": "Alguma vez teve queimadura, bolha ou mancha após laser?",
-        "type": "yesno",
-        "required": true,
-        "condition": {
-          "questionId": "laser-interesse",
-          "value": "Sim"
-        }
-      },
-      {
-        "id": "laser-7",
-        "label": "Usa medicamento fotossensibilizante (antibiótico, diurético, erva de São João)?",
-        "type": "yesno",
-        "required": true,
-        "condition": {
-          "questionId": "laser-interesse",
-          "value": "Sim"
-        }
-      },
-      {
-        "id": "laser-8",
-        "label": "Está usando ácido na área (retinoico, glicólico, salicílico)?",
-        "type": "yesno",
-        "required": true,
-        "condition": {
-          "questionId": "laser-interesse",
-          "value": "Sim"
-        }
-      },
-      {
-        "id": "laser-9",
-        "label": "Tem foliculite ou pelos encravados com frequência?",
-        "type": "yesno",
-        "required": true,
-        "condition": {
-          "questionId": "laser-interesse",
-          "value": "Sim"
-        }
-      },
-      {
-        "id": "laser-10",
-        "label": "Tem ovário policístico, hirsutismo ou alteração hormonal?",
-        "type": "yesno",
-        "required": true,
-        "condition": {
-          "questionId": "laser-interesse",
-          "value": "Sim"
-        }
-      },
-      {
-        "id": "laser-11",
-        "label": "Tem alguma lesão, ferida ou irritação na área agora?",
-        "type": "yesno",
-        "required": true,
-        "condition": {
-          "questionId": "laser-interesse",
-          "value": "Sim"
-        }
-      },
-      {
-        "id": "laser-detalhe",
-        "label": "Detalhe as respostas sobre depilação a laser",
-        "type": "long",
-        "required": false,
-        "condition": {
-          "questionId": "laser-interesse",
           "value": "Sim"
         }
       },
@@ -590,30 +438,8 @@ export const CLINIC_DOCUMENT_MODELS = Object.freeze([
           "proc-detalhe-6",
           "proc-7",
           "proc-detalhe-7",
-          "proc-8",
-          "proc-detalhe-8",
           "proc-9",
           "proc-detalhe-9"
-        ]
-      },
-      {
-        "id": "laser",
-        "title": "Avaliação para depilação a laser",
-        "questionIds": [
-          "laser-interesse",
-          "laser-0",
-          "laser-1",
-          "laser-2",
-          "laser-3",
-          "laser-4",
-          "laser-5",
-          "laser-6",
-          "laser-7",
-          "laser-8",
-          "laser-9",
-          "laser-10",
-          "laser-11",
-          "laser-detalhe"
         ]
       },
       {

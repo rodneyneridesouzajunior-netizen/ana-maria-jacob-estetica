@@ -16,7 +16,7 @@ import {createCustomDocuments} from '../../../supabase/functions/app-workspace/c
 import {createPublicDocumentHandler} from '../../../supabase/functions/documento-paciente/handler.mjs';
 
 const oldIds=['amj-anamnese-geral-20261016','amj-termo-toxina-20261016','amj-termo-preenchimento-20261016','amj-imagem-20261016'];
-const newIds=['amj-termo-labial-20261016','amj-termo-full-face-20261016','amj-termo-rinomodelacao-20261016','amj-termo-bioestimuladores-20261016','amj-termo-fios-pdo-20261016','amj-termo-fios-silhouette-20261016','amj-termo-hialuronidase-20261016','amj-termo-lipoescultura-pescoco-20261016'];
+const newIds=['amj-termo-labial-20261016','amj-termo-full-face-20261016','amj-termo-rinomodelacao-20261016','amj-termo-bioestimuladores-20261016','amj-termo-fios-pdo-20261016','amj-termo-fios-silhouette-20261016','amj-termo-hialuronidase-20261016','amj-termo-intradermoterapia-20261112','amj-termo-peeling-quimico-20261112','amj-termo-microagulhamento-20261112','amj-termo-skinbooster-20261112','amj-termo-intramuscular-20261112'];
 const expectedIds=[...oldIds,...newIds];
 const stamp='2026-10-16T15:00:00.000Z';
 const runtime=createRequire('C:/Users/rotan/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/package.json');
@@ -60,11 +60,11 @@ function dom(t){
  return{w,host:w.document.querySelector('main')};
 }
 
-test('complete clinic inventory has eight new specific terms plus the four preserved models, with one general anamnese',()=>{
+test('complete clinic inventory has twelve new specific terms plus the four preserved models, with one general anamnese',()=>{
  assert.deepEqual(CLINIC_DOCUMENT_MODELS.map(m=>m.id).sort(),expectedIds.toSorted());
  assert.equal(CLINIC_DOCUMENT_MODELS.filter(m=>m.kind==='anamnese').length,1);
  assert.equal(CLINIC_DOCUMENT_MODELS.filter(m=>m.kind==='imagem').length,1);
- assert.equal(CLINIC_DOCUMENT_MODELS.filter(m=>m.kind==='termo').length,10);
+ assert.equal(CLINIC_DOCUMENT_MODELS.filter(m=>m.kind==='termo').length,14);
  const general=CLINIC_DOCUMENT_MODELS.find(m=>m.kind==='anamnese');
  const generalQuestions=new Set(general.questions.map(q=>cleanText(q.label).toLocaleLowerCase('pt-BR')));
  for(const id of newIds){
@@ -122,7 +122,7 @@ test('private issuance and public reopening accept every specific library ID and
  assert.equal(rows.size,expectedIds.length);assert.equal(authorizations,expectedIds.length*2);
 });
 
-test('all ten terms can be selected and associated to distinct procedures without requiring general data or image consent again',async()=>{
+test('all fourteen terms can be selected and associated to distinct procedures without requiring general data or image consent again',async()=>{
  const f=fixture(),procedures=[];
  for(const model of CLINIC_DOCUMENT_MODELS){
   const {issue,payload}=await emitted(model,f);
@@ -132,7 +132,7 @@ test('all ten terms can be selected and associated to distinct procedures withou
   assert.throws(()=>validateSubmission({...payload,image_use:'publicacao'},issue),e=>e.code==='custom_image_choice_unexpected');
   procedures.push(saveProcedure(f.state,{operationId:'procedure-'+model.id,now:stamp,data:{id:'procedure-'+model.id,name:model.title,price:10000,cost:1000,duration:30,recordMode:'simple',consentTemplateId:model.id,requiredDocumentIds:[model.id],active:true}}));
  }
- assert.equal(procedures.length,10);
+ assert.equal(procedures.length,14);
  const savedVisit=f.state.visits.find(v=>v.id===f.visit.id);savedVisit.procedureSnapshot=procedures[0];
  savedVisit.maps={synthetic:{points:procedures.slice(1).map((p,i)=>({id:'point-'+i,procedureId:p.id,procedureVersion:p.version,procedureSnapshot:p}))}};
  assert.deepEqual(visitRequiredDocumentIds(savedVisit).sort(),CLINIC_DOCUMENT_MODELS.filter(m=>m.kind==='termo').map(m=>m.id).sort());
