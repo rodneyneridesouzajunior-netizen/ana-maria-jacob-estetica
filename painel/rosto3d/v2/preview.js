@@ -26,11 +26,12 @@ const mats=m=>[].concat(m.material);
 const REALISTIC={id:'rosto-realista-20261112',file:'./assets/rosto-realista-20261112.glb',height:3.4};
 async function addRealistic(){
  const gltf=await new GLTFLoader().loadAsync(REALISTIC.file);gltf.scene.updateMatrixWorld(true);let src=null;gltf.scene.traverse(o=>{if(o.isMesh&&!src)src=o;});if(!src)throw Error('Modelo do rosto indisponível.');
- const geo=src.geometry.clone();geo.applyMatrix4(src.matrixWorld);geo.computeBoundingBox();const size=geo.boundingBox.getSize(new THREE.Vector3()),center=geo.boundingBox.getCenter(new THREE.Vector3()),s=REALISTIC.height/size.y;
+ const geo=src.geometry.clone();for(const name of Object.keys(geo.attributes)){const attr=geo.getAttribute(name);if(attr.isInterleavedBufferAttribute)geo.setAttribute(name,attr.clone());}// pontos leem position.array: precisa ser contíguo, não intercalado
+ geo.applyMatrix4(src.matrixWorld);geo.computeBoundingBox();const size=geo.boundingBox.getSize(new THREE.Vector3()),center=geo.boundingBox.getCenter(new THREE.Vector3()),s=REALISTIC.height/size.y;
  geo.translate(-center.x,-center.y,-center.z);geo.scale(s,s,s);if(!geo.getAttribute('normal'))geo.computeVertexNormals();geo.computeBoundingBox();geo.computeBoundingSphere();
  const real=src.material;real.metalness=0;real.metalnessMap=null;real.roughness=.68;real.roughnessMap=null;real.side=THREE.FrontSide;real.needsUpdate=true;
  const porcelain=new THREE.MeshPhysicalMaterial({color:'#EAD9C8',roughness:.58,sheen:.35,sheenColor:new THREE.Color('#FFE9DC'),side:THREE.FrontSide});
- const meta={id:REALISTIC.id,mode:'appearance',layer:'skin',realistic:true,positions:geo.getAttribute('position').array,indices:geo.index.array,materials:{real,porcelain}};
+ const meta={id:REALISTIC.id,mode:'appearance',layer:'skin',realistic:true,positions:Float32Array.from(geo.getAttribute('position').array),indices:Uint32Array.from(geo.index.array),materials:{real,porcelain}};
  const mesh=new THREE.Mesh(geo,real);mesh.name=REALISTIC.id;mesh.userData=meta;mesh.visible=false;scene.add(mesh);models.push(mesh);
 }
 async function loadJSON(path){const r=await fetch(path);if(!r.ok)throw Error('Arquivo indisponível: '+path);return r.json();}
