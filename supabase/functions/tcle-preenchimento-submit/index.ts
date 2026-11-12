@@ -7,10 +7,11 @@ import { readLimitedBody, RequestBodyTooLargeError } from "../_shared/read-limit
 import { matchesStoredTcleVersion } from "../_shared/tcle-term-versions.ts";
 
 const TYPE = "tcle_preenchimento_facial";
-const TERM_VERSION = "2026-10-15-v3";
-const TERM_SHA256 = "f0fbcda0450d514b44a906162ba89cfa0cb35c2ce00fb19e6bc11ae6d7aad3f1";
+const TERM_VERSION = "2026-11-12-v4";
+const TERM_SHA256 = "12b99449e73b9a305052df60b7dffe4e28695e6aa10f27497804cb4a60773a99";
 const KNOWN_TERM_HASHES: Readonly<Record<string, string>> = Object.freeze({
   [TERM_VERSION]: TERM_SHA256,
+  "2026-10-15-v3": "f0fbcda0450d514b44a906162ba89cfa0cb35c2ce00fb19e6bc11ae6d7aad3f1",
   "2026-10-15-v2": "c08d41af2d0358a064c8cded9b54cf4cd0c32b63b07a953ce25212f87998cab9",
   "2026-08-18-v1": "4e2fae97c2bc890fabe4b52e11324209cf60ad636fbff07993b7d3f7d8d4e8ad",
 });

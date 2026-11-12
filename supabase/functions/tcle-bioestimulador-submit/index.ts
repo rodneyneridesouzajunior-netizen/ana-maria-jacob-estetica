@@ -7,12 +7,13 @@ import { readLimitedBody, RequestBodyTooLargeError } from "../_shared/read-limit
 import { matchesStoredTcleVersion } from "../_shared/tcle-term-versions.ts";
 
 const TYPE = "tcle_bioestimulador_colageno";
-const TERM_VERSION = "2026-10-15-v3";
+const TERM_VERSION = "2026-11-12-v4";
 const TERM_SHA256 =
-  "7e1d154cee8870d3d97f7dd36540a24ffb06d7c40edfdf0c5c6a6173913f1ad2";
+  "96976cfdf3c2efb0b8a8a2778a9bb69d075a05b4c415fa47d7d6977f93b483a8";
 const RELEASED = true;
 const KNOWN_TERM_HASHES: Readonly<Record<string, string>> = Object.freeze({
   [TERM_VERSION]: TERM_SHA256,
+  "2026-10-15-v3": "7e1d154cee8870d3d97f7dd36540a24ffb06d7c40edfdf0c5c6a6173913f1ad2",
   "2026-10-15-v2": "15cfff64ccb226d459c9dad3ff283ee0d1f41d28899d4285bb2f34bbe3666eca",
   "2026-08-18-v1": "cf2c0958cc679441b99849ded246d12ee1b9f7aaa102604a441dda1720a66213",
 });

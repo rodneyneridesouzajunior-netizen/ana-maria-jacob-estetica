@@ -1,6 +1,10 @@
-# TCLE: versões e revisão editorial 2026-10-15-v3
+# TCLE: versões
 
-## Versão atual v3
+## Versão atual v4 (2026-11-12)
+
+A v4 muda somente o e-mail de contato (contato@anamariajacob.com.br), acrescenta o endereço e o horário de atendimento e atualiza versão e vigência. Perguntas, riscos, declarações e payload são os mesmos da v3. A v3 fica aceita apenas para recuperação de envios já registrados.
+
+## Histórico da revisão v3
 
 A v3 remove somente a confirmação repetida `aceite_dados` / `tratamento_dados` dos seis termos por procedimento. As declarações gerais permanecem na anamnese, cujo recebimento deve ser conferido pela profissional. O TCLE não passa a comprovar esse recebimento e não herda nem inventa uma resposta da anamnese.
 

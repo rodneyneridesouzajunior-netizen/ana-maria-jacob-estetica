@@ -7,12 +7,13 @@ import { readLimitedBody, RequestBodyTooLargeError } from "../_shared/read-limit
 import { matchesStoredTcleVersion } from "../_shared/tcle-term-versions.ts";
 
 const TYPE = "tcle_fios_pdo";
-const TERM_VERSION = "2026-10-15-v3";
+const TERM_VERSION = "2026-11-12-v4";
 const TERM_SHA256 =
-  "bb38be93a473b903a2603815631768fa849d80c118652658426e6d5dbdaf1be8";
+  "016fe428488eafad63e55d538cf826aee0fb4d85e51bf1639d4292efe3a68510";
 const RELEASED = true;
 const KNOWN_TERM_HASHES: Readonly<Record<string, string>> = Object.freeze({
   [TERM_VERSION]: TERM_SHA256,
+  "2026-10-15-v3": "bb38be93a473b903a2603815631768fa849d80c118652658426e6d5dbdaf1be8",
   "2026-10-15-v2": "c68e4bf913915671063923e25588720c891b5ffdc2e585469373a1f4a9f568e4",
   "2026-08-18-v1": "6a31a13133e29132763e2ded44c6d1a424d64154d0cb883b02628d897924bd24",
 });

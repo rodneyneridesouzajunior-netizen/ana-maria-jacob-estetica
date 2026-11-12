@@ -7,10 +7,11 @@ import { readLimitedBody, RequestBodyTooLargeError } from "../_shared/read-limit
 import { matchesStoredTcleVersion } from "../_shared/tcle-term-versions.ts";
 
 const TYPE = "tcle_toxina_botulinica";
-const TERM_VERSION = "2026-10-15-v3";
-const TERM_SHA256 = "d240d5359473434ab4d48e38ed3b26bc93535fd87d2f55b95cd0cb585835696c";
+const TERM_VERSION = "2026-11-12-v4";
+const TERM_SHA256 = "ec30dfe1cb2c9329883e69390043cc3cae75ccc30cb18c7afdaf247981e5b86e";
 const KNOWN_TERM_HASHES: Readonly<Record<string, string>> = Object.freeze({
   [TERM_VERSION]: TERM_SHA256,
+  "2026-10-15-v3": "d240d5359473434ab4d48e38ed3b26bc93535fd87d2f55b95cd0cb585835696c",
   "2026-10-15-v2": "a455dc7d5d0f6bc63afef6b02492b2070665092e79f56bf0d4dbddd07273ea66",
   "2026-08-18-v1": "c4c21544a3e0b7ad9d020ca4e36437dbf7424ff808c1dee7d61542283d33bbf8",
 });

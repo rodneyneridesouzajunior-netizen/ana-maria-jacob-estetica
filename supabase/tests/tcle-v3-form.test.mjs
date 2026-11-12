@@ -23,7 +23,7 @@ const requiredFields = slug => [
 ];
 
 async function formHarness(slug, {corruptTerm = false} = {}) {
-  const [html, script, term] = await Promise.all(['index.html', 'tcle.js', 'termo-v3.txt'].map(file => readFile(resolve(root, 'tcle-' + slug, file), 'utf8')));
+  const [html, script, term] = await Promise.all(['index.html', 'tcle.js', 'termo-v4.txt'].map(file => readFile(resolve(root, 'tcle-' + slug, file), 'utf8')));
   const dom = new JSDOM(html, {url: 'https://offline.invalid/tcle-' + slug + '/', runScripts: 'outside-only', pretendToBeVisual: true, virtualConsole: new VirtualConsole()});
   const {window} = dom, calls = [], errors = [];
   Object.defineProperty(window, 'crypto', {value: webcrypto});
@@ -32,7 +32,7 @@ async function formHarness(slug, {corruptTerm = false} = {}) {
   window.HTMLCanvasElement.prototype.getContext = () => new Proxy({}, {get: (_target, key) => key === 'measureText' ? () => ({width: 100}) : () => {}});
   window.fetch = async (url, init = {}) => {
     calls.push({url: String(url), method: init.method || 'GET'});
-    assert.equal(String(url), 'termo-v3.txt', 'The offline test must never send data or fetch another resource');
+    assert.equal(String(url), 'termo-v4.txt', 'The offline test must never send data or fetch another resource');
     assert.equal(init.method || 'GET', 'GET');
     return new Response(corruptTerm ? term + '\nALTERADO' : term);
   };
@@ -57,10 +57,10 @@ for (const [index, slug] of slugs.entries()) {
     const h = await formHarness(slug);
     t.after(() => h.dom.window.close());
     assert.equal(h.api.state.termReady, true);
-    assert.equal(h.api.CONFIG.TERM_VERSION, '2026-10-15-v3');
+    assert.equal(h.api.CONFIG.TERM_VERSION, '2026-11-12-v4');
     assert.equal(h.api.state.signed, false);
     assert.equal(h.api.state.signatureMethod, '');
-    assert.deepEqual(h.calls, [{url: 'termo-v3.txt', method: 'GET'}]);
+    assert.deepEqual(h.calls, [{url: 'termo-v4.txt', method: 'GET'}]);
     assert.equal(h.form.querySelector('[name="aceite_dados"]'), null);
     assert.equal(h.form.querySelectorAll('.health-question').length, healthCounts[index]);
     assert.equal(h.form.querySelectorAll('.health-question input:checked').length, 0);
@@ -128,7 +128,7 @@ for (const [index, slug] of slugs.entries()) {
     assert.equal(h.window.document.getElementById('enviar').disabled, true);
     assert.match(h.window.document.getElementById('texto-integral').textContent, /integridade/);
     assert.equal(h.api.validateForm().ok, false);
-    assert.deepEqual(h.calls, [{url: 'termo-v3.txt', method: 'GET'}]);
+    assert.deepEqual(h.calls, [{url: 'termo-v4.txt', method: 'GET'}]);
     assert.equal(h.api.state.signed, false);
   });
 }

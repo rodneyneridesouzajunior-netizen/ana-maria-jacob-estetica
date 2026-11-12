@@ -34,9 +34,11 @@ const v2Hashes = [
   '941fbbbfcb0ffc1ccc282f7771a9907f0de6b01f20405e1cade6363d462b0690',
   'c68e4bf913915671063923e25588720c891b5ffdc2e585469373a1f4a9f568e4',
 ];
-const V1 = '2026-08-18-v1', V2 = '2026-10-15-v2', V3 = '2026-10-15-v3';
+const V1 = '2026-08-18-v1', V2 = '2026-10-15-v2', V3 = '2026-10-15-v3', V4 = '2026-11-12-v4';
+const CURRENT = V4;
+// v1/v2 carry the removed general declaration; v3 is historical too but follows the v4 payload shape.
 const legacyVersions = [V1, V2];
-const termSuffix = {[V1]: 'v1', [V2]: 'v2', [V3]: 'v3'};
+const termSuffix = {[V1]: 'v1', [V2]: 'v2', [V3]: 'v3', [V4]: 'v4'};
 const requiredDeclarations = slug => [
   'leitura', 'informacoes_verdadeiras', 'decisao_voluntaria', 'revisao_profissional',
   ...(slug === 'preenchimento' ? ['risco_vascular', 'ciencia_hialuronidase_urgencia'] : slug === 'toxina' ? [] : ['riscos_especificos']),
@@ -117,7 +119,7 @@ async function harness(slug, previous = null, options = {}) {
   };
 }
 
-async function payloadFor(slug, config, version = V3) {
+async function payloadFor(slug, config, version = CURRENT) {
   assert(termSuffix[version], 'Unknown test fixture version');
   const text = normalize(await load('tcle-' + slug + '/termo-' + termSuffix[version] + '.txt'));
   const hash = digest(text), id = '00000000-0000-4000-8000-000000000001';
@@ -134,7 +136,7 @@ async function payloadFor(slug, config, version = V3) {
       procedimento: {finalidade: 'exclusivamente estética', regioes: config.regions.length ? [config.regions[0]] : 'Região de teste', modalidades: config.modalities.length ? [config.modalities[0]] : [], objetivo: 'Objetivo de teste', detalhamento_plano_previsto: 'Planejamento de teste', detalhamento_volume_previsto: 'Volume a avaliar pela profissional', status_anamnese: 'Já preenchi'},
       confirmacoes_saude: Array.from(config.questions, (pergunta, index) => ({numero: index + 1, pergunta, resposta: 'nao', detalhe: ''})),
       observacoes_saude: '', imagem: {foto_prontuario: 'nao', divulgacao: 'nao', antes_depois: 'nao', forma_imagem: 'nao_aplicavel', primeiro_nome: 'nao', depoimento: 'nao'}, duvidas: '',
-      declaracoes: {...Object.fromEntries(requiredDeclarations(slug).map(key => [key, true])), ...(version !== V3 ? {tratamento_dados: true} : {})},
+      declaracoes: {...Object.fromEntries(requiredDeclarations(slug).map(key => [key, true])), ...(![V3, V4].includes(version) ? {tratamento_dados: true} : {})},
       assinatura_digitada: identification.nome, assinatura_metodo: 'nome_digitado', assinado_em_cliente: signedAt, fuso_horario: 'America/Sao_Paulo',
     },
   };
@@ -150,22 +152,26 @@ for (const [index, slug] of slugs.entries()) {
     assert.equal(digest(v1), legacyHashes[index]);
     assert.equal(digest(v2), v2Hashes[index]);
     const h = await harness(slug);
-    assert.equal(h.config.version, V3);
-    assert.equal(digest(v3), h.config.hash);
-    assert.equal(manifest.currentVersion, V3);
+    const v4 = normalize(await load('tcle-' + slug + '/termo-v4.txt'));
+    assert.equal(h.config.version, CURRENT);
+    assert.equal(digest(v4), h.config.hash);
+    assert.equal(manifest.currentVersion, CURRENT);
+    assert(v4.includes('contato@anamariajacob.com.br') && !v4.includes('anamariajacob95@gmail.com'));
+    assert(v4.includes('Rua Clotildes Borges, 370, sala 504'));
+    assert.equal(v4.replaceAll('contato@anamariajacob.com.br', 'anamariajacob95@gmail.com').replace(/\n\nEndereço de atendimento: [^\n]+/, '').replace(V4, V3).replace('12 de novembro de 2026', '15 de outubro de 2026'), v3, 'v4 must only change e-mail, address, version and date');
     assert.deepEqual(manifest.documents.map(document => document.slug), slugs);
     const entry = manifest.documents.find(document => document.slug === slug);
     assert.equal(entry.type, h.config.type);
-    for (const [version, text] of [[V1, v1], [V2, v2], [V3, v3]]) {
+    for (const [version, text] of [[V1, v1], [V2, v2], [V3, v3], [V4, v4]]) {
       const item = entry.versions[termSuffix[version]];
       assert.equal(item.version, version);
       assert.equal(item.path, 'tcle-' + slug + '/termo-' + termSuffix[version] + '.txt');
       assert.equal(item.sha256, digest(text));
     }
     const front = await load('tcle-' + slug + '/tcle.js');
-    assert(front.includes("TERM_VERSION: '" + V3 + "'"));
+    assert(front.includes("TERM_VERSION: '" + CURRENT + "'"));
     assert(front.includes(h.config.hash));
-    assert(front.includes("fetch('termo-v3.txt'"));
+    assert(front.includes("fetch('termo-v4.txt'"));
     const questionsLiteral = /const HEALTH_QUESTIONS = Object\.freeze\(([\s\S]+?)\);/.exec(front)[1];
     const questions = vm.runInNewContext(questionsLiteral);
     assert.equal(questions.length, questionCounts[index]);
@@ -214,7 +220,7 @@ for (const [index, slug] of slugs.entries()) {
 
   test(slug + ': ' + termSuffix[version] + ' recovery refuses another owner, type, version, hash or unknown stored version', async () => {
     const base = await harness(slug), p = await payloadFor(slug, base.config, version);
-    const current = await payloadFor(slug, base.config, V3);
+    const current = await payloadFor(slug, base.config, CURRENT);
     const cases = [
       [recordFor(p), {...p, cpf: '11111111111'}],
       [recordFor(p), {...p, tipo: 'outro_tipo'}],
@@ -243,7 +249,7 @@ for (const [index, slug] of slugs.entries()) {
       const pdf = Array.from(h.uploads.entries()).find(([path]) => path.endsWith('/documento.pdf'))[1];
       assert((await pdfLib.PDFDocument.load(pdf)).getPageCount() > 1);
       assert(h.pdfTexts.some(text => text.includes(version)));
-      assert(!h.pdfTexts.some(text => text.includes(V3)));
+      assert(!h.pdfTexts.some(text => text.includes(CURRENT)));
       assert(h.pdfTexts.join(' ').includes(p.termo_sha256));
       assert.equal(h.stored().dados.confirmacoes_saude.length, questionCounts[index]);
       assert.equal(h.stored().dados.declaracoes.tratamento_dados, true);
@@ -292,7 +298,7 @@ for (const [index, slug] of slugs.entries()) {
     const h = await harness(slug), p = await payloadFor(slug, h.config);
     const result = await h.run(p);
     assert.equal(result.status, 201, JSON.stringify({result, errors: h.errors}));
-    assert.equal(h.stored().versao_termo, V3);
+    assert.equal(h.stored().versao_termo, CURRENT);
     assert.equal(h.stored().termo_sha256, p.termo_sha256);
     assert.equal(h.stored().dados.confirmacoes_saude.length, questionCounts[index]);
     const allText = h.pdfTexts.join(' ').replace(/\s+/g, ' ');

@@ -4,8 +4,8 @@ const CONFIG = Object.freeze({
   API_URL: 'https://rjxtxoqprnumouqakxbc.supabase.co/functions/v1/tcle-submit',
   PUBLISHABLE_KEY: 'sb_publishable_Ip14p4tUfYFjwUYaWinMlw_Gf9v0YwT',
   TYPE: 'tcle_toxina_botulinica',
-  TERM_VERSION: '2026-10-15-v3',
-  TERM_SHA256: 'd240d5359473434ab4d48e38ed3b26bc93535fd87d2f55b95cd0cb585835696c',
+  TERM_VERSION: '2026-11-12-v4',
+  TERM_SHA256: 'ec30dfe1cb2c9329883e69390043cc3cae75ccc30cb18c7afdaf247981e5b86e',
   WHATSAPP: '5531995844803',
   MAX_SIGNATURE_BYTES: 500_000
 });
@@ -78,7 +78,7 @@ function renderTerm(text) {
 async function loadTerm() {
   const target = document.getElementById('texto-integral');
   try {
-    const response = await fetch('termo-v3.txt', { cache: 'no-store' });
+    const response = await fetch('termo-v4.txt', { cache: 'no-store' });
     if (!response.ok) throw new Error('Não foi possível carregar o texto do termo.');
     const text = normalizeNewlines(await response.text()).trim();
     const hash = await sha256Hex(text);

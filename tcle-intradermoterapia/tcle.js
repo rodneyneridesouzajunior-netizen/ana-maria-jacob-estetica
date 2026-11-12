@@ -4,8 +4,8 @@ const CONFIG = Object.freeze({
   API_URL: 'https://rjxtxoqprnumouqakxbc.supabase.co/functions/v1/tcle-intradermoterapia-submit',
   PUBLISHABLE_KEY: 'sb_publishable_Ip14p4tUfYFjwUYaWinMlw_Gf9v0YwT',
   TYPE: 'tcle_intradermoterapia_estetica',
-  TERM_VERSION: '2026-10-15-v3',
-  TERM_SHA256: 'c6728f12ea050bb68ef2b645f8c142d72c1af0870a53c0006012e2133942fe07',
+  TERM_VERSION: '2026-11-12-v4',
+  TERM_SHA256: 'cb025d8a9fb392b3d40fcbaf190cd7c8faf2536acbe31dd8c67f7122d03d9b6a',
   WHATSAPP: '5531995844803',
   MAX_SIGNATURE_BYTES: 500_000
 });
@@ -75,7 +75,7 @@ function renderTerm(text) {
 async function loadTerm() {
   const target = document.getElementById('texto-integral');
   try {
-    const response = await fetch('termo-v3.txt', { cache: 'no-store' });
+    const response = await fetch('termo-v4.txt', { cache: 'no-store' });
     if (!response.ok) throw new Error('Não foi possível carregar o texto do termo.');
     const text = normalizeNewlines(await response.text()).trim();
     const hash = await sha256Hex(text);

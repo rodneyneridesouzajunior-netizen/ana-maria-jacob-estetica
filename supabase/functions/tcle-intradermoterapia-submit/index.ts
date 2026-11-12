@@ -7,10 +7,11 @@ import { readLimitedBody, RequestBodyTooLargeError } from "../_shared/read-limit
 import { matchesStoredTcleVersion } from "../_shared/tcle-term-versions.ts";
 
 const TYPE = "tcle_intradermoterapia_estetica";
-const TERM_VERSION = "2026-10-15-v3";
-const TERM_SHA256 = "c6728f12ea050bb68ef2b645f8c142d72c1af0870a53c0006012e2133942fe07";
+const TERM_VERSION = "2026-11-12-v4";
+const TERM_SHA256 = "cb025d8a9fb392b3d40fcbaf190cd7c8faf2536acbe31dd8c67f7122d03d9b6a";
 const KNOWN_TERM_HASHES: Readonly<Record<string, string>> = Object.freeze({
   [TERM_VERSION]: TERM_SHA256,
+  "2026-10-15-v3": "c6728f12ea050bb68ef2b645f8c142d72c1af0870a53c0006012e2133942fe07",
   "2026-10-15-v2": "4642ac82b2b796fe5782431f8611f4eaf60f985f9ebc29374b10324d9ed74d86",
   "2026-08-18-v1": "65c38aa1611a53d5602db4307d8353f508dffc6cd6ab7ada320d2db2db925de4",
 });

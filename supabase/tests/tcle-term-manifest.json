@@ -1,5 +1,5 @@
 {
-  "currentVersion": "2026-10-15-v3",
+  "currentVersion": "2026-11-12-v4",
   "normalization": "UTF-8, LF, trim outer whitespace",
   "documents": [
     {
@@ -21,6 +21,11 @@
           "version": "2026-10-15-v3",
           "path": "tcle-toxina/termo-v3.txt",
           "sha256": "d240d5359473434ab4d48e38ed3b26bc93535fd87d2f55b95cd0cb585835696c"
+        },
+        "v4": {
+          "version": "2026-11-12-v4",
+          "path": "tcle-toxina/termo-v4.txt",
+          "sha256": "ec30dfe1cb2c9329883e69390043cc3cae75ccc30cb18c7afdaf247981e5b86e"
         }
       }
     },
@@ -43,6 +48,11 @@
           "version": "2026-10-15-v3",
           "path": "tcle-preenchimento/termo-v3.txt",
           "sha256": "f0fbcda0450d514b44a906162ba89cfa0cb35c2ce00fb19e6bc11ae6d7aad3f1"
+        },
+        "v4": {
+          "version": "2026-11-12-v4",
+          "path": "tcle-preenchimento/termo-v4.txt",
+          "sha256": "12b99449e73b9a305052df60b7dffe4e28695e6aa10f27497804cb4a60773a99"
         }
       }
     },
@@ -65,6 +75,11 @@
           "version": "2026-10-15-v3",
           "path": "tcle-intradermoterapia/termo-v3.txt",
           "sha256": "c6728f12ea050bb68ef2b645f8c142d72c1af0870a53c0006012e2133942fe07"
+        },
+        "v4": {
+          "version": "2026-11-12-v4",
+          "path": "tcle-intradermoterapia/termo-v4.txt",
+          "sha256": "cb025d8a9fb392b3d40fcbaf190cd7c8faf2536acbe31dd8c67f7122d03d9b6a"
         }
       }
     },
@@ -87,6 +102,11 @@
           "version": "2026-10-15-v3",
           "path": "tcle-bioestimulador/termo-v3.txt",
           "sha256": "7e1d154cee8870d3d97f7dd36540a24ffb06d7c40edfdf0c5c6a6173913f1ad2"
+        },
+        "v4": {
+          "version": "2026-11-12-v4",
+          "path": "tcle-bioestimulador/termo-v4.txt",
+          "sha256": "96976cfdf3c2efb0b8a8a2778a9bb69d075a05b4c415fa47d7d6977f93b483a8"
         }
       }
     },
@@ -109,6 +129,11 @@
           "version": "2026-10-15-v3",
           "path": "tcle-peeling-quimico/termo-v3.txt",
           "sha256": "9290d84c01b6dd0029021650746fe589dda03005c05f480d9c644238e55daa4b"
+        },
+        "v4": {
+          "version": "2026-11-12-v4",
+          "path": "tcle-peeling-quimico/termo-v4.txt",
+          "sha256": "1730e82a56a963096c36fef8711e69d45cfb1bb6cb9dbb370bdc0a41465027b8"
         }
       }
     },
@@ -131,6 +156,11 @@
           "version": "2026-10-15-v3",
           "path": "tcle-fios-pdo/termo-v3.txt",
           "sha256": "bb38be93a473b903a2603815631768fa849d80c118652658426e6d5dbdaf1be8"
+        },
+        "v4": {
+          "version": "2026-11-12-v4",
+          "path": "tcle-fios-pdo/termo-v4.txt",
+          "sha256": "016fe428488eafad63e55d538cf826aee0fb4d85e51bf1639d4292efe3a68510"
         }
       }
     }

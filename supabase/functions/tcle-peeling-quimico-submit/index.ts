@@ -7,12 +7,13 @@ import { readLimitedBody, RequestBodyTooLargeError } from "../_shared/read-limit
 import { matchesStoredTcleVersion } from "../_shared/tcle-term-versions.ts";
 
 const TYPE = "tcle_peeling_quimico";
-const TERM_VERSION = "2026-10-15-v3";
+const TERM_VERSION = "2026-11-12-v4";
 const TERM_SHA256 =
-  "9290d84c01b6dd0029021650746fe589dda03005c05f480d9c644238e55daa4b";
+  "1730e82a56a963096c36fef8711e69d45cfb1bb6cb9dbb370bdc0a41465027b8";
 const RELEASED = true;
 const KNOWN_TERM_HASHES: Readonly<Record<string, string>> = Object.freeze({
   [TERM_VERSION]: TERM_SHA256,
+  "2026-10-15-v3": "9290d84c01b6dd0029021650746fe589dda03005c05f480d9c644238e55daa4b",
   "2026-10-15-v2": "941fbbbfcb0ffc1ccc282f7771a9907f0de6b01f20405e1cade6363d462b0690",
   "2026-08-18-v1": "3f04db1af1f0e984385862abdd0b1b93ae34ebfd49f09587f541c317022b530b",
 });
