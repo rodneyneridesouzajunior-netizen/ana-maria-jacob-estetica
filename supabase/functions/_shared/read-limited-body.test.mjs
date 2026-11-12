@@ -1,8 +1,5 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import fs from 'node:fs';
-import { stripTypeScriptTypes } from 'node:module';
-import vm from 'node:vm';
 import { readLimitedBody, RequestBodyTooLargeError } from './read-limited-body.ts';
 
 const encoder = new TextEncoder();
@@ -61,49 +58,3 @@ test('failed or stalled producer cancellation cannot mask or delay size rejectio
     } finally { clearTimeout(timer); }
   }
 });
-
-// Actual handler source runs in an isolated VM. Only imports/runtime services are
-// mocked; no Supabase, provider, network, PDF generation or patient data is used.
-function handler(name, options = {}) {
-  let handle;
-  let authCalls = 0;
-  let rateCalls = 0;
-  class DualAuthError extends Error {
-    status = 401; code = 'individual_auth_required'; publicMessage = 'Entre com sua conta.';
-  }
-  const sandbox = {
-    Request, Response, Headers, TextEncoder, TextDecoder, Uint8Array, crypto,
-    console: { error() {}, log() {} }, readLimitedBody, RequestBodyTooLargeError, DualAuthError,
-    authenticateDual: async () => { authCalls++; if (!options.authenticated) throw new DualAuthError(); return { role: 'owner', aal: 'aal2' }; },
-    consumePublicFormRateLimit: async () => { rateCalls++; return { allowed: true }; },
-    Deno: { env: { get() { return ''; } }, serve(callback) { handle = callback; } },
-    fetch: async () => { throw new Error('Network forbidden in unit test'); }
-  };
-  let source = fs.readFileSync(new URL('../' + name + '/index.ts', import.meta.url), 'utf8');
-  source = stripTypeScriptTypes(source, { mode: 'transform' })
-    .replace(/^import[\s\S]*?;\s*$/gm, '')
-    .replace(/\bexport (?=(?:async )?function|class|const)/g, '')
-    .replaceAll('import.meta.main', 'false');
-  vm.runInNewContext(source, sandbox, { filename: name + '/index.ts' });
-  assert.equal(typeof handle, 'function');
-  return { handle, authCalls: () => authCalls, rateCalls: () => rateCalls };
-}
-
-const tcles = ['tcle-submit', 'tcle-preenchimento-submit', 'tcle-intradermoterapia-submit',
-  'tcle-bioestimulador-submit', 'tcle-peeling-quimico-submit', 'tcle-fios-pdo-submit'];
-for (const name of tcles) {
-  test(name + ': cancel excessive body and preserve invalid-JSON/domain validation', async () => {
-    const h = handler(name);
-    const headers = { origin: 'https://anamariajacob.com.br', 'content-type': 'application/json' };
-    const sample = streamed([new Uint8Array(1500000), new Uint8Array(1), new Uint8Array(1024)], headers);
-    const response = await h.handle(sample.req);
-    assert.equal(response.status, 413);
-    assert.equal(sample.read(), 2);
-    assert.equal(sample.cancelled(), true);
-    assert.equal(h.rateCalls(), 1);
-    const invalid = await h.handle(new Request('http://unit.invalid/', { method: 'POST', headers, body: '{' }));
-    assert.equal((await invalid.json()).codigo_erro, 'invalid_json');
-    const parsed = await h.handle(new Request('http://unit.invalid/', { method: 'POST', headers, body: '{"website":"synthetic"}' }));
-    assert.equal((await parsed.json()).codigo_erro, 'invalid_submission');
-  });
-}

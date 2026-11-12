@@ -10,12 +10,6 @@ const day=value=>{if(!value)return'Não informada';const d=new Date(String(value
 const official='https://anamariajacob.com.br';
 export const OFFICIAL_CLINICAL_FORMS=Object.freeze([
   ['anamnese','Ficha de anamnese','/anamnese/'],
-  ['toxina','Termo de toxina botulínica','/tcle-toxina/'],
-  ['preenchimento','Termo de preenchimento facial','/tcle-preenchimento/'],
-  ['intradermoterapia','Pré-avaliação: intradermoterapia','/tcle-intradermoterapia/'],
-  ['bioestimulador','Pré-avaliação: bioestimulador','/tcle-bioestimulador/'],
-  ['peeling','Pré-avaliação: peeling químico','/tcle-peeling-quimico/'],
-  ['fios','Pré-avaliação: fios de PDO','/tcle-fios-pdo/'],
 ].map(([key,label,path])=>Object.freeze({key,label,url:official+path})));
 
 function pagination(value,count){
@@ -79,7 +73,7 @@ export function validateOpenedOriginal(result,selected){
   const url=trustedOriginalPDF(pdf.url);if(!url)throw Error('O endereço do PDF não pertence ao armazenamento autorizado.');return url;
 }
 
-function officialForms(){return`<details class="cb-official"><summary>Formulários oficiais para a paciente</summary><p>Abrem os formulários existentes. Nenhuma mensagem é enviada por esta tela.</p><div class="cb-form-links">${OFFICIAL_CLINICAL_FORMS.map(f=>`<a class="secondary" href="${f.url}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">${e(f.label)} ↗</a>`).join('')}</div></details>`;}
+function officialForms(){return`<details class="cb-official"><summary>Formulários oficiais para a paciente</summary><p>A anamnese é pública. Os termos de procedimento são enviados pela consulta da paciente, em Documentos, com link pessoal e botão de WhatsApp.</p><div class="cb-form-links">${OFFICIAL_CLINICAL_FORMS.map(f=>`<a class="secondary" href="${f.url}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">${e(f.label)} ↗</a>`).join('')}</div></details>`;}
 export function renderClinicalBridge({section='documents',context=null,documentFilter}={}){
   const documents=section!=='requests';
   const anamneses=documents&&documentFilter==='anamnese';

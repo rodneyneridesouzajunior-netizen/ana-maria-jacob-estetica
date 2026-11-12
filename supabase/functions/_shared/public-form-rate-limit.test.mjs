@@ -149,12 +149,6 @@ test("interrompe e falha fechado quando o RPC não responde", async () => {
 
 const HANDLERS = [
   ["anamnese-submit", "anamnese-submit", "Deno.serve", "await consumePublicFormRateLimit"],
-  ["tcle-submit", "tcle-submit", "Deno.serve", "await consumePublicFormRateLimit"],
-  ["tcle-preenchimento-submit", "tcle-submit", "Deno.serve", "await consumePublicFormRateLimit"],
-  ["tcle-intradermoterapia-submit", "tcle-submit", "Deno.serve", "await consumePublicFormRateLimit"],
-  ["tcle-bioestimulador-submit", "tcle-submit", "Deno.serve", "await consumePublicFormRateLimit"],
-  ["tcle-peeling-quimico-submit", "tcle-submit", "Deno.serve", "await consumePublicFormRateLimit"],
-  ["tcle-fios-pdo-submit", "tcle-submit", "Deno.serve", "await consumePublicFormRateLimit"],
   ["agendamento-submit", "agendamento-submit", "return async (req: Request)", "await rateLimiter(req"],
 ];
 

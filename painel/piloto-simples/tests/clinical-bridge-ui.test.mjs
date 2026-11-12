@@ -42,7 +42,7 @@ test('originais e formulários ficam legíveis sem HTML de dados e sem afirmaç�
  const f=fixture(t);await f.handle.ready;
  assert.match(f.host.textContent,/Paciente <teste>/);assert.equal(f.host.querySelector('teste'),null);
  assert.match(f.host.textContent,/Sem vínculo nesta consulta/);assert.match(f.host.textContent,/A confirmação profissional é feita na conclusão do atendimento/);assert.doesNotMatch(f.host.textContent,/Revisão profissional: (pendente|concluída)/);
- assert.equal(f.host.querySelectorAll('.cb-form-links a').length,7);
+ assert.equal(f.host.querySelectorAll('.cb-form-links a').length,1);assert.equal(OFFICIAL_CLINICAL_FORMS.some(f=>/tcle-/.test(f.url)),false);
  for(const a of f.host.querySelectorAll('.cb-form-links a')){assert.equal(new URL(a.href).origin,'https://anamariajacob.com.br');assert.match(a.rel,/noreferrer/);}
  assert.equal(OFFICIAL_CLINICAL_FORMS.some(f=>f.url.endsWith('/anamnese/')),true);
 });
