@@ -52,9 +52,9 @@ test('modo conectado preserva conteúdo e impede assinatura demo, inclusive em f
  assert.equal(mutations,0);const delivery=w.document.querySelector('dialog');assert.ok(delivery);assert.match(delivery.textContent,/Gerar link para a paciente/);assert.equal(delivery.querySelector('canvas'),null);assert.equal(delivery.querySelector('[name=reviewed]').checked,false);assert.equal(requests.length,1);assert.equal(requests[0].acao,'listar_emissoes_documento');delivery.querySelector('[data-delivery=close]').click();
  host.querySelector('[data-doc="link"]').click();await tick();
  assert.equal(copied,'');assert.equal(requests.length,2);assert.ok(requests.every(x=>x.acao==='listar_emissoes_documento'));assert.ok(w.document.querySelector('[data-issue]'));w.document.querySelector('[data-delivery=close]').click();
- assert.match(renderPatientsPage(state),/Ambiente conectado em homologação/);assert.match(renderClinicPage(state),/Configuração no servidor/);
- assert.match(catalogPage(state,{section:'overview'}),/Homologação conectada/);
- printable('Teste',`<p>${userText}</p>`);assert.match(printed,/Ambiente conectado em homologação/);assert.ok(printed.includes(userText));
+ assert.match(renderPatientsPage(state),/Cadastros confirmados ficam no servidor da clínica/);assert.doesNotMatch(renderPatientsPage(state),/homologação|dados fictícios/);assert.match(renderClinicPage(state),/Configuração no servidor/);
+ assert.match(catalogPage(state,{section:'overview'}),/Gravações confirmadas no servidor da clínica/);assert.doesNotMatch(catalogPage(state,{section:'overview'}),/[Hh]omologação/);
+ printable('Teste',`<p>${userText}</p>`);assert.match(printed,/Exportação para conferência/);assert.doesNotMatch(printed,/homologação/);assert.ok(printed.includes(userText));
  const proposal={patientId:'demo-marina',title:'Teste',version:1,status:'rascunho',items:[{id:'item',procedureId:'procedure',name:'Item local',sessions:1,unitPrice:10000,unitCost:1000}],notes:userText,discountBps:0};
  const quoteHTML=quoteDocumentHTML(state,proposal);assert.match(quoteHTML,/HOMOLOGAÇÃO CONECTADA/);assert.ok(quoteHTML.includes('piloto local, neste navegador, demonstração &lt;preservar&gt;.'));
  assert.equal(state.patients[0].notes,userText);assert.equal(document.snapshot.body,userText);assert.equal(document.status,'rascunho');assert.equal(mutations,0);
