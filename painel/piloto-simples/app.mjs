@@ -8,6 +8,7 @@ import {renderPatientsPage,mountPatientsPage,openPatientEditor} from './patients
 import {renderComparisonLibrary,mountComparisonLibrary} from './comparison-library.mjs';
 import {renderHome} from './home.mjs';
 import {openQuickSend} from './quick-send-ui.mjs';
+import {installSuggestions} from './suggestions.mjs';
 import {renderAgenda,mountAgenda} from './agenda.mjs';
 import {createVisit,visitWorkflow,RECORD_MODE_LABELS,APPOINTMENT_TYPES,APPOINTMENT_COLORS,appointmentMetadata} from './visit-workflow.mjs';
 import {fittedPhotoSize,MAP_ZOOM_LEVELS} from './map-fit.mjs';
@@ -40,6 +41,7 @@ function serviceTone(service){const normalized=String(service).normalize('NFD').
 function serviceBadge(service){const tone=serviceTone(service),label={avaliacao:'Avaliação',procedimento:'Atendimento',retorno:'Retorno'}[tone];return `<span class="service-tone" data-service-tone="${tone}"><span class="service-type">${label}</span><span>${esc(service)}</span></span>`;}
 const icon=n=>`<svg class="icon" viewBox="0 0 20 20" aria-hidden="true">${icons[n]||icons.arrow}</svg>`;
 let state,route='hoje',patientId,visitId,tab='consultas',photoId,selectedId=null,pending=null,dirty=false,busy=false,zoom=1,tool='ponto',agendaDate=dateKey();
+if(typeof installSuggestions==='function')installSuggestions(()=>state);
 let toastTimer,dialogSubmit=null,objectUrls=new Map(),renderSeq=0,drag=null,acceptedHash=location.hash,importing=false,editGeneration=0;
 let mapBatchMode=true,mapBatch=null;
 const MAX_BATCH_MARKINGS=1000;
