@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-jFfbDb0iczpdLy9gtn1nAPgaef5kugw6LleJgecWIDs=' 'sha256-Ti9TKoZymNr2p+odoxrOJOeJIhywkmmgaMLpFSp3r3k=' 'sha256-/ujWjZJfQq9uedvREwJ+ITDOM2JnFliv1sozTl2Uwl0='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src https://rjxtxoqprnumouqakxbc.supabase.co; base-uri 'none'; form-action 'none'; object-src 'none'">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Ana Maria Jacob Estética">
 <meta property="og:title" content="Ficha de Anamnese — Ana Maria Jacob Estética">
@@ -52,9 +53,7 @@
 })();
 </script>
 <title>Ficha de Anamnese — Ana Maria Jacob Estética</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>@font-face{font-family:'Cormorant Garamond';src:url('/assets/amj-cormorant-20261015.ttf') format('truetype');font-display:swap}@font-face{font-family:'Poppins';src:url('/assets/amj-poppins-20261015.ttf') format('truetype');font-display:swap}</style>
 <style>
 /* ============================================================
    CONFIGURAÇÃO — edite apenas este bloco
@@ -252,7 +251,6 @@ footer{text-align:center;font-size:11px;color:var(--cinza);padding:26px 0 10px;b
   <div class="campo" style="margin-top:22px">
     <label>O que você vem fazer? (pode marcar mais de um)</label>
     <div class="chips multi" data-multi="atendimento">
-      <button type="button">Depilação a laser</button>
       <button type="button">Procedimento facial</button>
       <button type="button">Limpeza de pele</button>
       <button type="button">Ainda não sei</button>
@@ -287,53 +285,6 @@ footer{text-align:center;font-size:11px;color:var(--cinza);padding:26px 0 10px;b
     <strong>Preenchedor permanente</strong> — PMMA, silicone líquido ou bioplastia nunca é reabsorvido pelo corpo e muda o risco de qualquer procedimento na mesma região. Informe mesmo que tenha sido há muito tempo ou em outro lugar.
   </div>
   <div id="procs"></div>
-</section>
-
-<!-- ============ DEPILAÇÃO (condicional) ============ -->
-<section class="passo" data-nome="Depilação" data-so-se="Depilação a laser">
-  <h2>Depilação a laser</h2>
-  <p class="legenda">Estas perguntas evitam queimadura e sessão perdida. São rápidas.</p>
-
-  <div class="campo"><label>Como sua pele reage ao sol?</label>
-    <div class="chips" data-escolha="fototipo">
-      <button type="button">Sempre queima, nunca bronzeia</button>
-      <button type="button">Queima fácil, bronzeia pouco</button>
-      <button type="button">Queima às vezes, bronzeia aos poucos</button>
-      <button type="button">Queima pouco, bronzeia fácil</button>
-      <button type="button">Raramente queima, bronzeia muito</button>
-      <button type="button">Nunca queima, pele negra</button>
-    </div>
-  </div>
-
-  <div class="campo"><label>Quais áreas quer tratar? (pode marcar mais de uma)</label>
-    <div class="chips multi" data-multi="areas">
-      <button type="button">Axilas</button><button type="button">Virilha</button>
-      <button type="button">Pernas</button><button type="button">Buço</button>
-      <button type="button">Rosto</button><button type="button">Barba / pescoço</button>
-      <button type="button">Braços</button><button type="button">Tórax</button>
-      <button type="button">Costas</button><button type="button">Glúteos</button>
-    </div>
-  </div>
-
-  <div class="campo"><label>Como você tira os pelos hoje?</label>
-    <div class="chips" data-escolha="metodo_pelo">
-      <button type="button">Lâmina</button><button type="button">Cera</button>
-      <button type="button">Pinça</button><button type="button">Linha</button>
-      <button type="button">Creme depilatório</button><button type="button">Máquina / epilador</button>
-    </div>
-  </div>
-
-  <div class="nota grave">
-    <strong>Cera, pinça e linha arrancam o pelo pela raiz.</strong> O laser precisa da raiz para funcionar. Se você usa esses métodos, pare 30 dias antes e use só lâmina nesse período.
-  </div>
-
-  <div class="faixa" id="laser"></div>
-
-  <div class="campo"><label for="laser_detalhe">Se respondeu sim a algum item, conte mais aqui</label><textarea id="laser_detalhe"></textarea></div>
-
-  <div class="nota">
-    <strong>No dia da sessão:</strong> venha com a área raspada de lâmina (12 a 24 horas antes), sem creme, sem desodorante e sem maquiagem na região. Sem bronzeado recente.
-  </div>
 </section>
 
 <!-- ============ 5 ============ -->
@@ -460,24 +411,9 @@ const PROCS = [
   ['Microagulhamento', false],
   ['Peeling químico', false],
   ['Laser, luz pulsada ou radiofrequência', false],
-  ['Depilação a laser', false],
   ['Cirurgia plástica facial', false]
 ];
 
-const LASER = [
-  'Tomou sol, foi à praia ou fez bronzeamento artificial nos últimos 15 dias?',
-  'Usou autobronzeador nos últimos 15 dias?',
-  'Depilou com cera, pinça ou linha nos últimos 30 dias?',
-  'Tem tatuagem na área que quer tratar?',
-  'Tem melasma, manchas escuras ou cicatriz escura na área?',
-  'Já fez depilação a laser antes?',
-  'Alguma vez teve queimadura, bolha ou mancha após laser?',
-  'Usa medicamento fotossensibilizante (antibiótico, diurético, erva de São João)?',
-  'Está usando ácido na área (retinoico, glicólico, salicílico)?',
-  'Tem foliculite ou pelos encravados com frequência?',
-  'Tem ovário policístico, hirsutismo ou alteração hormonal?',
-  'Tem alguma lesão, ferida ou irritação na área agora?'
-];
 
 const ACEITES = [
   ['declaracao', 'Li e concordo com a declaração acima'],
@@ -498,7 +434,7 @@ function novaChaveIdempotencia() {
     hex.slice(16, 20) + '-' + hex.slice(20);
 }
 
-const estado = { saude:{}, medic:{}, laser:{}, procs:{}, escolhas:{}, multi:{}, aceites:{} };
+const estado = { saude:{}, medic:{}, procs:{}, escolhas:{}, multi:{}, aceites:{} };
 const formularioIniciadoEm = new Date().toISOString();
 const idempotencyKey = novaChaveIdempotencia();
 let assinaturaRegistradaEm = null;
@@ -535,7 +471,7 @@ function montaSN(container, lista, bucket, destaques) {
 }
 montaSN(document.getElementById('saude'), SAUDE, 'saude');
 montaSN(document.getElementById('medic'), MEDIC, 'medic');
-montaSN(document.getElementById('laser'), LASER, 'laser', [0, 1, 2, 3, 6]);
+
 
 /* ---------- aceites ---------- */
 const cxAceites = document.getElementById('aceites');
@@ -755,23 +691,9 @@ function valida() {
     achados.primeiro = achados.primeiro || grupoAtendimento;
   }
 
-  if (sec.querySelector('#laser')) {
-    const gruposLaser = [
-      [estado.escolhas.fototipo, sec.querySelector('[data-escolha="fototipo"]')],
-      [(estado.multi.areas || []).length, sec.querySelector('[data-multi="areas"]')],
-      [estado.escolhas.metodo_pelo, sec.querySelector('[data-escolha="metodo_pelo"]')]
-    ];
-    gruposLaser.forEach(([valor, elemento]) => {
-      if (!valor) {
-        ok = false;
-        achados.primeiro = achados.primeiro || elemento;
-      }
-    });
-  }
 
   if (!checaGrupo(sec, '#saude', SAUDE, 'saude', achados)) ok = false;
   if (!checaGrupo(sec, '#medic', MEDIC, 'medic', achados)) ok = false;
-  if (!checaGrupo(sec, '#laser', LASER, 'laser', achados)) ok = false;
 
   if (sec.querySelector('#procs')) {
     PROCS.forEach((_, i) => {
@@ -836,13 +758,7 @@ function montaDados() {
     alergia_medicamentos: v('alergia_med'), alergia_outras: v('alergia_out'),
     procedimentos: PROCS.map(([nome], i) => ({ procedimento: nome, ...(estado.procs[i] || {}) })),
     atendimento: estado.multi.atendimento || [],
-    laser: (estado.multi.atendimento || []).includes('Depilação a laser') ? {
-      fototipo: estado.escolhas.fototipo || '',
-      areas: estado.multi.areas || [],
-      metodo_pelo: estado.escolhas.metodo_pelo || '',
-      respostas: LASER.map((q, i) => ({ pergunta: q, resposta: estado.laser[i] || '' })),
-      detalhe: v('laser_detalhe')
-    } : null,
+    laser: null,
     tipo_pele: estado.escolhas.tipo_pele || '', exposicao_sol: estado.escolhas.sol || '',
     protetor_solar: estado.escolhas.protetor || '',
     rotina: v('rotina'), objetivo: v('objetivo'),

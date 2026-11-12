@@ -19,8 +19,6 @@ const RATE_WINDOW_MS = 15 * 60_000;
 const ALLOWED_ORIGINS = new Set([
   "https://anamariajacob.com.br",
   "https://www.anamariajacob.com.br",
-  "http://127.0.0.1:8765",
-  "http://localhost:8765",
 ]);
 
 const LOCAL_TEST_ORIGINS = new Set([
@@ -67,7 +65,6 @@ const PROCEDURES = Object.freeze([
   "Microagulhamento",
   "Peeling químico",
   "Laser, luz pulsada ou radiofrequência",
-  "Depilação a laser",
   "Cirurgia plástica facial",
 ]);
 
@@ -86,8 +83,8 @@ const LASER_QUESTIONS = Object.freeze([
   "Tem alguma lesão, ferida ou irritação na área agora?",
 ]);
 
+// Depilação a laser retirada em 12/11/2026: a clínica não oferece o serviço.
 const ATTENDANCE = new Set([
-  "Depilação a laser",
   "Procedimento facial",
   "Limpeza de pele",
   "Ainda não sei",
@@ -139,6 +136,8 @@ const URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const DRY_RUN_ENABLED = Deno.env.get("ANAMNESE_ENABLE_DRY_RUN") === "true" &&
   /^http:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?(?:\/|$)/.test(URL);
+// Endereços locais só valem no modo de teste local (dry run); em produção, apenas o site.
+const originAllowed = (origin: string) => ALLOWED_ORIGINS.has(origin) || (DRY_RUN_ENABLED && LOCAL_TEST_ORIGINS.has(origin));
 
 type JsonRecord = Record<string, unknown>;
 type YesNo = "sim" | "nao";
@@ -204,7 +203,7 @@ const failureRate = new Map<string, { count: number; startedAt: number }>();
 
 function cors(origin: string): Record<string, string> {
   return {
-    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.has(origin)
+    "Access-Control-Allow-Origin": originAllowed(origin)
       ? origin
       : "https://anamariajacob.com.br",
     "Access-Control-Allow-Headers": "apikey, content-type, x-client-info",
@@ -974,12 +973,12 @@ async function successfulRateCount(originHash: string): Promise<number> {
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin") || "";
   if (req.method === "OPTIONS") {
-    if (!ALLOWED_ORIGINS.has(origin)) {
+    if (!originAllowed(origin)) {
       return new Response(null, { status: 403 });
     }
     return new Response(null, { status: 204, headers: cors(origin) });
   }
-  if (!ALLOWED_ORIGINS.has(origin)) {
+  if (!originAllowed(origin)) {
     return fail(origin, "origin_not_allowed", "Origem não permitida.", 403);
   }
   if (req.method !== "POST") {

@@ -1,5 +1,5 @@
 import {CustomDocumentError,exact,reject,tokenParts,digest,canonical,validateSubmission,publicDocument,paths,assertIssueIntegrity} from '../_shared/custom-documents.mjs';
-const origins=new Set(['https://anamariajacob.com.br','https://www.anamariajacob.com.br','http://127.0.0.1:8766','http://localhost:8766','http://127.0.0.1:8765','http://localhost:8765']);
+const origins=new Set(['https://anamariajacob.com.br','https://www.anamariajacob.com.br']);
 async function body(req){let n=0;const chunks=[],reader=req.body?.getReader();if(!reader)reject('custom_invalid_payload','Envio vazio.');while(true){const {done,value}=await reader.read();if(done)break;n+=value.length;if(n>1500000){await reader.cancel();reject('custom_body_too_large','Envio acima do limite.',413);}chunks.push(value);}const bytes=new Uint8Array(n);let at=0;for(const c of chunks){bytes.set(c,at);at+=c.length;}try{return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes));}catch{reject('custom_invalid_payload','Envio inválido.');}}
 export function createPublicDocumentHandler({repository,renderPDF,rateLimit}){
  const receipt=async row=>{const pdf=await repository.customOriginalPDF(row);return{id:row.id,document_id:row.document_id,status:'received',signed_at:row.signed_at,snapshot_hash:row.snapshot_hash,pdf_url:pdf.url,pdf_sha256:pdf.sha256,expires_in:120,clinical_authorization:false};};
@@ -17,6 +17,8 @@ export function createPublicDocumentHandler({repository,renderPDF,rateLimit}){
    const limit=await rateLimit(req,p.acao);if(!limit.allowed)reject('custom_rate_limited','Aguarde alguns minutos antes de tentar novamente.',429);
    const parts=tokenParts(p.token);id=parts.id;const tokenHash=await digest(parts.token),access={p_id:id,p_token_hash:tokenHash};
    const issue=await repository.customPublic(access);await assertIssueIntegrity(issue);
+   // Depois de assinado, o link fica aberto 24 horas para a paciente baixar a cópia; depois disso, é encerrado.
+   if(issue?.received_at&&Date.parse(issue.received_at)+24*3600*1000<Date.now())reject('custom_link_closed','Este link foi encerrado após a assinatura. Peça uma cópia à clínica.',410);
    if(p.acao==='abrir')return respond({ok:true,document:publicDocument(issue),snapshot_hash:issue.snapshot_hash,confirmation:issue.confirmation,expires_at:issue.expires_at,status:issue.status,can_resume:issue.status==='processing'&&!!issue.submit_operation_id});
    if(p.acao==='recibo'){if(!issue.received_at)reject('custom_not_received','Este documento ainda não foi recebido.',409);return respond({ok:true,receipt:await receipt(issue)});}
    if(p.acao==='retomar'&&issue.received_at)return respond({ok:true,receipt:await receipt(issue)});

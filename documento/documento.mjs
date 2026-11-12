@@ -1,5 +1,7 @@
 import {checkAnswers,documentSections,visibleQuestions,validateDocumentVersion} from '../painel/piloto-simples/documents-domain.mjs';
 import {createPatientDocumentClient,originalURL} from './public-client.mjs';
+// Proteção contra clickjacking: o app nunca roda dentro de outra página.
+if(typeof window!=='undefined'&&window.top!==window.self){document.documentElement.style.display='none';try{window.top.location.replace(window.location.href);}catch{}throw new Error('Aplicativo bloqueado dentro de outra página.');}
 export const escape=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const e=escape;
 export function textBlocks(snapshot){return `${snapshot.body?`<pre>${e(snapshot.body)}</pre>`:''}${(snapshot.blocks||[]).map(b=>`<section><h2>${e(b.title)}</h2><pre>${e(b.body)}</pre></section>`).join('')}`;}

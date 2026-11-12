@@ -169,8 +169,7 @@ mostra valores recebidos, pagos, em aberto e a evolução dos últimos seis mese
 Fluxo de caixa não é apresentado como lucro contábil.
 
 O Financeiro exige conta individual `owner` e MFA `aal2`. A senha compartilhada
-de transição não autoriza nem revela a aba. Ana Maria Costa Jacob e Rodney Neri
-de Souza Junior devem possuir memberships `owner` ativas, com poderes iguais.
+de transição não autoriza nem revela a aba. As contas proprietárias devem possuir memberships `owner` ativas.
 
 Pagamentos são registros administrativos do que efetivamente ocorreu. Esta fase
 não cobra cartão, não gera PIX ou boleto, não consulta banco e não armazena
