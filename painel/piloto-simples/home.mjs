@@ -87,8 +87,8 @@ export function renderHome(state,now=new Date()){
     <section class="sp-care-priorities" aria-label="Prioridades de atendimento">
       <article class="sp-home-card sp-care-docs">
         <div class="sp-card-title"><div><span class="sp-section-kicker">Fichas das pacientes</span><h2>Anamneses</h2></div><span class="sp-card-icon" aria-hidden="true">${icon('document')}</span></div>
-        <p class="sp-care-doc-copy">${isConnected()?'Busque pelo nome da paciente e abra a ficha original preenchida.':'Consulte os documentos das pacientes e os modelos disponíveis.'}</p>
-        <div class="sp-care-links"><a class="primary" href="${isConnected()?'#originais/anamneses':'#documentos'}">${isConnected()?'Anamneses preenchidas':'Anamneses e termos'}</a></div>
+        <p class="sp-care-doc-copy">${isConnected()?'Envie a anamnese ou um termo pelo WhatsApp, mesmo para quem ainda não tem cadastro, e consulte as fichas recebidas.':'Consulte os documentos das pacientes e os modelos disponíveis.'}</p>
+        <div class="sp-care-links"><button type="button" class="primary" data-action="quick-send">Enviar pelo WhatsApp</button><a class="secondary" href="${isConnected()?'#originais/anamneses':'#documentos'}">${isConnected()?'Anamneses preenchidas':'Anamneses e termos'}</a></div>
       </article>
       <section class="sp-home-card sp-next">
         <div class="sp-card-title"><div><span class="sp-section-kicker">Sua agenda</span><h2>Agenda de hoje</h2>${data.todayCount>data.todayAppointments.length?`<p>Mostrando ${data.todayAppointments.length} de ${data.todayCount} horários.</p>`:''}</div></div>

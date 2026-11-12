@@ -9,3 +9,6 @@
 .document-readonly .model-preview{max-height:none;overflow:visible}
 .feature-dialog input:not([type=checkbox]):not([type=radio]),.feature-dialog select,.feature-dialog textarea{font-size:16px;min-height:44px;max-width:100%}
 .installment-row,.patient-profile strong{font-size:13px}
+
+.quick-send [hidden]{display:none!important}.quick-send form{display:grid;gap:12px}.quick-send [data-qs-feedback].error{color:#9b2c2c}
+
