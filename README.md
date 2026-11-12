@@ -26,10 +26,12 @@ Maria Jacob Estética.
   mantendo a ficha de anamnese separada
 - `/agendar/` — solicitação pública de atendimento; salva primeiro em uma
   caixa privada do CRM e depois oferece o WhatsApp manual, sem reservar horário
-- `/painel/` — acesso restrito da equipe, com filtros para anamneses e TCLEs,
-  links de convite, QR codes, acesso aos PDFs armazenados e o módulo interno
-  **Agenda e retornos**; proprietários autenticados com MFA também recebem a
-  aba privada **Financeiro** e a **Central de integrações** somente leitura
+- `/fichas/` — página "Minhas fichas": anamnese e termos por procedimento
+- `/app/` — aplicativo da clínica (`painel/piloto-simples/connected.html`):
+  agenda, prontuários, financeiro, fichas recebidas e envio de documentos
+  com link pessoal pelo WhatsApp. Acesso restrito com MFA.
+- `/painel/` — aposentado em 12/11/2026; redireciona para `/app/`. As seções
+  abaixo sobre o painel antigo ficam como histórico.
 
 Domínio: `anamariajacob.com.br`
 

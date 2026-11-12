@@ -84,34 +84,10 @@ function handler(name, options = {}) {
     .replace(/^import[\s\S]*?;\s*$/gm, '')
     .replace(/\bexport (?=(?:async )?function|class|const)/g, '')
     .replaceAll('import.meta.main', 'false');
-  if (name === 'marketing-fichas') {
-    source += '\nroute = async (req, context, payload) => new Response(JSON.stringify(payload));\nDeno.serve(handleRequest);';
-  }
   vm.runInNewContext(source, sandbox, { filename: name + '/index.ts' });
   assert.equal(typeof handle, 'function');
   return { handle, authCalls: () => authCalls, rateCalls: () => rateCalls };
 }
-
-test('anonymous marketing request is rejected without consuming its body', async () => {
-  const h = handler('marketing-fichas');
-  const sample = streamed([encoder.encode('{}')]);
-  const response = await h.handle(sample.req);
-  assert.equal(response.status, 401);
-  assert.equal(sample.read(), 0);
-  assert.equal(h.authCalls(), 1);
-});
-
-test('authenticated marketing preserves valid Unicode JSON and rejects oversized stream', async () => {
-  const h = handler('marketing-fichas', { authenticated: true });
-  // The established 65,536 UTF-16-unit policy accepts this valid payload.
-  const payload = { text: '漢'.repeat(50000) };
-  const valid = new Request('http://unit.invalid/', { method: 'POST', body: JSON.stringify(payload) });
-  assert.deepEqual(await (await h.handle(valid)).json(), payload);
-  const sample = streamed([new Uint8Array(196611), new Uint8Array(1), new Uint8Array(1024)]);
-  assert.equal((await h.handle(sample.req)).status, 413);
-  assert.equal(sample.cancelled(), true);
-  assert.equal(sample.read(), 2);
-});
 
 const tcles = ['tcle-submit', 'tcle-preenchimento-submit', 'tcle-intradermoterapia-submit',
   'tcle-bioestimulador-submit', 'tcle-peeling-quimico-submit', 'tcle-fios-pdo-submit'];

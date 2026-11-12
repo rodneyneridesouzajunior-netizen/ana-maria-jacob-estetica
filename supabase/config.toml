@@ -90,20 +90,6 @@ verify_jwt = false
 import_map = "./functions/operacao-clinica-fichas/deno.json"
 entrypoint = "./functions/operacao-clinica-fichas/index.ts"
 
-[functions.gestao-administrativa-fichas]
-enabled = true
-# Validação interna obrigatória: Bearer, sessão ativa, owner e AAL2.
-verify_jwt = false
-import_map = "./functions/gestao-administrativa-fichas/deno.json"
-entrypoint = "./functions/gestao-administrativa-fichas/index.ts"
-
-[functions.cotacoes-fichas]
-enabled = true
-# Validação interna obrigatória: Bearer, sessão ativa, owner e AAL2.
-verify_jwt = false
-import_map = "./functions/cotacoes-fichas/deno.json"
-entrypoint = "./functions/cotacoes-fichas/index.ts"
-
 [functions.crm-fichas]
 enabled = true
 # Validação interna obrigatória: Bearer, sessão ativa, owner e AAL2.
@@ -112,30 +98,6 @@ verify_jwt = false
 import_map = "./functions/crm-fichas/import_map.json"
 entrypoint = "./functions/crm-fichas/index.ts"
 
-[functions.marketing-fichas]
-enabled = true
-# Validacao interna obrigatoria: Bearer, sessao ativa, owner e AAL2.
-# Arquivamentos tambem consomem prova recente de senha.
-verify_jwt = false
-import_map = "./functions/marketing-fichas/import_map.json"
-entrypoint = "./functions/marketing-fichas/index.ts"
-
-[functions.ia-copiloto-fichas]
-enabled = true
-# Compatibilidade com o padrao privado atual: o handler valida internamente
-# Bearer, sessao ativa, vinculo owner e AAL2 antes de ler o corpo.
-verify_jwt = false
-import_map = "./functions/ia-copiloto-fichas/deno.json"
-entrypoint = "./functions/ia-copiloto-fichas/index.ts"
-
-[functions.integracoes-fichas]
-enabled = true
-# Fase 5B somente leitura. O handler valida internamente Bearer, sessao ativa,
-# owner e AAL2. O site usa fluxo interno; chamadas externas seguem desativadas.
-verify_jwt = false
-import_map = "./functions/integracoes-fichas/import_map.json"
-entrypoint = "./functions/integracoes-fichas/index.ts"
-
 [functions.agendamento-submit]
 enabled = true
 # Formulário público sem conta Auth. A Edge restringe origem, tamanho, campos,
@@ -143,20 +105,6 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/agendamento-submit/deno.json"
 entrypoint = "./functions/agendamento-submit/index.ts"
-
-[functions.rosto3d-fichas]
-enabled = true
-# Custom auth verifies the user, active session, owner membership and AAL2.
-# Saving also consumes a recent password proof scoped to this consultation.
-verify_jwt = false
-entrypoint = "./functions/rosto3d-fichas/index.ts"
-
-[functions.edicao-autorizacao]
-enabled = true
-# Internal verification: Auth user, active session, owner and AAL2. Grants also
-# consume the unchanged one-time recent-password proof. No anonymous access.
-verify_jwt = false
-entrypoint = "./functions/edicao-autorizacao/index.ts"
 
 [functions.app-workspace]
 enabled = true
@@ -171,3 +119,9 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/documento-paciente/deno.json"
 entrypoint = "./functions/documento-paciente/index.ts"
+
+[functions.foto-marcacoes-fichas]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/foto-marcacoes-fichas/index.ts"
+
