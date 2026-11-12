@@ -1,4 +1,4 @@
-export const MODEL_VERSION='amj-facial-20260906-v2';
+export const MODEL_VERSION='amj-facial-20261112-v3';
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const plain=v=>v&&typeof v==='object'&&!Array.isArray(v);
 function text(v,max){if(typeof v!=='string'||v.length>max||/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(v))throw Error('Texto inválido ou muito longo.');return v.trim();}

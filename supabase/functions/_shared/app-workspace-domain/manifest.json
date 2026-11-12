@@ -4,8 +4,8 @@
   "files": [
     {
       "name": "operations-domain.mjs",
-      "sourceSha256": "a93c8d73aa7304520a87c5c87e6c20c4e6d1f04cec604f5ad477f27db5430266",
-      "generatedSha256": "0b5e29bed44633ea993b84eb5e6b59626344f0ae3d5466ac66e3a32cef15de34",
+      "sourceSha256": "4328269aa8bf039bc317c969d89e5b12d0c2b8dbeda439458b80893f4d9c38c0",
+      "generatedSha256": "8354881d9248ddb4480798c65d254e1309046f16f8b4c7fa8b5b2e3906f39d57",
       "mode": "exact-copy"
     },
     {
@@ -34,8 +34,8 @@
     },
     {
       "name": "facial-study-domain.mjs",
-      "sourceSha256": "bae3a96bf1e3f6a75577dd52e5cf4916272773dd448b980725bb04cc134f41db",
-      "generatedSha256": "049bc46795f0dae9be0457e5ab631bbb95296a5e11fa5a90f51d75c9686b37b7",
+      "sourceSha256": "7184dce234a53b42acc3ba4182d8a6ed67f06f47cbf2c19fd7bc4ffc2e64f6b5",
+      "generatedSha256": "f67852f2b472f983d290911d845e078961924f9fd181e8c387f7240a9a40512a",
       "mode": "exact-copy"
     },
     {
@@ -64,14 +64,14 @@
     },
     {
       "name": "comparison-library.mjs",
-      "sourceSha256": "33d13e02ae63ed273c32d53bba2a940e6546917fc331fd3b5fe5bd8bd8e990a9",
+      "sourceSha256": "4b931255248e3bfebd404c9cb438ee00aa8308c7298b61d6e1dd34d231ddd38e",
       "generatedSha256": "2632c038344117742d01e72dcb34be121ff962223128fc79252ef4e488a0d67a",
       "mode": "pure-prefix"
     },
     {
       "name": "backup.mjs",
-      "sourceSha256": "bc8fb4da4041e4aed4e52af1642ee8656a82f40bd90aa28d6e0bc93847fd0912",
-      "generatedSha256": "997aa714afcf5326cf053f1a0241a37c6b7ce33bbcbb000f8917b71af64d564e",
+      "sourceSha256": "c7adc7c1f6f73abe07168bd3090b0851ff0fd89db453a6d98549600686037c43",
+      "generatedSha256": "73a8e203039e84478156ecad1415fb11ba27d20243182942066a0464ed17b0eb",
       "mode": "pure-prefix"
     }
   ]

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {OrbitControls} from './vendor/OrbitControls.js';
+import {GLTFLoader} from './vendor/loaders/GLTFLoader.js';
 import {initial,preset,visible,tissueLayers} from './layer-state.mjs';
 import {annotations} from './annotations.mjs?v=20260906-3';
 import {TapGesture} from './gesture.mjs';
@@ -21,6 +22,17 @@ let state={...initial},scene,camera,renderer,controls,editor,resizeObserver,disp
 const gesture=new TapGesture();
 const ray=new THREE.Raycaster(),pointer=new THREE.Vector2();
 const mats=m=>[].concat(m.material);
+// Rosto realista (12/11/2026): malha única, normalizada para a mesma escala do visor. Determinística: os pontos usam esta geometria.
+const REALISTIC={id:'rosto-realista-20261112',file:'./assets/rosto-realista-20261112.glb',height:3.4};
+async function addRealistic(){
+ const gltf=await new GLTFLoader().loadAsync(REALISTIC.file);gltf.scene.updateMatrixWorld(true);let src=null;gltf.scene.traverse(o=>{if(o.isMesh&&!src)src=o;});if(!src)throw Error('Modelo do rosto indisponível.');
+ const geo=src.geometry.clone();geo.applyMatrix4(src.matrixWorld);geo.computeBoundingBox();const size=geo.boundingBox.getSize(new THREE.Vector3()),center=geo.boundingBox.getCenter(new THREE.Vector3()),s=REALISTIC.height/size.y;
+ geo.translate(-center.x,-center.y,-center.z);geo.scale(s,s,s);if(!geo.getAttribute('normal'))geo.computeVertexNormals();geo.computeBoundingBox();geo.computeBoundingSphere();
+ const real=src.material;real.metalness=0;real.metalnessMap=null;real.roughness=.68;real.roughnessMap=null;real.side=THREE.FrontSide;real.needsUpdate=true;
+ const porcelain=new THREE.MeshPhysicalMaterial({color:'#EAD9C8',roughness:.58,sheen:.35,sheenColor:new THREE.Color('#FFE9DC'),side:THREE.FrontSide});
+ const meta={id:REALISTIC.id,mode:'appearance',layer:'skin',realistic:true,positions:geo.getAttribute('position').array,indices:geo.index.array,materials:{real,porcelain}};
+ const mesh=new THREE.Mesh(geo,real);mesh.name=REALISTIC.id;mesh.userData=meta;mesh.visible=false;scene.add(mesh);models.push(mesh);
+}
 async function loadJSON(path){const r=await fetch(path);if(!r.ok)throw Error('Arquivo indisponível: '+path);return r.json();}
 async function loadTexture(path){path=path.replace(/^\/assets\//,'./assets/');if(!textures.has(path)){const t=await new THREE.TextureLoader().loadAsync(path);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());textures.set(path,t);}return textures.get(path);}
 function add(meta){
@@ -47,6 +59,7 @@ function sync(){
  selectOptions();
  for(const mesh of models){const meta=mesh.userData;mesh.visible=visible(meta,state);
   if(state.mode==='appearance'){if(meta.layer==='hair')mesh.visible&&=$('hair').checked&&(meta.hairStyle||'tied')===$('hair-style').value;if(['eyes','eyelashes','eyebrows'].includes(meta.layer))mesh.visible&&=$('appearance-eyes').checked;
+   if(meta.realistic){const next=$('texture').checked?meta.materials.real:meta.materials.porcelain;if(mesh.material!==next)mesh.material=next;continue;}
    if(meta.layer==='skin'){const mat=mesh.material,map=$('texture').checked?textures.get(meta.texture.replace(/^\/assets\//,'./assets/')):null;if(mat.map!==map){mat.map=map;mat.needsUpdate=true;}mat.color.set(map?'#ffffff':'#C5AD95');}}
   for(const mat of mats(mesh)){if(meta.layer==='surface'){mat.opacity=state.opacity;mat.transparent=state.opacity<1;mat.depthWrite=state.opacity===1;}
    mat.emissive.set(meta.id===state.selected&&state.mode==='anatomy'?'#281908':'#000000');}
@@ -64,7 +77,7 @@ function view(angle=0){
  const a=angle*Math.PI/180,box=new THREE.Box3();
  const frame=models.filter(m=>m.userData.mode===state.mode&&(state.mode==='appearance'?(m.userData.layer==='skin'||m.userData.layer==='hair'&&m.visible):m.userData.layer==='surface'));
  for(const mesh of frame){
-  if(state.mode==='appearance'){const p=mesh.geometry.getAttribute('position');for(let i=0;i<p.count;i++)if(p.getY(i)>=-1.85)box.expandByPoint(new THREE.Vector3(p.getX(i),p.getY(i),p.getZ(i)));}
+  if(state.mode==='appearance'){const p=mesh.geometry.getAttribute('position'),floor=mesh.userData.realistic?-1.0:-1.85;for(let i=0;i<p.count;i++)if(p.getY(i)>=floor)box.expandByPoint(new THREE.Vector3(p.getX(i),p.getY(i),p.getZ(i)));}
   else box.expandByObject(mesh);
  }if(box.isEmpty())return;
  const target=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3()),width=Math.abs(Math.cos(a))*size.x+Math.abs(Math.sin(a))*size.z;
@@ -76,7 +89,7 @@ async function setMode(value,{reframe=true}={}){
  gesture.clear();stopFocus();
  const token=++requestId;state.mode=value;state.selected='';state.isolated=false;$('loading').hidden=false;$('loading').textContent=value==='appearance'?'Preparando o rosto…':'Preparando as camadas anatômicas…';
  for(const mesh of models)mesh.visible=false;editor?.refresh();render();
- try{if(!requests.has(value))requests.set(value,(async()=>{const data=await loadJSON('./assets/'+value+'.json');await Promise.all([...new Set(data.meshes.map(m=>m.texture).filter(Boolean))].map(loadTexture));if(disposed||embedded&&!host())return;for(const meta of data.meshes)add({...meta,mode:value});})());
+ try{if(!requests.has(value))requests.set(value,(async()=>{if(value==='appearance'){await addRealistic();return;}const data=await loadJSON('./assets/'+value+'.json');await Promise.all([...new Set(data.meshes.map(m=>m.texture).filter(Boolean))].map(loadTexture));if(disposed||embedded&&!host())return;for(const meta of data.meshes)add({...meta,mode:value});})());
  await requests.get(value);if(disposed||token!==requestId)return;sync();if(reframe)view();$('loading').hidden=true;
  }catch(error){if(token!==requestId)return;requests.delete(value);lost=true;window.AMJRostoFailed=true;$('loading').textContent=error.message+' Use Abrir / tentar novamente no app.';throw error;}
 }
@@ -108,7 +121,7 @@ async function revealPoint(point,isCurrent){
 }
 try{
  scene=new THREE.Scene();scene.background=new THREE.Color('#FBF6F0');camera=new THREE.PerspectiveCamera(34,1,.05,100);
- renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1;
+ renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.NeutralToneMapping;renderer.toneMappingExposure=1.18;
  viewer.append(renderer.domElement);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=false;controls.enablePan=false;controls.minDistance=2.4;controls.addEventListener('change',render);controls.addEventListener('start',stopFocus);
  scene.add(new THREE.HemisphereLight('#FFF8EE','#76685E',1.3));for(const [power,pos]of [[2.4,[-3,4,5]],[1,[4,2,3]],[1.5,[0,3,-4]]]){const light=new THREE.DirectionalLight('#FFF9F3',power);light.position.set(...pos);scene.add(light);}
  resizeObserver=new ResizeObserver(()=>{camera.aspect=viewer.clientWidth/viewer.clientHeight;camera.updateProjectionMatrix();renderer.setSize(viewer.clientWidth,viewer.clientHeight,false);render();});resizeObserver.observe(viewer);

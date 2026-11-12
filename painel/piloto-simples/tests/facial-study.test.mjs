@@ -8,7 +8,7 @@ import {viewerPolicy,assertViewerMode,assertViewerStudy} from '../../rosto3d/v2/
 const op=n=>`11111111-1111-4111-8111-${String(n).padStart(12,'0')}`;
 const selection={patientId:'p1',visitId:'v1'},now=new Date('2026-10-15T12:30:00Z');
 const fixture=()=>({patients:[{id:'p1',name:'Ana <teste>'},{id:'p2',name:'Outra'}],visits:[{id:'v1',patientId:'p1',date:'2026-10-15',status:'aberto'},{id:'v2',patientId:'p2',date:'2026-10-15',status:'aberto'}]});
-const doc=()=>({...emptyFacialStudy(),points:[{id:op(99),mode:'appearance',meshId:'makehuman-head-uv-study-2',triangle:200,barycentric:[.2,.3,.5],label:'Observação',notes:'Sem inferência clínica.'}]});
+const doc=()=>({...emptyFacialStudy(),points:[{id:op(99),mode:'appearance',meshId:'rosto-realista-20261112',triangle:200,barycentric:[.2,.3,.5],label:'Observação',notes:'Sem inferência clínica.'}]});
 const save=(state,expectedVersion=0,document=doc(),operationId=op(expectedVersion+1),selectionOverride=selection)=>saveFacialStudy(state,{...selectionOverride,expectedVersion,document,operationId},now);
 
 test('registry and document remain compatible with exact preserved legacy topology',()=>{
@@ -46,7 +46,7 @@ test('independent patients have independent ordered versions',()=>{
   assert.equal(latestFacialStudy(state,selection).version,2);assert.equal(latestFacialStudy(state,{patientId:'p2',visitId:'v2'}).version,1);assert.equal(validateFacialStudies(state),true);
 });
 for(const [name,change]of [
-  ['atlas',d=>d.points[0].mode='anatomy'],['unknown mesh',d=>d.points[0].meshId='__proto__'],['triangle',d=>d.points[0].triangle=153672],['NaN',d=>d.points[0].barycentric[0]=NaN],['wrong sum',d=>d.points[0].barycentric=[1,1,0]],['duplicate',d=>d.points.push({...d.points[0]})],['empty name',d=>d.points[0].label=' '],['model mismatch',d=>d.modelVersion='new-geometry']
+  ['atlas',d=>d.points[0].mode='anatomy'],['unknown mesh',d=>d.points[0].meshId='__proto__'],['triangle',d=>d.points[0].triangle=81386],['NaN',d=>d.points[0].barycentric[0]=NaN],['wrong sum',d=>d.points[0].barycentric=[1,1,0]],['duplicate',d=>d.points.push({...d.points[0]})],['empty name',d=>d.points[0].label=' '],['model mismatch',d=>d.modelVersion='new-geometry']
 ])test(`invalid ${name} rejects without creating a collection`,()=>{const state=fixture(),value=doc();change(value);assert.throws(()=>save(state,0,value));assert.equal(state.facialStudies,undefined);});
 test('aggregate UTF-8 limit rejects otherwise valid individual notes',()=>{
   const value=doc();value.points=Array.from({length:100},(_,i)=>({...value.points[0],id:op(i+500),notes:'á'.repeat(1500)}));assert.throws(()=>validateFacialDocument(value),/240 KiB/);

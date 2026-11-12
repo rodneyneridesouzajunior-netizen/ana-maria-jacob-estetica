@@ -1,8 +1,8 @@
 // Portable local contract: no network, credentials, assets or storage side effects.
-// Keep this registry tied to the exact v2 topology. Tests compare it with the legacy source.
-export const FACIAL_MODEL_VERSION='amj-facial-20260906-v2';
+// Keep this registry tied to the exact topology of the realistic model (rosto3d/v2/assets). Tests compare it with point-registry.json.
+export const FACIAL_MODEL_VERSION='amj-facial-20261112-v3';
 export const FACIAL_MAX_BYTES=245760;
-export const FACIAL_APPEARANCE_REGISTRY=Object.freeze({'makehuman-head-uv-study-2':Object.freeze({mode:'appearance',triangles:153672})});
+export const FACIAL_APPEARANCE_REGISTRY=Object.freeze({'rosto-realista-20261112':Object.freeze({mode:'appearance',triangles:81386})});
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const plain=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 const clone=value=>structuredClone(value);
