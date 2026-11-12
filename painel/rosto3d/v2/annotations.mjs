@@ -26,7 +26,9 @@ export function annotations({THREE,scene,models,registry,getMode,render,host,rev
  function redraw(){clearMarkers();doc.points.forEach((p,i)=>{const model=models.find(m=>m.name===p.meshId);if(!model||!model.visible||p.mode!==getMode())return;
   const pos=pointPosition(p,model.userData),g=model.geometry,index=g.index.array,points=[0,1,2].map(c=>new THREE.Vector3().fromBufferAttribute(g.attributes.position,index[p.triangle*3+c]));
   const normal=new THREE.Vector3().crossVectors(points[1].clone().sub(points[0]),points[2].clone().sub(points[0])).normalize();
-  const ball=new THREE.Mesh(new THREE.SphereGeometry(.026,14,10),new THREE.MeshStandardMaterial({color:p.id===selected?'#33261D':'#B18431',roughness:.55}));ball.position.fromArray(pos).addScaledVector(normal,.022);ball.userData.pointId=p.id;group.add(ball);
+  // A bolinha fica sempre do lado de fora da pele, qualquer que seja a orientação dos triângulos do modelo.
+  if(!g.boundingSphere)g.computeBoundingSphere();if(normal.dot(new THREE.Vector3().fromArray(pos).sub(g.boundingSphere.center))<0)normal.negate();
+  const ball=new THREE.Mesh(new THREE.SphereGeometry(.032,16,12),new THREE.MeshStandardMaterial({color:p.id===selected?'#33261D':'#B18431',roughness:.55}));ball.position.fromArray(pos).addScaledVector(normal,.022);ball.userData.pointId=p.id;group.add(ball);
   const canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;const c=canvas.getContext('2d');c.fillStyle=p.id===selected?'#33261D':'#8B6420';c.beginPath();c.arc(32,32,27,0,Math.PI*2);c.fill();c.font='bold 30px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillStyle='#FFFFFF';c.fillText(String(i+1),32,33);
   const map=new THREE.CanvasTexture(canvas);map.colorSpace=THREE.SRGBColorSpace;const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map,depthTest:true}));sprite.position.copy(ball.position).add(new THREE.Vector3(.045,.055,0));sprite.scale.set(.10,.10,1);group.add(sprite);
  });render();}

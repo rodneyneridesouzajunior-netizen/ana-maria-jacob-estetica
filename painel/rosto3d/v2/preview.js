@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {OrbitControls} from './vendor/OrbitControls.js';
 import {GLTFLoader} from './vendor/loaders/GLTFLoader.js';
 import {initial,preset,visible,tissueLayers} from './layer-state.mjs';
-import {annotations} from './annotations.mjs?v=20260906-3';
+import {annotations} from './annotations.mjs?v=20261112-v3';
 import {TapGesture} from './gesture.mjs';
 import {pointPosition} from './study.mjs';
 import {viewerPolicy,assertViewerMode,assertViewerStudy} from './pilot-mode.mjs';
