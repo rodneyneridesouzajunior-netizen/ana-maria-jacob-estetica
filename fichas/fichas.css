@@ -1,0 +1,31 @@
+.fichas-hero{padding-block:70px 30px}
+.fichas-hero h1{font-size:clamp(46px,5.6vw,76px)}
+.fichas-passos{list-style:none;padding:0;margin:34px 0 0;display:grid;grid-template-columns:repeat(2,minmax(0,320px));gap:18px}
+.fichas-passos li{display:flex;gap:16px;align-items:flex-start;padding:18px 20px;border:1px solid var(--line);border-radius:14px;background:var(--ivory)}
+.fichas-passos span{flex:0 0 34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:#fff;font:500 15px/1 AMJSerif,Georgia,serif}
+.fichas-passos strong{display:block;font-weight:500;line-height:1.4}
+.fichas-passos small{color:var(--muted);font-size:13px;line-height:1.5}
+.fichas-bloco{padding-block:34px}
+.fichas-bloco .eyebrow{margin-bottom:16px}
+.ficha-principal{display:flex;justify-content:space-between;align-items:center;gap:30px;padding:36px 34px;border:1px solid #cdb995;border-radius:18px;background:linear-gradient(135deg,#fffdf9,#f5ede3);box-shadow:0 12px 28px #32251f0a;transition:transform .2s,border-color .2s}
+.ficha-principal:hover{transform:translateY(-3px);border-color:var(--gold)}
+.ficha-principal h2{font-size:clamp(34px,3.4vw,46px);margin-bottom:10px}
+.ficha-principal p{max-width:520px}
+.ficha-principal .button{flex-shrink:0}
+.fichas-ajuda{font-size:14px;margin:-4px 0 22px;max-width:560px}
+.fichas-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.ficha-card{display:flex;flex-direction:column;justify-content:space-between;min-height:170px;padding:26px 24px 20px;border:1px solid var(--line);border-radius:14px;background:#fff;transition:transform .2s,border-color .2s}
+.ficha-card:hover{transform:translateY(-3px);border-color:#baa278}
+.ficha-card .eyebrow{font-size:9.5px;margin-bottom:14px}
+.ficha-card h3{font-size:28px;margin-bottom:18px}
+.ficha-card .card-link{font-size:12.5px;color:var(--gold);display:flex;justify-content:space-between}
+.fichas-notas{display:grid;grid-template-columns:1fr 1fr;gap:40px;padding-block:50px 90px}
+.fichas-notas>div{padding-top:26px;border-top:1px solid var(--line)}
+.fichas-notas h2{font-size:clamp(32px,3vw,42px);margin-bottom:14px}
+.header nav>a[aria-current=page]{color:var(--gold)}
+.hero-fichas{display:flex;flex-direction:column;gap:2px;margin:22px 0 4px;padding:14px 18px;max-width:360px;border:1px solid #cdb995;border-radius:12px;background:var(--ivory);transition:border-color .2s}
+.hero-fichas:hover{border-color:var(--gold)}
+.hero-fichas span{font-size:12px;color:var(--muted)}
+.hero-fichas strong{font-weight:500;color:var(--gold);display:flex;justify-content:space-between;gap:12px}
+@media(max-width:1000px){.fichas-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.fichas-hero{padding-block:44px 16px}.fichas-passos{grid-template-columns:1fr}.ficha-principal{flex-direction:column;align-items:stretch;padding:28px 22px}.ficha-principal .button{width:100%}.fichas-grid{grid-template-columns:1fr;gap:12px}.ficha-card{min-height:0;padding:18px 20px 12px}.ficha-card .eyebrow{margin-bottom:8px}.ficha-card h3{font-size:26px;margin-bottom:6px}.fichas-notas{grid-template-columns:1fr;gap:28px;padding-block:30px 70px}}
