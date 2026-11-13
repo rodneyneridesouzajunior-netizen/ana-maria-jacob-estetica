@@ -56,7 +56,7 @@ test('termo para paciente nova: cadastro rápido, consulta nova e documento prep
   const procedure = h.state.procedures.find(p => p.active !== false);
   h.set('what', h.model.id);
   h.set('patientId', '__nova__');
-  h.form.elements.namedItem('pName').value = 'Paciente Nova Teste'; h.form.elements.namedItem('pPhone').value = '31977776666';
+  h.form.elements.namedItem('pName').value = 'Paciente Nova Teste'; h.form.elements.namedItem('pPhone').value = '31977776666'; h.form.elements.namedItem('cpf').value = '529.982.247-25';
   assert.equal(h.form.elements.namedItem('visitId').value, '__nova__');
   h.form.elements.namedItem('procedureId').value = procedure.id;
   await h.submit();
@@ -78,6 +78,8 @@ test('termo para paciente existente reaproveita consulta aberta e não duplica d
   h.set('what', h.model.id);
   h.set('patientId', patient.id);
   assert.equal(h.form.elements.namedItem('visitId').value, visit.id);
+  if (!h.dialog.querySelector('[data-qs-cpf]').hidden) h.form.elements.namedItem('cpf').value = '111.444.777-35';
+  if (!h.dialog.querySelector('[data-qs-phone-fix]').hidden) h.form.elements.namedItem('fixPhone').value = '31955554444';
   await h.submit();
   const docs = () => h.state.documentResponses.filter(d => d.visitId === visit.id && d.templateId === h.model.id);
   assert.equal(docs().length, 1);
@@ -124,9 +126,26 @@ test('servidor aceita cadastro rápido, consulta e documento num único salvamen
   const f = dialog.querySelector('form'), field = n => f.elements.namedItem(n), change = el => el.dispatchEvent(new w.Event('change'));
   field('what').value = model.id; change(field('what'));
   field('patientId').value = '__nova__'; change(field('patientId'));
-  field('pName').value = 'Paciente Servidor'; field('pPhone').value = '31966665555'; field('procedureId').value = 'p';
+  field('pName').value = 'Paciente Servidor'; field('pPhone').value = '31966665555'; field('cpf').value = '529.982.247-25'; field('procedureId').value = 'p';
   f.dispatchEvent(new w.Event('submit', {cancelable: true})); await tick(); await tick();
   assert.equal(saves, 1, 'um único salvamento');
   assert.equal(delivered.length, 1);
   assert.equal(state.documentResponses[0].templateId, model.id);
+});
+test('termo exige CPF válido e completa o cadastro de paciente existente sem CPF', async t => {
+  const h = harness(t);
+  const patient = h.state.patients.find(p => openVisits(h.state, p.id).length);
+  h.state.patients.find(p => p.id === patient.id).cpf = '';
+  h.set('what', h.model.id);
+  h.set('patientId', patient.id);
+  assert.equal(h.dialog.querySelector('[data-qs-cpf]').hidden, false, 'pede CPF quando falta');
+  h.form.elements.namedItem('cpf').value = '123.456.789-00';
+  if (!h.dialog.querySelector('[data-qs-phone-fix]').hidden) h.form.elements.namedItem('fixPhone').value = '31955554444';
+  await h.submit();
+  assert.match(h.dialog.querySelector('[data-qs-feedback]').textContent, /CPF válido/);
+  assert.equal(h.delivered.length, 0);
+  h.form.elements.namedItem('cpf').value = '111.444.777-35';
+  await h.submit();
+  assert.equal(h.state.patients.find(p => p.id === patient.id).cpf, '11144477735');
+  assert.equal(h.delivered.length, 1);
 });

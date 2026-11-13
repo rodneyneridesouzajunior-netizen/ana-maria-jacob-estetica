@@ -83,10 +83,11 @@ const LASER_QUESTIONS = Object.freeze([
   "Tem alguma lesão, ferida ou irritação na área agora?",
 ]);
 
-// Depilação a laser retirada em 12/11/2026: a clínica não oferece o serviço.
+// Depilação a laser e limpeza de pele retiradas em 12/11/2026: a clínica não oferece esses serviços.
 const ATTENDANCE = new Set([
   "Procedimento facial",
-  "Limpeza de pele",
+  "Tratamento capilar",
+  "Aplicação intramuscular",
   "Ainda não sei",
 ]);
 

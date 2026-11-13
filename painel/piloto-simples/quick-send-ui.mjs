@@ -1,7 +1,7 @@
 // Atalho da tela inicial: enviar anamnese ou termo pelo WhatsApp em poucos toques.
 // Anamnese: link público do site, sem cadastro. Termo: exige paciente e consulta (cadastro rápido quando faltar).
 import {escapeHTML as e} from './feature-ui.mjs';
-import {savePatient} from './patients-domain.mjs';
+import {savePatient, validCPF} from './patients-domain.mjs';
 import {createVisit} from './visit-workflow.mjs';
 import {prepareDocument} from './documents-domain.mjs';
 import {openDocumentDelivery} from './documents-delivery-ui.mjs';
@@ -55,6 +55,11 @@ export function openQuickSend({getState, persist, notify = () => {}, navigate = 
    <label class="field">Nome completo<input name="pName" maxlength="140" autocomplete="off"></label>
    <label class="field">WhatsApp com DDD<input name="pPhone" inputmode="tel" maxlength="25" placeholder="(31) 99999-9999" autocomplete="off"></label>
   </div>
+  <div data-qs-identity hidden>
+   <p class="small-label" data-qs-identity-note>Para a paciente assinar o termo, o cadastro precisa de CPF válido.</p>
+   <label class="field" data-qs-cpf>CPF da paciente<input name="cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" autocomplete="off"></label>
+   <label class="field" data-qs-phone-fix>WhatsApp com DDD<input name="fixPhone" inputmode="tel" maxlength="25" placeholder="(31) 99999-9999" autocomplete="off"></label>
+  </div>
   <label class="field">Consulta<select name="visitId"></select></label>
   <label class="field" data-qs-proc hidden>Procedimento da nova consulta<select name="procedureId"><option value="">Selecione</option>${procedures.map(p => `<option value="${e(p.id)}">${e(p.name)}</option>`).join('')}</select></label>
  </div>
@@ -81,6 +86,14 @@ export function openQuickSend({getState, persist, notify = () => {}, navigate = 
     $('[data-qs-new]').hidden = form.elements.namedItem('patientId').value !== NEW;
     $('[data-qs=go]').textContent = anamnese ? 'Abrir WhatsApp' : 'Preparar e gerar link';
     $('[data-qs-proc]').hidden = anamnese || form.elements.namedItem('visitId').value !== NEW;
+    const pid = form.elements.namedItem('patientId').value, existing = (getState().patients || []).find(p => p.id === pid);
+    const needCpf = !anamnese && (pid === NEW || (existing && !validCPF(existing.cpf || '') || existing && digits(existing.cpf).length !== 11));
+    const needPhone = !anamnese && !!existing && digits(existing.phone).length < 10;
+    $('[data-qs-identity]').hidden = !(needCpf || needPhone);
+    $('[data-qs-cpf]').hidden = !needCpf;
+    $('[data-qs-phone-fix]').hidden = !needPhone;
+    const proc = form.elements.namedItem('procedureId');
+    if (!anamnese && !proc.value) { const match = (getState().procedures || []).find(p => p.active !== false && p.consentTemplateId === form.elements.namedItem('what').value); if (match) proc.value = match.id; }
   };
   form.elements.namedItem('what').addEventListener('change', sync);
   form.elements.namedItem('patientId').addEventListener('change', () => { refreshVisits(); sync(); });
@@ -111,13 +124,22 @@ export function openQuickSend({getState, persist, notify = () => {}, navigate = 
       if (newPatient && name.length < 2) throw Error('Informe o nome completo da paciente.');
       if (newPatient && digits(phone).length < 10) throw Error('Informe o WhatsApp com DDD.');
       if (newVisit && !form.elements.namedItem('procedureId').value) throw Error('Escolha o procedimento da nova consulta.');
+      const existing = newPatient ? null : (getState().patients || []).find(p => p.id === form.elements.namedItem('patientId').value);
+      const cpfField = form.elements.namedItem('cpf').value.trim(), fixPhone = form.elements.namedItem('fixPhone').value.trim();
+      const needCpf = newPatient || !existing || digits(existing.cpf).length !== 11 || !validCPF(existing.cpf);
+      if (needCpf && (digits(cpfField).length !== 11 || !validCPF(cpfField))) throw Error('Informe um CPF válido da paciente. Ele é exigido para a assinatura do termo.');
+      const needPhone = !!existing && digits(existing.phone).length < 10;
+      if (needPhone && digits(fixPhone).length < 10) throw Error('Informe o WhatsApp da paciente com DDD.');
+      const patientPatch = existing && (needCpf || needPhone) ? {...existing, ...(needCpf ? {cpf: cpfField} : {}), ...(needPhone ? {phone: fixPhone} : {})} : null;
       const patientId = newPatient ? crypto.randomUUID() : form.elements.namedItem('patientId').value;
       const visitId = newVisit ? crypto.randomUUID() : form.elements.namedItem('visitId').value;
       let record = newVisit ? null : (getState().documentResponses || []).find(d => d.visitId === visitId && d.templateId === templateId && d.status !== 'cancelado');
+      if (record && patientPatch) await persist(s => { savePatient(s, patientPatch, {expectedVersion: existing.version ?? 1, operationId: crypto.randomUUID(), today: today()}); });
       if (!record) {
         const id = crypto.randomUUID();
         await persist(s => {
-          if (newPatient) savePatient(s, {id: patientId, name, phone}, {expectedVersion: 0, operationId: crypto.randomUUID(), today: today()});
+          if (newPatient) savePatient(s, {id: patientId, name, phone, cpf: cpfField}, {expectedVersion: 0, operationId: crypto.randomUUID(), today: today()});
+          if (patientPatch) savePatient(s, patientPatch, {expectedVersion: existing.version ?? 1, operationId: crypto.randomUUID(), today: today()});
           if (newVisit) createVisit(s, {id: visitId, patientId, procedureId: form.elements.namedItem('procedureId').value, date: today(), notes: 'Aberta pelo atalho de envio da tela inicial.'});
           prepareDocument(s, {id, templateId, patientId, visitId});
         });
