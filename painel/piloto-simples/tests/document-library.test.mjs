@@ -11,8 +11,11 @@ test('clinic models are separate, versioned and never rewrite an issued snapshot
  for(const model of CLINIC_DOCUMENT_MODELS){const v=saveTemplate(s,structuredClone(model));validateDocumentVersion(v);const record=prepareDocument(s,{id:'issued-'+model.id,templateId:model.id,patientId:'demo-marina',visitId:'demo-consulta'}),original=structuredClone(record);saveTemplate(s,{...structuredClone(model),title:'Versão revisada',expectedVersion:1});assert.deepEqual(record,original);assert.equal(s.documentTemplates.at(-1).versions.length,2);}
 });
 test('procedure models exclude repeated general data and image sections',()=>{
+ // Modelos integrados reúnem anamnese + termo de propósito (pedido da clínica, 16/11/2026): trazem a declaração de dados e a anamnese dentro.
+ const integrated=new Set(['amj-termo-intramuscular-20261116']);
  for(const model of CLINIC_DOCUMENT_MODELS.filter(t=>t.kind==='termo')){
   const content=[model.body,...(model.blocks||[]).flatMap(block=>[block.title,block.body])].join('\n');
+  if(integrated.has(model.id)){assert.match(content,/Autorizo o tratamento dos meus dados/);assert.match(content,/ficha de anamnese/);assert.doesNotMatch(content,/AUTORIZAÇÃO DE USO DE IMAGEM/);assert.match(content,/riscos/i);continue;}
   assert.doesNotMatch(content,/PROTEÇÃO DE DADOS PESSOAIS|AUTORIZAÇÃO DE USO DE IMAGEM|Autorizo o tratamento dos meus dados/);
   assert.match(content,/riscos/i);assert.match(content,/anamnese obrigatória/);
  }

@@ -56,7 +56,7 @@ test('termo para paciente nova: cadastro rápido, consulta nova e documento prep
   const procedure = h.state.procedures.find(p => p.active !== false);
   h.set('what', h.model.id);
   h.set('patientId', '__nova__');
-  h.form.elements.namedItem('pName').value = 'Paciente Nova Teste'; h.form.elements.namedItem('pPhone').value = '31977776666'; h.form.elements.namedItem('cpf').value = '529.982.247-25';
+  h.form.elements.namedItem('pName').value = 'Paciente Nova Teste'; h.form.elements.namedItem('pPhone').value = '31977776666'; h.form.elements.namedItem('cpf').value = '529.982.247-25'; h.form.elements.namedItem('birthDate').value = '1990-05-10';
   assert.equal(h.form.elements.namedItem('visitId').value, '__nova__');
   h.form.elements.namedItem('procedureId').value = procedure.id;
   await h.submit();
@@ -80,6 +80,7 @@ test('termo para paciente existente reaproveita consulta aberta e não duplica d
   assert.equal(h.form.elements.namedItem('visitId').value, visit.id);
   if (!h.dialog.querySelector('[data-qs-cpf]').hidden) h.form.elements.namedItem('cpf').value = '111.444.777-35';
   if (!h.dialog.querySelector('[data-qs-phone-fix]').hidden) h.form.elements.namedItem('fixPhone').value = '31955554444';
+  if (!h.dialog.querySelector('[data-qs-birth]').hidden) h.form.elements.namedItem('birthDate').value = '1990-05-10';
   await h.submit();
   const docs = () => h.state.documentResponses.filter(d => d.visitId === visit.id && d.templateId === h.model.id);
   assert.equal(docs().length, 1);
@@ -118,7 +119,7 @@ test('servidor aceita cadastro rápido, consulta e documento num único salvamen
   const today = new Date().toISOString().slice(0, 10);
   let state = emptyState(); ensureDocuments(state);
   saveProcedure(state, {today, now: today + 'T12:00:00.000Z', operationId: 'p', data: {id: 'p', name: 'Toxina botulínica', price: 10000, cost: 1000, duration: 30, recordMode: 'simple'}});
-  const model = CLINIC_DOCUMENT_MODELS.find(m => m.id === 'amj-termo-intramuscular-20261112');
+  const model = CLINIC_DOCUMENT_MODELS.find(m => m.id === 'amj-termo-intramuscular-20261116');
   saveTemplate(state, {id: model.id, kind: model.kind, title: model.title, body: model.body, questions: model.questions, blocks: model.blocks || []});
   let saves = 0; const delivered = [];
   const persist = async fn => { const next = structuredClone(state); fn(next); validateTransition(state, next); state = next; saves++; };
@@ -126,7 +127,7 @@ test('servidor aceita cadastro rápido, consulta e documento num único salvamen
   const f = dialog.querySelector('form'), field = n => f.elements.namedItem(n), change = el => el.dispatchEvent(new w.Event('change'));
   field('what').value = model.id; change(field('what'));
   field('patientId').value = '__nova__'; change(field('patientId'));
-  field('pName').value = 'Paciente Servidor'; field('pPhone').value = '31966665555'; field('cpf').value = '529.982.247-25'; field('procedureId').value = 'p';
+  field('pName').value = 'Paciente Servidor'; field('pPhone').value = '31966665555'; field('cpf').value = '529.982.247-25'; field('birthDate').value = '1990-05-10'; field('procedureId').value = 'p';
   f.dispatchEvent(new w.Event('submit', {cancelable: true})); await tick(); await tick();
   assert.equal(saves, 1, 'um único salvamento');
   assert.equal(delivered.length, 1);
@@ -141,11 +142,51 @@ test('termo exige CPF válido e completa o cadastro de paciente existente sem CP
   assert.equal(h.dialog.querySelector('[data-qs-cpf]').hidden, false, 'pede CPF quando falta');
   h.form.elements.namedItem('cpf').value = '123.456.789-00';
   if (!h.dialog.querySelector('[data-qs-phone-fix]').hidden) h.form.elements.namedItem('fixPhone').value = '31955554444';
+  if (!h.dialog.querySelector('[data-qs-birth]').hidden) h.form.elements.namedItem('birthDate').value = '1990-05-10';
   await h.submit();
   assert.match(h.dialog.querySelector('[data-qs-feedback]').textContent, /CPF válido/);
   assert.equal(h.delivered.length, 0);
   h.form.elements.namedItem('cpf').value = '111.444.777-35';
   await h.submit();
   assert.equal(h.state.patients.find(p => p.id === patient.id).cpf, '11144477735');
+  assert.equal(h.delivered.length, 1);
+});
+
+test('termo exige data de nascimento de maior de 18 anos e completa o cadastro existente', async t => {
+  const h = harness(t);
+  h.set('what', h.model.id);
+  h.set('patientId', '__nova__');
+  assert.equal(h.dialog.querySelector('[data-qs-birth]').hidden, false, 'pede nascimento no cadastro rápido');
+  h.form.elements.namedItem('pName').value = 'Paciente Sem Idade'; h.form.elements.namedItem('pPhone').value = '31977776666'; h.form.elements.namedItem('cpf').value = '529.982.247-25';
+  h.form.elements.namedItem('procedureId').value = h.state.procedures.find(p => p.active !== false).id;
+  await h.submit();
+  assert.match(h.dialog.querySelector('[data-qs-feedback]').textContent, /nascimento/);
+  h.form.elements.namedItem('birthDate').value = new Date().toISOString().slice(0, 4) - 10 + '-01-01';
+  await h.submit();
+  assert.match(h.dialog.querySelector('[data-qs-feedback]').textContent, /18 anos/);
+  assert.equal(h.state.patients.some(p => p.name === 'Paciente Sem Idade'), false, 'nada gravado sem nascimento válido');
+  h.form.elements.namedItem('birthDate').value = '1988-12-31';
+  await h.submit();
+  assert.equal(h.state.patients.find(p => p.name === 'Paciente Sem Idade').birthDate, '1988-12-31');
+  assert.equal(h.delivered.length, 1);
+});
+
+test('termos da biblioteca aparecem no atalho e são adicionados ao preparar o envio', async t => {
+  const h = harness(t);
+  const options = [...h.form.elements.namedItem('what').options].map(o => o.value);
+  const library = CLINIC_DOCUMENT_MODELS.filter(m => m.kind === 'termo' || m.kind === 'imagem').map(m => m.id);
+  for (const id of library) assert.ok(options.includes(id), 'modelo da biblioteca listado: ' + id);
+  const fromLibrary = [...h.form.elements.namedItem('what').options].find(o => o.value === 'amj-termo-intramuscular-20261116');
+  assert.match(fromLibrary.textContent, /da biblioteca/);
+  assert.equal(h.state.documentTemplates.some(x => x.id === 'amj-termo-intramuscular-20261116'), false);
+  h.set('what', 'amj-termo-intramuscular-20261116');
+  h.set('patientId', '__nova__');
+  h.form.elements.namedItem('pName').value = 'Paciente Biblioteca'; h.form.elements.namedItem('pPhone').value = '31977776666'; h.form.elements.namedItem('cpf').value = '529.982.247-25'; h.form.elements.namedItem('birthDate').value = '1990-05-10';
+  h.form.elements.namedItem('procedureId').value = h.state.procedures.find(p => p.active !== false).id;
+  await h.submit();
+  const template = h.state.documentTemplates.find(x => x.id === 'amj-termo-intramuscular-20261116');
+  assert.ok(template, 'modelo importado no mesmo salvamento');
+  assert.equal(template.versions.length, 1);
+  assert.equal(h.state.documentResponses.at(-1).templateId, 'amj-termo-intramuscular-20261116');
   assert.equal(h.delivered.length, 1);
 });

@@ -5,11 +5,21 @@ import {savePatient, validCPF} from './patients-domain.mjs';
 import {createVisit} from './visit-workflow.mjs';
 import {prepareDocument} from './documents-domain.mjs';
 import {openDocumentDelivery} from './documents-delivery-ui.mjs';
+import {CLINIC_DOCUMENT_MODELS} from './document-library.mjs';
+import {importClinicDocumentModels} from './documents-ui.mjs';
 
 export const ANAMNESE_URL = 'https://anamariajacob.com.br/anamnese/';
 const NEW = '__nova__';
 const digits = value => String(value || '').replace(/\D/g, '');
 const today = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+/** Data civil AAAA-MM-DD válida, de pessoa com 18 anos ou mais (o servidor exige maioridade para emitir o link). */
+export function adultBirthDate(value) {
+  const v = String(value || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v) || new Date(v + 'T12:00:00Z').toISOString().slice(0, 10) !== v) return false;
+  const [y, m, d] = v.split('-').map(Number), t = today().split('-').map(Number);
+  const age = t[0] - y - (t[1] < m || (t[1] === m && t[2] < d) ? 1 : 0);
+  return age >= 18 && age < 120;
+}
 
 /** Link do WhatsApp com a anamnese pública. Sem dado de saúde no texto. */
 export function anamneseWhatsapp(phone, name = '') {
@@ -27,10 +37,13 @@ export function openVisits(state, patientId) {
     .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
 }
 
-/** Modelos de termo/autorização já disponíveis na clínica. */
+/** Modelos de termo/autorização da clínica mais os da biblioteca ainda não adicionados (entram ao preparar o envio). */
 export function sendableTemplates(state) {
-  return (state.documentTemplates || []).filter(t => t.kind === 'termo' || t.kind === 'imagem')
-    .sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'));
+  const own = (state.documentTemplates || []).filter(t => t.kind === 'termo' || t.kind === 'imagem');
+  const ownIds = new Set(own.map(t => t.id));
+  const library = CLINIC_DOCUMENT_MODELS.filter(t => (t.kind === 'termo' || t.kind === 'imagem') && !ownIds.has(t.id))
+    .map(t => ({id: t.id, kind: t.kind, title: t.title, fromLibrary: true}));
+  return [...own, ...library].sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'));
 }
 
 export function openQuickSend({getState, persist, notify = () => {}, navigate = () => {}, openDelivery = openDocumentDelivery, openWindow = (url) => window.open(url, '_blank', 'noopener,noreferrer')}) {
@@ -43,8 +56,8 @@ export function openQuickSend({getState, persist, notify = () => {}, navigate = 
   const procedures = (state.procedures || []).filter(p => p.active !== false);
   dialog.innerHTML = `<div class="dialog-top"><h2>Enviar pelo WhatsApp</h2><button type="button" class="icon-button" data-qs="close" aria-label="Fechar janela">×</button></div>
 <form data-qs-form novalidate>
- <label class="field">O que enviar<select name="what" required><option value="anamnese">Ficha de anamnese (não precisa de cadastro)</option>${templates.map(t => `<option value="${e(t.id)}">${e(t.title)}</option>`).join('')}</select></label>
- ${templates.length ? '' : '<p class="note-box">Para enviar termos, importe os modelos em <a href="#documentos" data-qs="library">Documentos › Biblioteca de modelos</a>.</p>'}
+ <label class="field">O que enviar<select name="what" required><option value="anamnese">Ficha de anamnese (não precisa de cadastro)</option>${templates.map(t => `<option value="${e(t.id)}">${e(t.title)}${t.fromLibrary ? ' · da biblioteca' : ''}</option>`).join('')}</select></label>
+ ${templates.some(t => t.fromLibrary) ? '<p class="small-label">Termos marcados “da biblioteca” são adicionados aos seus modelos ao preparar o envio. Para conferir ou editar o texto antes, use <a href="#documentos" data-qs="library">Documentos › Biblioteca de modelos</a>.</p>' : ''}
  <div data-qs-anamnese>
   <label class="field">Nome (opcional)<input name="aName" maxlength="140" autocomplete="off"></label>
   <label class="field">WhatsApp com DDD<input name="aPhone" inputmode="tel" maxlength="25" placeholder="(31) 99999-9999" autocomplete="off"></label>
@@ -56,8 +69,9 @@ export function openQuickSend({getState, persist, notify = () => {}, navigate = 
    <label class="field">WhatsApp com DDD<input name="pPhone" inputmode="tel" maxlength="25" placeholder="(31) 99999-9999" autocomplete="off"></label>
   </div>
   <div data-qs-identity hidden>
-   <p class="small-label" data-qs-identity-note>Para a paciente assinar o termo, o cadastro precisa de CPF válido.</p>
+   <p class="small-label" data-qs-identity-note>Para a paciente assinar o termo pelo link, o cadastro precisa de CPF válido e data de nascimento (maior de 18 anos).</p>
    <label class="field" data-qs-cpf>CPF da paciente<input name="cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" autocomplete="off"></label>
+   <label class="field" data-qs-birth>Data de nascimento<input name="birthDate" type="date" max="${today()}" autocomplete="off"></label>
    <label class="field" data-qs-phone-fix>WhatsApp com DDD<input name="fixPhone" inputmode="tel" maxlength="25" placeholder="(31) 99999-9999" autocomplete="off"></label>
   </div>
   <label class="field">Consulta<select name="visitId"></select></label>
@@ -88,9 +102,11 @@ export function openQuickSend({getState, persist, notify = () => {}, navigate = 
     $('[data-qs-proc]').hidden = anamnese || form.elements.namedItem('visitId').value !== NEW;
     const pid = form.elements.namedItem('patientId').value, existing = (getState().patients || []).find(p => p.id === pid);
     const needCpf = !anamnese && (pid === NEW || (existing && !validCPF(existing.cpf || '') || existing && digits(existing.cpf).length !== 11));
+    const needBirth = !anamnese && (pid === NEW || (!!existing && !adultBirthDate(existing.birthDate)));
     const needPhone = !anamnese && !!existing && digits(existing.phone).length < 10;
-    $('[data-qs-identity]').hidden = !(needCpf || needPhone);
+    $('[data-qs-identity]').hidden = !(needCpf || needBirth || needPhone);
     $('[data-qs-cpf]').hidden = !needCpf;
+    $('[data-qs-birth]').hidden = !needBirth;
     $('[data-qs-phone-fix]').hidden = !needPhone;
     const proc = form.elements.namedItem('procedureId');
     if (!anamnese && !proc.value) { const match = (getState().procedures || []).find(p => p.active !== false && p.consentTemplateId === form.elements.namedItem('what').value); if (match) proc.value = match.id; }
@@ -128,9 +144,12 @@ export function openQuickSend({getState, persist, notify = () => {}, navigate = 
       const cpfField = form.elements.namedItem('cpf').value.trim(), fixPhone = form.elements.namedItem('fixPhone').value.trim();
       const needCpf = newPatient || !existing || digits(existing.cpf).length !== 11 || !validCPF(existing.cpf);
       if (needCpf && (digits(cpfField).length !== 11 || !validCPF(cpfField))) throw Error('Informe um CPF válido da paciente. Ele é exigido para a assinatura do termo.');
+      const birthField = String(form.elements.namedItem('birthDate').value || '').trim();
+      const needBirth = newPatient || !existing || !adultBirthDate(existing.birthDate);
+      if (needBirth && !adultBirthDate(birthField)) throw Error('Informe a data de nascimento da paciente (maior de 18 anos). O link de assinatura exige essa informação.');
       const needPhone = !!existing && digits(existing.phone).length < 10;
       if (needPhone && digits(fixPhone).length < 10) throw Error('Informe o WhatsApp da paciente com DDD.');
-      const patientPatch = existing && (needCpf || needPhone) ? {...existing, ...(needCpf ? {cpf: cpfField} : {}), ...(needPhone ? {phone: fixPhone} : {})} : null;
+      const patientPatch = existing && (needCpf || needBirth || needPhone) ? {...existing, ...(needCpf ? {cpf: cpfField} : {}), ...(needBirth ? {birthDate: birthField} : {}), ...(needPhone ? {phone: fixPhone} : {})} : null;
       const patientId = newPatient ? crypto.randomUUID() : form.elements.namedItem('patientId').value;
       const visitId = newVisit ? crypto.randomUUID() : form.elements.namedItem('visitId').value;
       let record = newVisit ? null : (getState().documentResponses || []).find(d => d.visitId === visitId && d.templateId === templateId && d.status !== 'cancelado');
@@ -138,9 +157,10 @@ export function openQuickSend({getState, persist, notify = () => {}, navigate = 
       if (!record) {
         const id = crypto.randomUUID();
         await persist(s => {
-          if (newPatient) savePatient(s, {id: patientId, name, phone, cpf: cpfField}, {expectedVersion: 0, operationId: crypto.randomUUID(), today: today()});
+          if (newPatient) savePatient(s, {id: patientId, name, phone, cpf: cpfField, birthDate: birthField}, {expectedVersion: 0, operationId: crypto.randomUUID(), today: today()});
           if (patientPatch) savePatient(s, patientPatch, {expectedVersion: existing.version ?? 1, operationId: crypto.randomUUID(), today: today()});
           if (newVisit) createVisit(s, {id: visitId, patientId, procedureId: form.elements.namedItem('procedureId').value, date: today(), notes: 'Aberta pelo atalho de envio da tela inicial.'});
+          if (!(s.documentTemplates || []).some(t => t.id === templateId)) importClinicDocumentModels(s, [templateId]);
           prepareDocument(s, {id, templateId, patientId, visitId});
         });
         record = getState().documentResponses.find(d => d.id === id);

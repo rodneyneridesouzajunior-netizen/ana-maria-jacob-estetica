@@ -43,7 +43,7 @@ export const STANDARD_PROCEDURES=Object.freeze([
  ['amj-proc-intradermoterapia','Intradermoterapia','Injetáveis','✦','injectable',30,'amj-termo-intradermoterapia-20261112'],
  ['amj-proc-peeling','Peeling químico superficial','Pele','◇','simple',45,'amj-termo-peeling-quimico-20261112'],
  ['amj-proc-microagulhamento','Microagulhamento facial e capilar','Pele','◇','simple',60,'amj-termo-microagulhamento-20261112'],
- ['amj-proc-intramuscular','Aplicação intramuscular com prescrição','Aplicações','✚','simple',15,'amj-termo-intramuscular-20261112'],
+ ['amj-proc-intramuscular','Aplicação intramuscular com prescrição','Aplicações','✚','simple',15,'amj-termo-intramuscular-20261116'],
 ].map(([id,name,category,emoji,recordMode,duration,consentTemplateId])=>Object.freeze({id,name,category,emoji,recordMode,duration,consentTemplateId})));
 const foldName=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
 /** Padrões que ainda não existem (por id ou por nome igual) e cujo termo já está nos modelos da clínica. */

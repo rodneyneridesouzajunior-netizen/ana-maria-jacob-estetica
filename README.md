@@ -10,6 +10,12 @@ Maria Jacob Estética.
   faciais, capilares e a administração intramuscular mediante avaliação,
   anamnese, indicação individual e prescrição válida
 - `/anamnese/` — ficha de anamnese preservada
+- `/impressao/` — "Fichas para imprimir": PDF em branco de cada modelo da
+  biblioteca (anamnese, termos e autorização de imagem) para preenchimento em
+  papel, com botão para mandar o link pelo WhatsApp. Gerados por
+  `node scripts/gerar-pdfs-impressao.mjs` (Chrome/Edge sem janela) a partir de
+  `painel/piloto-simples/document-print.mjs`; o app oferece o mesmo conteúdo em
+  "Imprimir em branco" na Biblioteca de modelos
 - `/tcle-toxina/` — TCLE de toxina botulínica para leitura, preenchimento,
   assinatura da paciente e geração de sua cópia em PDF
 - `/tcle-preenchimento/` — TCLE de preenchimento facial com ácido hialurônico,

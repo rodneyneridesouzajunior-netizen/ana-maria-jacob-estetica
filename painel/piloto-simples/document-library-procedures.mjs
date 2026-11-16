@@ -715,41 +715,46 @@ export const ADDITIONAL_PROCEDURE_MODELS = Object.freeze([
     ]
   },
   {
-    "id": "amj-termo-intramuscular-20261112",
-    "title": "Consentimento — Aplicação intramuscular com prescrição",
+    "id": "amj-termo-intramuscular-20261116",
+    "title": "Anamnese e consentimento — Aplicação intramuscular com prescrição",
     "kind": "termo",
-    "source": "Rascunho para revisão da profissional e orientação jurídica. Base: Res. CFF 760/2023, Portaria SVS/MS 344/1998, Lei 9.965/2000 e Res. CFM 2.333/2023.",
-    "body": "Este termo trata somente da administração intramuscular de medicamento prescrito por outro profissional habilitado, para reposição hormonal ou uso de medicamento controlado. As declarações gerais de saúde estão na anamnese obrigatória. Não abrange prescrição, indicação de dose, finalidade estética ou de desempenho, nem implantes hormonais.",
+    "source": "Reúne a ficha de anamnese geral da clínica e o termo de aplicação intramuscular em um único documento, a pedido da clínica em 16/11/2026, com perguntas sobre alergia a medicamentos e PMMA ou silicone nos glúteos. Substitui o modelo de 12/11/2026. Rascunho para revisão da profissional e orientação jurídica; base citada no modelo anterior: Res. CFF 760/2023, Portaria SVS/MS 344/1998, Lei 9.965/2000 e Res. CFM 2.333/2023 (conferir antes de aprovar).",
+    "body": "Este documento reúne a sua ficha de anamnese e o consentimento para a aplicação intramuscular de um medicamento prescrito por outro profissional habilitado: vitaminas, minerais e outros injetáveis, medicamento de uso contínuo, reposição hormonal com diagnóstico ou medicamento sujeito a controle especial. Responda com sinceridade: as respostas orientam a avaliação de segurança antes de cada aplicação. Não abrange prescrição, indicação de dose, finalidade estética ou de desempenho, nem implantes hormonais.",
     "blocks": [
       {
         "id": "objetivo",
         "title": "O que é este atendimento",
-        "body": "A profissional farmacêutica aplica, por via intramuscular, o medicamento indicado na receita apresentada. A escolha do medicamento, a dose, o intervalo e o acompanhamento do tratamento são de responsabilidade do profissional que prescreveu. A farmacêutica avalia a receita, confere o produto e pode recusar ou adiar a aplicação quando houver dúvida sobre a prescrição, a procedência do medicamento ou a sua segurança."
+        "body": "A profissional farmacêutica aplica, por via intramuscular, o medicamento indicado na receita apresentada. A escolha do medicamento, a dose, o intervalo e o acompanhamento do tratamento são de responsabilidade do profissional que prescreveu. A farmacêutica avalia a receita, confere o produto, a validade e o registro, e pode recusar ou adiar a aplicação quando houver dúvida sobre a prescrição, a procedência do medicamento, as respostas desta ficha ou a sua segurança."
       },
       {
         "id": "prescricao",
         "title": "Receita e procedência do medicamento",
-        "body": "A aplicação depende de receita válida, legível e dentro do prazo, com nome, conselho e número do prescritor. Para hormônios anabolizantes e outros medicamentos controlados, é exigida Receita de Controle Especial, com indicação clínica, e a cópia carimbada pela farmácia fica arquivada no prontuário. O medicamento deve ser adquirido pela paciente em farmácia, com nota fiscal, e apresentado lacrado, dentro da validade e com registro na Anvisa. A clínica não fornece, vende nem guarda medicamentos controlados. Não serão aplicados produtos manipulados injetáveis de procedência duvidosa nem hormônios com finalidade estética ou de ganho de desempenho."
+        "body": "A aplicação depende de receita válida, legível e dentro do prazo, com nome, conselho e número do prescritor. Para medicamentos sujeitos a controle especial, inclusive hormônios, é exigida a receita do tipo correspondente, com indicação clínica, e a cópia carimbada pela farmácia fica arquivada no prontuário. O medicamento deve ser adquirido pela paciente em farmácia, com nota fiscal, e apresentado lacrado, dentro da validade e com registro na Anvisa. A clínica não fornece, vende nem guarda medicamentos controlados. Não serão aplicados produtos injetáveis de procedência duvidosa nem hormônios com finalidade estética ou de ganho de desempenho."
+      },
+      {
+        "id": "local",
+        "title": "Local da aplicação",
+        "body": "O local da injeção (glúteo, deltoide ou face lateral da coxa) é escolhido pela profissional conforme o medicamento, o volume e as condições da paciente. Quem tem PMMA, silicone ou outro preenchedor, bioestimulador ou implante nos glúteos não deve receber injeção nessa região: há risco de infecção, inflamação e de atingir ou deslocar o material, além de dificultar a aplicação correta. Nesses casos a aplicação é feita em outro local ou adiada para avaliação. Por isso é obrigatório informar qualquer produto aplicado nos glúteos, mesmo há muitos anos."
       },
       {
         "id": "acompanhamento",
-        "title": "Acompanhamento médico",
-        "body": "A reposição hormonal deve ser indicada a partir de diagnóstico de deficiência e acompanhada pelo prescritor, com exames periódicos. A aplicação na clínica não substitui consultas, exames ou ajustes de dose pelo prescritor."
+        "title": "Acompanhamento com o prescritor",
+        "body": "O tratamento deve ser indicado e acompanhado pelo prescritor, com exames quando necessário. No caso de reposição hormonal, a indicação parte de diagnóstico de deficiência e exige exames periódicos. A aplicação na clínica não substitui consultas, exames ou ajustes de dose pelo prescritor."
       },
       {
         "id": "riscos",
         "title": "Riscos da aplicação",
-        "body": "Podem ocorrer dor, sensibilidade, endurecimento, hematoma e incômodo para movimentar o local por alguns dias. Mais raramente podem ocorrer abscesso ou infecção, lesão de nervo com dor irradiada, dormência ou fraqueza, aplicação acidental em vaso, tosse ou sensação de falta de ar logo após medicamentos oleosos, e reação alérgica, inclusive grave (anafilaxia)."
+        "body": "Podem ocorrer dor, sensibilidade, endurecimento, hematoma e incômodo para movimentar o local por alguns dias, além de tontura ou mal-estar passageiro no momento da injeção. Mais raramente podem ocorrer abscesso ou infecção, lesão de nervo com dor irradiada, dormência ou fraqueza, aplicação acidental em vaso, lesão da pele e do tecido no local da injeção, tosse ou sensação de falta de ar logo após medicamentos oleosos, e reação alérgica, inclusive grave (anafilaxia). Informar alergias e reações anteriores reduz esses riscos."
       },
       {
         "id": "riscos_medicamento",
         "title": "Efeitos do medicamento",
-        "body": "Os efeitos do medicamento são explicados pelo prescritor e constam da bula. No caso de hormônios, podem incluir aumento do hematócrito (sangue mais espesso), risco de trombose, alterações de colesterol e do fígado, acne, oleosidade, queda de cabelo, alterações de humor, retenção de líquido, alterações na fertilidade e, em mulheres, engrossamento da voz, aumento de pelos e outros sinais de virilização, que podem ser permanentes."
+        "body": "Os efeitos de cada medicamento são explicados pelo prescritor e constam da bula; vitaminas e minerais injetáveis também podem causar reações alérgicas e dor local. No caso de hormônios, podem incluir aumento do hematócrito (sangue mais espesso), risco de trombose, alterações de colesterol e do fígado, acne, oleosidade, queda de cabelo, alterações de humor, retenção de líquido, alterações na fertilidade e, em mulheres, engrossamento da voz, aumento de pelos e outros sinais de virilização, que podem ser permanentes."
       },
       {
         "id": "observacao",
         "title": "Observação e cuidados após a aplicação",
-        "body": "Após a aplicação, permaneço na clínica pelo tempo orientado pela profissional para observação. No local, evito massagem vigorosa, calor intenso e atividade física pesada no dia, salvo orientação diferente. O local, o lado, o lote e a validade do medicamento ficam registrados no prontuário."
+        "body": "Após a aplicação, permaneço na clínica pelo tempo orientado pela profissional para observação. No local, evito massagem vigorosa, calor intenso e atividade física pesada no dia, salvo orientação diferente. O medicamento, o lote, a validade, o local e o lado da aplicação ficam registrados no prontuário."
       },
       {
         "id": "alertas",
@@ -757,12 +762,448 @@ export const ADDITIONAL_PROCEDURE_MODELS = Object.freeze([
         "body": "Falta de ar, chiado, inchaço de lábios, língua ou garganta, coceira generalizada, tontura ou desmaio após a aplicação são emergência. Dor, vermelhidão ou calor que aumentam no local, febre ou secreção, dor ou inchaço em uma perna, dor no peito ou fraqueza súbita também precisam de avaliação imediata. Em uma emergência, procure um pronto-socorro ou acione o SAMU pelo 192; não espere resposta da clínica por mensagem. Depois, comunique a clínica pelo (31) 99584-4803."
       },
       {
+        "id": "dados",
+        "title": "Uso dos meus dados",
+        "body": "Autorizo o tratamento dos meus dados pessoais e de saúde por Ana Maria Costa Jacob, CRF/MG 40880, conforme a Lei nº 13.709/2018, para prestação segura do atendimento, cumprimento de obrigações legais e defesa de direitos. Guarda por 20 anos. Os dados não são vendidos nem cedidos para fins comerciais. Posso pedir acesso, correção ou eliminação pelo WhatsApp (31) 99584-4803. Este documento não autoriza uso de imagem, que tem documento próprio."
+      },
+      {
         "id": "decisao",
         "title": "Decisão sobre a aplicação descrita",
-        "body": "Posso pedir esclarecimentos, adiar ou recusar a aplicação, sem precisar justificar, e recebo uma cópia deste documento, emitido em duas vias. Declaro que as informações sobre a receita, o prescritor e o medicamento são verdadeiras e que informarei qualquer mudança de saúde ou de tratamento antes de cada aplicação. Aceito a assinatura eletrônica deste documento, com registro de data, hora, dispositivo e integridade do conteúdo, como manifestação válida da minha vontade."
+        "body": "Declaro que respondi a todas as perguntas com sinceridade, sem omitir informação sobre meu estado de saúde, medicamentos, alergias, implantes ou procedimentos anteriores, e que comunicarei qualquer alteração antes de cada aplicação. Estou ciente de que a omissão pode me expor a riscos evitáveis. Posso pedir esclarecimentos, adiar ou recusar a aplicação, sem precisar justificar, e recebo uma cópia deste documento, emitido em duas vias. Aceito a assinatura eletrônica deste documento, com registro de data, hora, dispositivo e integridade do conteúdo, como manifestação válida da minha vontade, nos termos do art. 10, §2º da MP 2.200-2/2001."
       }
     ],
     "questions": [
+      {
+        "id": "nascimento",
+        "label": "Data de nascimento",
+        "type": "date",
+        "required": true
+      },
+      {
+        "id": "profissao",
+        "label": "Profissão",
+        "type": "text",
+        "required": false
+      },
+      {
+        "id": "emergencia",
+        "label": "Contato de emergência (nome e telefone)",
+        "type": "text",
+        "required": true
+      },
+      {
+        "id": "saude-0",
+        "label": "Está grávida, com suspeita de gravidez ou amamentando?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "saude-1",
+        "label": "Tem doença crônica em tratamento (diabetes, hipertensão, tireoide)?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "saude-2",
+        "label": "Tem doença cardíaca, renal ou hepática?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "saude-3",
+        "label": "Tem doença autoimune ou inflamatória?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "saude-4",
+        "label": "Tem doença neuromuscular (miastenia, ELA, outras)?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "saude-5",
+        "label": "Tem epilepsia ou já teve convulsões?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "saude-6",
+        "label": "Tem ou teve câncer? Está em tratamento oncológico?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "saude-7",
+        "label": "Tem imunossupressão de qualquer causa?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "saude-8",
+        "label": "Tem distúrbio de coagulação ou sangra com facilidade?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "saude-9",
+        "label": "Usa marca-passo ou tem prótese ou implante metálico?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "saude-10",
+        "label": "Tem histórico de queloide ou cicatrização anormal?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "saude-11",
+        "label": "Tem herpes labial ou genital recorrente?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "saude-12",
+        "label": "Tem doença de pele em atividade (acne, dermatite, rosácea)?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "saude-13",
+        "label": "Fez alguma cirurgia nos últimos 6 meses?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "saude-14",
+        "label": "Fez ou fará procedimento odontológico em até 2 semanas?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "saude-15",
+        "label": "Tomou vacina nas últimas 2 semanas?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "saude-16",
+        "label": "Fuma?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "saude-17",
+        "label": "Consome bebida alcoólica com frequência?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "saude-detalhe",
+        "label": "Se respondeu sim a algum item, conte mais aqui",
+        "type": "long",
+        "required": false
+      },
+      {
+        "id": "medic-0",
+        "label": "Usa anticoagulante ou antiagregante (AAS, varfarina, clopidogrel)?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "medic-1",
+        "label": "Usou isotretinoína oral nos últimos 6 meses?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "medic-2",
+        "label": "Usa corticoide de forma contínua?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "medic-3",
+        "label": "Usa anticoncepcional ou faz reposição hormonal?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "medic-4",
+        "label": "Tem alergia a anestésico local (lidocaína e semelhantes)?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "medic-5",
+        "label": "Tem alergia a látex?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "continuo",
+        "label": "Medicamentos de uso contínuo (quais e para quê)",
+        "type": "long",
+        "required": false
+      },
+      {
+        "id": "suplementos",
+        "label": "Suplementos, vitaminas e fitoterápicos",
+        "type": "long",
+        "required": false
+      },
+      {
+        "id": "alergia_medicamento",
+        "label": "Tem alergia a algum medicamento (antibiótico, anti-inflamatório, dipirona, anestésico, vitamina injetável ou outro)?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "alergia_medicamento_quais",
+        "label": "Quais medicamentos e qual foi a reação?",
+        "type": "long",
+        "required": true,
+        "condition": {
+          "questionId": "alergia_medicamento",
+          "value": "Sim"
+        }
+      },
+      {
+        "id": "anafilaxia",
+        "label": "Já teve reação alérgica grave (anafilaxia), com falta de ar, inchaço de boca ou garganta ou desmaio, a qualquer substância?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "alergia-out",
+        "label": "Alergias a cosméticos, ativos ou alimentos",
+        "type": "text",
+        "required": false
+      },
+      {
+        "id": "proc-0",
+        "label": "Já realizou Toxina botulínica?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "proc-detalhe-0",
+        "label": "Quando, em qual região e com qual produto realizou Toxina botulínica?",
+        "type": "long",
+        "required": false,
+        "condition": {
+          "questionId": "proc-0",
+          "value": "Sim"
+        }
+      },
+      {
+        "id": "proc-1",
+        "label": "Já realizou Preenchimento com ácido hialurônico?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "proc-detalhe-1",
+        "label": "Quando, em qual região e com qual produto realizou Preenchimento com ácido hialurônico?",
+        "type": "long",
+        "required": false,
+        "condition": {
+          "questionId": "proc-1",
+          "value": "Sim"
+        }
+      },
+      {
+        "id": "proc-2",
+        "label": "Já realizou Preenchedor PERMANENTE (PMMA, silicone líquido, bioplastia)?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "proc-detalhe-2",
+        "label": "Quando, em qual região e com qual produto realizou Preenchedor PERMANENTE (PMMA, silicone líquido, bioplastia)?",
+        "type": "long",
+        "required": false,
+        "condition": {
+          "questionId": "proc-2",
+          "value": "Sim"
+        }
+      },
+      {
+        "id": "proc-3",
+        "label": "Já realizou Bioestimulador de colágeno?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "proc-detalhe-3",
+        "label": "Quando, em qual região e com qual produto realizou Bioestimulador de colágeno?",
+        "type": "long",
+        "required": false,
+        "condition": {
+          "questionId": "proc-3",
+          "value": "Sim"
+        }
+      },
+      {
+        "id": "proc-4",
+        "label": "Já realizou Fios de sustentação (PDO e outros)?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "proc-detalhe-4",
+        "label": "Quando, em qual região e com qual produto realizou Fios de sustentação (PDO e outros)?",
+        "type": "long",
+        "required": false,
+        "condition": {
+          "questionId": "proc-4",
+          "value": "Sim"
+        }
+      },
+      {
+        "id": "proc-5",
+        "label": "Já realizou Microagulhamento?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "proc-detalhe-5",
+        "label": "Quando, em qual região e com qual produto realizou Microagulhamento?",
+        "type": "long",
+        "required": false,
+        "condition": {
+          "questionId": "proc-5",
+          "value": "Sim"
+        }
+      },
+      {
+        "id": "proc-6",
+        "label": "Já realizou Peeling químico?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "proc-detalhe-6",
+        "label": "Quando, em qual região e com qual produto realizou Peeling químico?",
+        "type": "long",
+        "required": false,
+        "condition": {
+          "questionId": "proc-6",
+          "value": "Sim"
+        }
+      },
+      {
+        "id": "proc-7",
+        "label": "Já realizou Laser, luz pulsada ou radiofrequência?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "proc-detalhe-7",
+        "label": "Quando, em qual região e com qual produto realizou Laser, luz pulsada ou radiofrequência?",
+        "type": "long",
+        "required": false,
+        "condition": {
+          "questionId": "proc-7",
+          "value": "Sim"
+        }
+      },
+      {
+        "id": "proc-9",
+        "label": "Já realizou Cirurgia plástica facial?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "proc-detalhe-9",
+        "label": "Quando, em qual região e com qual produto realizou Cirurgia plástica facial?",
+        "type": "long",
+        "required": false,
+        "condition": {
+          "questionId": "proc-9",
+          "value": "Sim"
+        }
+      },
+      {
+        "id": "gluteo_pmma",
+        "label": "Tem PMMA, silicone (líquido ou prótese) ou outro preenchedor, bioestimulador ou implante aplicado nos glúteos?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "gluteo_pmma_detalhe",
+        "label": "Qual produto, quando foi aplicado e por quem? Teve alguma reação?",
+        "type": "long",
+        "required": true,
+        "condition": {
+          "questionId": "gluteo_pmma",
+          "value": "Sim"
+        }
+      },
+      {
+        "id": "implante_outro",
+        "label": "Tem preenchedor permanente ou implante em outro local onde se aplicam injeções (braços ou coxas)?",
+        "type": "yesno",
+        "required": true
+      },
+      {
+        "id": "implante_outro_detalhe",
+        "label": "Qual produto, em qual região e quando?",
+        "type": "long",
+        "required": true,
+        "condition": {
+          "questionId": "implante_outro",
+          "value": "Sim"
+        }
+      },
+      {
+        "id": "tipo-pele",
+        "label": "Tipo de pele",
+        "type": "select",
+        "required": false,
+        "options": [
+          "Oleosa",
+          "Mista",
+          "Seca",
+          "Normal",
+          "Sensível"
+        ]
+      },
+      {
+        "id": "sol",
+        "label": "Exposição ao sol no dia a dia",
+        "type": "select",
+        "required": false,
+        "options": [
+          "Baixa",
+          "Média",
+          "Alta"
+        ]
+      },
+      {
+        "id": "protetor",
+        "label": "Usa protetor solar todos os dias?",
+        "type": "select",
+        "required": false,
+        "options": [
+          "Sim",
+          "Às vezes",
+          "Não"
+        ]
+      },
+      {
+        "id": "rotina",
+        "label": "Rotina de cuidados atual (produtos que usa)",
+        "type": "long",
+        "required": false
+      },
+      {
+        "id": "objetivo",
+        "label": "Queixa principal e o que você espera do atendimento",
+        "type": "long",
+        "required": true
+      },
       {
         "id": "medicamento",
         "label": "Nome do medicamento prescrito (como está na receita)",
@@ -793,6 +1234,8 @@ export const ADDITIONAL_PROCEDURE_MODELS = Object.freeze([
         "type": "select",
         "required": true,
         "options": [
+          "Vitaminas, minerais ou outro injetável prescrito",
+          "Medicamento de uso contínuo prescrito",
           "Reposição hormonal com diagnóstico de deficiência",
           "Outro tratamento indicado pelo prescritor",
           "Não sei informar"
@@ -823,6 +1266,12 @@ export const ADDITIONAL_PROCEDURE_MODELS = Object.freeze([
         "required": true
       },
       {
+        "id": "desmaio_injecao",
+        "label": "Costuma sentir tontura, mal-estar ou desmaiar com injeções, ao ver sangue ou em jejum?",
+        "type": "yesno",
+        "required": true
+      },
+      {
         "id": "trombose",
         "label": "Já teve trombose, embolia ou tem tendência a coágulos?",
         "type": "yesno",
@@ -836,9 +1285,127 @@ export const ADDITIONAL_PROCEDURE_MODELS = Object.freeze([
       },
       {
         "id": "duvidas_especificas",
-        "label": "Quais dúvidas ou observações sobre este procedimento você quer discutir antes de decidir?",
+        "label": "Quais dúvidas ou observações sobre esta aplicação você quer discutir antes de decidir?",
         "type": "long",
         "required": false
+      }
+    ],
+    "steps": [
+      {
+        "id": "sobre-voce",
+        "title": "Sobre você",
+        "questionIds": [
+          "nascimento",
+          "profissao",
+          "emergencia"
+        ]
+      },
+      {
+        "id": "saude",
+        "title": "Sua saúde",
+        "questionIds": [
+          "saude-0",
+          "saude-1",
+          "saude-2",
+          "saude-3",
+          "saude-4",
+          "saude-5",
+          "saude-6",
+          "saude-7",
+          "saude-8",
+          "saude-9",
+          "saude-10",
+          "saude-11",
+          "saude-12",
+          "saude-13",
+          "saude-14",
+          "saude-15",
+          "saude-16",
+          "saude-17",
+          "saude-detalhe"
+        ]
+      },
+      {
+        "id": "medicamentos",
+        "title": "Medicamentos e alergias",
+        "questionIds": [
+          "medic-0",
+          "medic-1",
+          "medic-2",
+          "medic-3",
+          "medic-4",
+          "medic-5",
+          "continuo",
+          "suplementos",
+          "alergia_medicamento",
+          "alergia_medicamento_quais",
+          "anafilaxia",
+          "alergia-out"
+        ]
+      },
+      {
+        "id": "historico",
+        "title": "Procedimentos anteriores e implantes",
+        "questionIds": [
+          "proc-0",
+          "proc-detalhe-0",
+          "proc-1",
+          "proc-detalhe-1",
+          "proc-2",
+          "proc-detalhe-2",
+          "proc-3",
+          "proc-detalhe-3",
+          "proc-4",
+          "proc-detalhe-4",
+          "proc-5",
+          "proc-detalhe-5",
+          "proc-6",
+          "proc-detalhe-6",
+          "proc-7",
+          "proc-detalhe-7",
+          "proc-9",
+          "proc-detalhe-9",
+          "gluteo_pmma",
+          "gluteo_pmma_detalhe",
+          "implante_outro",
+          "implante_outro_detalhe"
+        ]
+      },
+      {
+        "id": "objetivo",
+        "title": "Pele, cuidados e objetivo",
+        "questionIds": [
+          "tipo-pele",
+          "sol",
+          "protetor",
+          "rotina",
+          "objetivo"
+        ]
+      },
+      {
+        "id": "receita",
+        "title": "Receita e medicamento",
+        "questionIds": [
+          "medicamento",
+          "prescritor_nome",
+          "prescritor_registro",
+          "receita_data",
+          "finalidade",
+          "acompanhamento_exames",
+          "comprado_farmacia"
+        ]
+      },
+      {
+        "id": "seguranca",
+        "title": "Segurança para a injeção",
+        "questionIds": [
+          "aplicacao_anterior",
+          "reacao_anterior",
+          "desmaio_injecao",
+          "trombose",
+          "cancer_hormonal",
+          "duvidas_especificas"
+        ]
       }
     ]
   }

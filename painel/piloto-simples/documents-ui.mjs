@@ -4,7 +4,9 @@ import {isConnected} from './runtime-store.mjs';
 import {ensureDocuments,saveTemplate,prepareDocument,signaturePayload,signDemoDocument} from './documents-domain.mjs';
 import {templateEditor as editor,documentBody,responseEditor,renderDocumentText} from './documents-editor.mjs';
 import {escapeHTML as e,input,textArea,select,featureDialog,downloadFile,readOnlyPreview} from './feature-ui.mjs';
+import {blankDocumentBody,blankDocumentTitle,printFileName} from './document-print.mjs';
 const kindName={anamnese:'Anamnese',termo:'Termo',imagem:'Uso de imagem'};
+export const PRINT_PDF_BASE='https://anamariajacob.com.br/impressao/';
 const normalizeSearch=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('pt-BR');
 /** Import missing IDs only. Existing clinic versions and issued snapshots are never rewritten. */
 export function importClinicDocumentModels(state,ids){
@@ -16,7 +18,7 @@ export function importClinicDocumentModels(state,ids){
 }
 function templateCard(model,current){
  const kind=current?.kind||model.kind,title=current?.title||model.title,version=current?.versions.at(-1),source=current?'Versão '+version.version+' · '+current.versions.length+' versão(ões) preservada(s)':model.source;
- return `<article class="card document-item" data-doc-model="${e(model.id)}" data-kind="${e(kind)}" data-search="${e(normalizeSearch(title+' '+model.title+' '+kindName[kind]))}"><span class="badge rose">${kindName[kind]}</span><h3>${e(title)}</h3><p>${e(source)}</p><p class="small-label">${current?'Disponível para preparar documento':'Ainda não adicionado'}</p><button type="button" class="secondary" data-doc="${current?'edit-template':'preset'}" data-id="${e(model.id)}">${current?'Editar nova versão':'Conferir e usar modelo'}</button></article>`;
+ return `<article class="card document-item" data-doc-model="${e(model.id)}" data-kind="${e(kind)}" data-search="${e(normalizeSearch(title+' '+model.title+' '+kindName[kind]))}"><span class="badge rose">${kindName[kind]}</span><h3>${e(title)}</h3><p>${e(source)}</p><p class="small-label">${current?'Disponível para preparar documento':'Ainda não adicionado'}</p><button type="button" class="secondary" data-doc="${current?'edit-template':'preset'}" data-id="${e(model.id)}">${current?'Editar nova versão':'Conferir e usar modelo'}</button><button type="button" class="subtle" data-doc="print-model" data-id="${e(model.id)}">Imprimir em branco</button>${CLINIC_DOCUMENT_MODELS.some(t=>t.id===model.id)?`<button type="button" class="subtle" data-doc="pdf-model" data-id="${e(model.id)}">PDF para imprimir</button>`:''}</article>`;
 }
 function templateLibrary(s){
  const known=new Set(CLINIC_DOCUMENT_MODELS.map(t=>t.id)),available=CLINIC_DOCUMENT_MODELS.filter(t=>s.documentTemplates.some(x=>x.id===t.id)).length,custom=s.documentTemplates.filter(t=>!known.has(t.id));
@@ -46,6 +48,8 @@ export function mountDocuments(host,{getState,mutate,notify,rerender,visitId}){
  if(action==='preset'){const preset=CLINIC_DOCUMENT_MODELS.find(t=>t.id===id);if(!preset)throw Error('Modelo não encontrado.');return editor(s,s.documentTemplates.some(t=>t.id===id)?id:null,save,{preset});}
  if(action==='new-template'||action==='edit-template')return editor(s,id,save);
  if(action==='prepare'){const visit=s.visits.find(v=>v.id===(b.dataset.visit||visitId));if(!visit)throw Error('Abra uma consulta primeiro.');if(!s.documentTemplates.length)throw Error('Crie um modelo na área Clínica antes de preparar documentos.');return prepareDocumentDialog(s,visit,save);}
+ if(action==='print-model'){const current=s.documentTemplates.find(t=>t.id===id),model=current?{...current.versions.at(-1),title:current.title}:CLINIC_DOCUMENT_MODELS.find(t=>t.id===id);if(!model)throw Error('Modelo não encontrado.');return readOnlyPreview(blankDocumentTitle(model),blankDocumentBody(model,{footer:'Modelo '+id+(current?' · versão '+current.versions.at(-1).version:' · biblioteca')+'. Versão para preenchimento em papel: a via assinada deve ser conferida e arquivada no prontuário.'}));}
+ if(action==='pdf-model'){const model=CLINIC_DOCUMENT_MODELS.find(t=>t.id===id);if(!model)throw Error('PDF pronto apenas para modelos da biblioteca. Use “Imprimir em branco”.');window.open(PRINT_PDF_BASE+printFileName(model),'_blank','noopener,noreferrer');return;}
  const d=s.documentResponses.find(x=>x.id===id);if(!d)throw Error('Documento não encontrado.');
  if(action==='print')return readOnlyPreview(d.title,documentBody(d,s));
  if(action==='export')return downloadFile(new Blob([JSON.stringify({format:isConnected()?'amj-documento-homologacao-v1':'amj-documento-demo-v1',storage:isConnected()?'clinic-server':'local-browser',document:d},null,2)],{type:'application/json'}),(isConnected()?'documento-homologacao-':'documento-demo-')+d.id+'.json');

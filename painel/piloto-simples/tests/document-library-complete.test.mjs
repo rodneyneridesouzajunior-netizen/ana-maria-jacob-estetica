@@ -16,13 +16,19 @@ import {createCustomDocuments} from '../../../supabase/functions/app-workspace/c
 import {createPublicDocumentHandler} from '../../../supabase/functions/documento-paciente/handler.mjs';
 
 const oldIds=['amj-anamnese-geral-20261016','amj-termo-toxina-20261016','amj-termo-preenchimento-20261016','amj-imagem-20261016'];
-const newIds=['amj-termo-labial-20261016','amj-termo-full-face-20261016','amj-termo-rinomodelacao-20261016','amj-termo-bioestimuladores-20261016','amj-termo-fios-pdo-20261016','amj-termo-fios-silhouette-20261016','amj-termo-hialuronidase-20261016','amj-termo-intradermoterapia-20261112','amj-termo-peeling-quimico-20261112','amj-termo-microagulhamento-20261112','amj-termo-skinbooster-20261112','amj-termo-intramuscular-20261112'];
+const newIds=['amj-termo-labial-20261016','amj-termo-full-face-20261016','amj-termo-rinomodelacao-20261016','amj-termo-bioestimuladores-20261016','amj-termo-fios-pdo-20261016','amj-termo-fios-silhouette-20261016','amj-termo-hialuronidase-20261016','amj-termo-intradermoterapia-20261112','amj-termo-peeling-quimico-20261112','amj-termo-microagulhamento-20261112','amj-termo-skinbooster-20261112','amj-termo-intramuscular-20261116'];
 const expectedIds=[...oldIds,...newIds];
+// Modelos que reúnem anamnese e termo de propósito (pedido da clínica em 16/11/2026): repetem perguntas gerais e a declaração de dados.
+const INTEGRATED=new Set(['amj-termo-intramuscular-20261116']);
 const stamp='2026-10-16T15:00:00.000Z';
-const runtime=createRequire('C:/Users/rotan/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/package.json');
+let runtime;
+try{runtime=createRequire('C:/Users/rotan/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/package.json');runtime.resolve('pdf-lib');}
+catch{runtime=createRequire(new URL('../../../../../skinpro-analise/test-tools/package.json',import.meta.url));}
 const require=createRequire(import.meta.url);
 const {PDFDocument,rgb}=runtime('pdf-lib');
-const fontkit=require('../../../skinpro-analise/revisoes/codigo-provas/custom-docs-pdf/package/dist/fontkit.umd.js');
+let fontkit;
+try{fontkit=require('../../../skinpro-analise/revisoes/codigo-provas/custom-docs-pdf/package/dist/fontkit.umd.js');}
+catch{fontkit=runtime('@pdf-lib/fontkit');}
 const jsdomRequire=createRequire(new URL('../../../../../skinpro-analise/test-tools/package.json',import.meta.url));
 const {JSDOM}=jsdomRequire('jsdom');
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
@@ -70,9 +76,9 @@ test('complete clinic inventory has twelve new specific terms plus the four pres
  for(const id of newIds){
   const model=CLINIC_DOCUMENT_MODELS.find(m=>m.id===id);assert.equal(model.kind,'termo',id);
   assert.ok(model.questions.length>0,id+' must contain the specific response fields');
-  for(const q of model.questions){assert.ok(!generalQuestions.has(cleanText(q.label).toLocaleLowerCase('pt-BR')),id+' repeats a general anamnese question');assert.equal(Object.hasOwn(q,'default'),false,id+' must not pre-confirm answers');}
+  for(const q of model.questions){if(!INTEGRATED.has(id))assert.ok(!generalQuestions.has(cleanText(q.label).toLocaleLowerCase('pt-BR')),id+' repeats a general anamnese question');assert.equal(Object.hasOwn(q,'default'),false,id+' must not pre-confirm answers');}
   const text=[model.body,...(model.blocks||[]).map(b=>b.body)].join('\n');
-  assert.doesNotMatch(text,/Autorizo o tratamento dos meus dados pessoais|Autoriza divulgar seu primeiro nome|Autoriza divulgação em comparativo de antes e depois/i,id);
+  if(!INTEGRATED.has(id))assert.doesNotMatch(text,/Autorizo o tratamento dos meus dados pessoais|Autoriza divulgar seu primeiro nome|Autoriza divulgação em comparativo de antes e depois/i,id);
  }
 });
 

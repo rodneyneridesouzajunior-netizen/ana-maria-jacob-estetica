@@ -1,0 +1,117 @@
+{
+  "generatedFrom": "painel/piloto-simples/document-library.mjs",
+  "items": [
+    {
+      "id": "amj-anamnese-geral-20261016",
+      "kind": "anamnese",
+      "title": "Ficha de anamnese geral",
+      "file": "ficha-de-anamnese-geral.pdf",
+      "pages": 6
+    },
+    {
+      "id": "amj-termo-toxina-20261016",
+      "kind": "termo",
+      "title": "Consentimento — Toxina botulínica",
+      "file": "consentimento-toxina-botulinica.pdf",
+      "pages": 4
+    },
+    {
+      "id": "amj-termo-preenchimento-20261016",
+      "kind": "termo",
+      "title": "Consentimento — Preenchimento com ácido hialurônico",
+      "file": "consentimento-preenchimento-com-acido-hialuronico.pdf",
+      "pages": 5
+    },
+    {
+      "id": "amj-imagem-20261016",
+      "kind": "imagem",
+      "title": "Autorização independente de uso de imagem",
+      "file": "autorizacao-independente-de-uso-de-imagem.pdf",
+      "pages": 2
+    },
+    {
+      "id": "amj-termo-labial-20261016",
+      "kind": "termo",
+      "title": "Consentimento — Preenchimento Labial",
+      "file": "consentimento-preenchimento-labial.pdf",
+      "pages": 3
+    },
+    {
+      "id": "amj-termo-full-face-20261016",
+      "kind": "termo",
+      "title": "Consentimento — Preenchimento Facial Full Face",
+      "file": "consentimento-preenchimento-facial-full-face.pdf",
+      "pages": 3
+    },
+    {
+      "id": "amj-termo-rinomodelacao-20261016",
+      "kind": "termo",
+      "title": "Consentimento — Rinomodelação com ácido hialurônico",
+      "file": "consentimento-rinomodelacao-com-acido-hialuronico.pdf",
+      "pages": 3
+    },
+    {
+      "id": "amj-termo-bioestimuladores-20261016",
+      "kind": "termo",
+      "title": "Consentimento — Bioestimuladores",
+      "file": "consentimento-bioestimuladores.pdf",
+      "pages": 3
+    },
+    {
+      "id": "amj-termo-fios-pdo-20261016",
+      "kind": "termo",
+      "title": "Consentimento — Fios de PDO",
+      "file": "consentimento-fios-de-pdo.pdf",
+      "pages": 3
+    },
+    {
+      "id": "amj-termo-fios-silhouette-20261016",
+      "kind": "termo",
+      "title": "Consentimento — Fios Silhouette",
+      "file": "consentimento-fios-silhouette.pdf",
+      "pages": 3
+    },
+    {
+      "id": "amj-termo-hialuronidase-20261016",
+      "kind": "termo",
+      "title": "Consentimento — Hialuronidase",
+      "file": "consentimento-hialuronidase.pdf",
+      "pages": 3
+    },
+    {
+      "id": "amj-termo-intradermoterapia-20261112",
+      "kind": "termo",
+      "title": "Consentimento — Intradermoterapia",
+      "file": "consentimento-intradermoterapia.pdf",
+      "pages": 3
+    },
+    {
+      "id": "amj-termo-peeling-quimico-20261112",
+      "kind": "termo",
+      "title": "Consentimento — Peeling químico superficial",
+      "file": "consentimento-peeling-quimico-superficial.pdf",
+      "pages": 3
+    },
+    {
+      "id": "amj-termo-microagulhamento-20261112",
+      "kind": "termo",
+      "title": "Consentimento — Microagulhamento facial e capilar",
+      "file": "consentimento-microagulhamento-facial-e-capilar.pdf",
+      "pages": 3
+    },
+    {
+      "id": "amj-termo-skinbooster-20261112",
+      "kind": "termo",
+      "title": "Consentimento — Skinbooster",
+      "file": "consentimento-skinbooster.pdf",
+      "pages": 3
+    },
+    {
+      "id": "amj-termo-intramuscular-20261116",
+      "kind": "termo",
+      "title": "Anamnese e consentimento — Aplicação intramuscular com prescrição",
+      "file": "anamnese-e-consentimento-aplicacao-intramuscular-com-prescricao.pdf",
+      "pages": 9
+    }
+  ]
+}
