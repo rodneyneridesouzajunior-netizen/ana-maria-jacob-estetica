@@ -48,3 +48,12 @@ criado assim, ele não volta sozinho naquele aparelho.
 
 `node --test painel/piloto-simples/tests/anamnese-patient-sync.test.mjs` (7 testes: regras, sincronização
 com as regras do servidor, falha/servidor antigo, ação do servidor e validação do cliente).
+
+## Publicação do servidor (feita em 16/11/2026)
+
+- Projeto Supabase `ana-maria-jacob-estetica` (`rjxtxoqprnumouqakxbc`), função `app-workspace`: **versão 14**.
+- Antes de publicar, a versão 13 em produção foi comparada com o pacote local: 24 dos 25 arquivos idênticos byte a byte; só `clinical-bridge.mjs` mudou (a ação nova).
+- A versão 14 foi publicada como um ponto de entrada de duas linhas que importa `supabase/functions/app-workspace/index.ts` do repositório público no commit fixo `30e9d50809d71d1f29dbb3684ea17abe742876d3` (o conector do Supabase exige o conteúdo dos arquivos embutido na chamada e o pacote tem 335 KB). O código executado é o mesmo do repositório; `verify_jwt` segue `false` porque a função valida sessão, titular e MFA.
+- Conferido sem login, antes e depois: 401 `session_invalid`, 403 `origin_forbidden`, 405 e OPTIONS 204 idênticos aos da versão 13. O caminho autenticado não pôde ser exercitado daqui (exige login da titular com autenticador).
+- Para voltar: publicar o mesmo ponto de entrada apontando para o commit `8d5dfdb` (conferido: `clinical-bridge.mjs` desse commit é igual ao da versão 13). Uma publicação futura pelo pacote completo (`node scripts/edge-package.mjs`) substitui este formato normalmente.
+- A função auxiliar `app-workspace-teste`, usada para validar a publicação, ficou desativada (responde 410) e pode ser apagada no painel do Supabase.
