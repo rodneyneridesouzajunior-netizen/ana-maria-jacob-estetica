@@ -4,7 +4,7 @@ import {IntegrationError} from './integration/errors.mjs';
 // CRM is read-only. The single write associates a received original with a
 // consultation; its receipt never represents clinical approval or a signature.
 const ACTIONS=Object.freeze({
-  'app-workspace':Object.freeze(['listar_documentos_originais','listar_vinculos_documentos','obter_documento_original','vincular_documento','status_vinculo_documento']),
+  'app-workspace':Object.freeze(['listar_documentos_originais','listar_vinculos_documentos','obter_documento_original','identidade_documento_original','vincular_documento','status_vinculo_documento']),
   'crm-fichas':Object.freeze(['listar_solicitacoes_site']),
 });
 const plain=v=>v!==null&&typeof v==='object'&&!Array.isArray(v);
@@ -108,6 +108,7 @@ export function createClinicalBridgeService({session,request,fetchImpl=globalThi
     listDocuments(v={}){assertPayload(v,['patient_id','visit_id','search','limit','offset']);const search=v.search??'';if(typeof search!=='string'||search.length>120)throw failure('invalid_search','A busca deve ter até 120 caracteres.');return call('app-workspace','listar_documentos_originais',{...page(v),search:search.trim(),...(v.patient_id!==undefined||v.visit_id!==undefined?binding(v):{})});},
     listLinks(v){assertPayload(v,['patient_id','visit_id']);return call('app-workspace','listar_vinculos_documentos',binding(v));},
     openDocument(v){assertPayload(v,['source_kind','source_id','expected_source_fingerprint']);if(!['anamnese','documento_clinico'].includes(v.source_kind)||!uuid(v.source_id)||!/^([a-f0-9]{64})$/.test(v.expected_source_fingerprint||''))throw failure('invalid_document','Atualize a lista e selecione um documento original válido.');return call('app-workspace','obter_documento_original',{source_kind:v.source_kind,source_id:v.source_id,expected_source_fingerprint:v.expected_source_fingerprint});},
+    documentIdentity(v){assertPayload(v,['source_kind','source_id','expected_source_fingerprint']);if(v.source_kind!=='anamnese'||!uuid(v.source_id)||!/^([a-f0-9]{64})$/.test(v.expected_source_fingerprint||''))throw failure('invalid_document','Atualize a lista e selecione uma anamnese válida.');return call('app-workspace','identidade_documento_original',{source_kind:v.source_kind,source_id:v.source_id,expected_source_fingerprint:v.expected_source_fingerprint});},
     listSiteRequests(v={}){assertPayload(v,['status','limit','offset']);const status=v.status??'pending';if(!['pending','accepted','archived','all'].includes(status))throw failure('invalid_status','O filtro de solicitações não é válido.');return call('crm-fichas','listar_solicitacoes_site',{...page(v,100),status});},
     linkDocument(v){
       check(generation);if(linkBusy||pendingLink)throw failure('pending_link','Confira o vínculo anterior antes de iniciar outro.');

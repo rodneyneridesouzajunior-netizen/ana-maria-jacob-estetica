@@ -8,6 +8,7 @@ import {renderPatientsPage,mountPatientsPage,openPatientEditor} from './patients
 import {renderComparisonLibrary,mountComparisonLibrary} from './comparison-library.mjs';
 import {renderHome} from './home.mjs';
 import {openQuickSend} from './quick-send-ui.mjs';
+import {syncAnamnesePatients,describeSync} from './anamnese-patient-sync.mjs';
 import {billCalculatorFields,mountBillCalculator,BILL_PREVIEW} from './bill-calculator.mjs';
 import {parseMoney} from './calc-helpers.mjs';
 import {installSuggestions} from './suggestions.mjs';
@@ -327,6 +328,7 @@ async function render(){
  if(['catalogo','orcamentos'].includes(route)||route==='paciente')mountOperations(host,context);
  if(route==='financeiro')mountFinance(host,context);
  if(route==='documentos'||route==='documento'||route==='paciente'&&tab==='documentos')mountDocuments(host,{...context,visitId:documentVisit||visitId});
+ if(isConnected()&&route==='originais'&&$('clinical-bridge-panel'))void syncPatientsFromAnamneses();
  if(isConnected()&&route==='originais'&&$('clinical-bridge-panel'))clinicalBridgeHandle=mountClinicalBridge($('clinical-bridge-panel'),{service:getClinicalBridge(),section:'documents',documentFilter:originalDocumentFilter(),getContext:bridgeContext,reloadContext:async()=>{if(busy||importing)throw Error('Aguarde a operação em andamento.');const latest=await load();if(connectionEnded)throw Error('Acesso encerrado.');state=latest;},notify:toast});
  if(isConnected()&&route==='solicitacoes'&&$('clinical-bridge-panel'))clinicalBridgeHandle=mountSiteBooking($('clinical-bridge-panel'),{service:createSiteBookingService({session:getClinicalBridge().session}),getState:()=>state,reloadState:async()=>{const latest=await load();if(connectionEnded)throw Error('Acesso encerrado.');state=latest;},notify:toast});
  if(route==='ajustes'&&isConnected())trackAuxiliary(mountCloudBackup($('cloud-backup-panel'),{readSnapshot,getClinicId,eventTarget:window,notify:toast}));
@@ -658,4 +660,17 @@ window.addEventListener('amj:cloud-reconcile-request',async event=>{
  }catch(error){toast(error.message,true);}
  finally{busy=false;if(!connectionEnded){lockInterface(false);dialogs.forEach(({element,inert})=>{if(element.isConnected)element.inert=inert;});}}
 });
+// Anamneses recebidas pelo site criam ou completam o cadastro da paciente sem redigitar.
+let anamneseSyncRunning=false;
+async function syncPatientsFromAnamneses(){
+ if(!isConnected()||anamneseSyncRunning||connectionEnded||busy||importing||dirty||pending||!Array.isArray(state?.patients))return;const service=getClinicalBridge();if(typeof service?.documentIdentity!=='function')return;
+ anamneseSyncRunning=true;
+ try{
+  let storage=null;try{storage=localStorage;}catch{storage=null;}
+  const result=await syncAnamnesePatients({service,getState:()=>state,persist:update=>{if(busy||importing||dirty||pending||document.querySelector('dialog[open]'))throw Error('Aguarde o registro em andamento.');return persist(update);},storage,today:dateKey()});
+  const message=describeSync(result);if(message&&!connectionEnded){if(!document.querySelector('dialog[open]')&&!dirty&&!pending)await render();toast(message);}
+ }catch{/* conferência silenciosa: tenta de novo na próxima abertura */}
+ finally{anamneseSyncRunning=false;}
+}
+setTimeout(()=>{void syncPatientsFromAnamneses();},2500);
 try{await setHash();}catch(e){$('content').innerHTML='<div class="card card-body"><h1>Não foi possível abrir os dados.</h1><p>Confira a conexão ou o armazenamento do navegador. Nenhuma gravação foi confirmada nesta tela.</p></div>';toast(e.message,true);}

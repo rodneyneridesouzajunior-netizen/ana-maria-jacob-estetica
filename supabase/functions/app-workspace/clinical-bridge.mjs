@@ -2,7 +2,7 @@
 import {fail,hash,stable,uuid,validId} from './rules.mjs';
 import {historicalPDFPath} from './clinical-document-access.mjs';
 import {validCPF} from '../_shared/app-workspace-domain/patients-domain.mjs';
-export const CLINICAL_ACTIONS=Object.freeze(['listar_documentos_originais','listar_vinculos_documentos','obter_documento_original','vincular_documento','status_vinculo_documento']);
+export const CLINICAL_ACTIONS=Object.freeze(['listar_documentos_originais','listar_vinculos_documentos','obter_documento_original','identidade_documento_original','vincular_documento','status_vinculo_documento']);
 const types={anamnese:'Ficha de anamnese',tcle_toxina_botulinica:'TCLE · Toxina botulínica',tcle_preenchimento_facial:'TCLE · Preenchimento facial',tcle_intradermoterapia_estetica:'Pré-avaliação · Intradermoterapia',tcle_bioestimulador_colageno:'Pré-avaliação · Bioestimulador',tcle_peeling_quimico:'Pré-avaliação · Peeling químico',tcle_fios_pdo:'Pré-avaliação · Fios de PDO'};
 const kinds=['anamnese','documento_clinico'];
 const hex=x=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x);
@@ -32,6 +32,15 @@ export function createClinicalBridge({repository,authorize}){
    const rows=await repository.clinicalList({...a,p_search:search.trim(),p_limit:limit+1,p_offset:offset});return {documents:rows.slice(0,limit).map(s=>describeClinicalSource(s,patient)),pagination:{limit,offset,has_more:rows.length>limit},capabilities};
   }
   sourceId(p);if(!hex(p.expected_source_fingerprint))fail('document_fingerprint_required','Reabra o documento original antes de continuar.');
+  // Identidade completa de uma anamnese recebida, para criar ou completar o cadastro da paciente no app.
+  // Mesmo acesso de quem já pode abrir o PDF original (titular com MFA); nada é gravado aqui.
+  if(p.acao==='identidade_documento_original'){
+   if(p.source_kind!=='anamnese')fail('invalid_document','Somente a ficha de anamnese alimenta o cadastro da paciente.');
+   const source=await repository.clinicalSource({...a,p_kind:p.source_kind,p_id:p.source_id});if(!source)fail('document_not_found','Documento não encontrado nesta clínica.',404);if(source.source_fingerprint!==p.expected_source_fingerprint)fail('document_source_changed','O documento mudou. Atualize a lista antes de continuar.',409);
+   if(source.status!=='recebido'||source.archived||source.withdrawn)fail('source_not_received','A anamnese ainda não foi recebida ou não está mais disponível.',409);
+   const identity=source.identity||{},cpf=digits(identity.cpf),phone=digits(identity.phone),birth=typeof identity.birth_date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(identity.birth_date)?identity.birth_date:'';
+   return {document:describeClinicalSource(source),identity:{name:String(identity.name||'').trim().slice(0,140),cpf:cpf.length===11&&validCPF(cpf)?cpf:'',birth_date:birth,phone:phone.length>=10&&phone.length<=13?phone:''}};
+  }
   if(p.acao==='obter_documento_original'){
    const source=await repository.clinicalSource({...a,p_kind:p.source_kind,p_id:p.source_id});if(!source)fail('document_not_found','Documento não encontrado nesta clínica.',404);if(source.source_fingerprint!==p.expected_source_fingerprint)fail('document_source_changed','O documento mudou. Atualize a lista antes de abrir.',409);
    const document=describeClinicalSource(source);
