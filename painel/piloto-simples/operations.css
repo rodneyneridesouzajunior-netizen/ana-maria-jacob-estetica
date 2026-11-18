@@ -10,3 +10,4 @@
 .op-check{min-height:44px}.op-check input{min-height:20px;max-width:20px}
 .op-quote-row{grid-template-columns:minmax(0,2fr) minmax(0,.6fr) minmax(0,1fr) minmax(0,1fr) auto}
 @media(max-width:760px){.op-quote-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.op-extra+.op-extra{border-top:1px solid #eadfe4;margin-top:14px;padding-top:14px}.op-extra>button{margin-top:8px}[data-op-extra-list]{margin-bottom:14px}
