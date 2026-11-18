@@ -111,6 +111,14 @@ body:has(.map-layout.is-focused){overflow:hidden}
 .map-layout .map-marker::before{content:'';position:absolute;inset:0;margin:auto;width:22px;height:22px;box-sizing:border-box;z-index:-1;border:1px solid #fff;border-radius:50%;background:var(--map-rose);box-shadow:0 1px 3px #25121e40;pointer-events:none}
 .map-layout .map-marker.selected{z-index:2;background:transparent;color:#fff;outline:none}
 .map-layout .map-marker.selected::before{width:24px;height:24px;background:var(--map-rose-dark);border-color:#fff;box-shadow:0 0 0 1.5px var(--map-rose),0 1px 4px #25121e4d}
+.map-layout .photo-stage[data-marker-size="medio"] .map-marker{font-size:9px}
+.map-layout .photo-stage[data-marker-size="medio"] .map-marker::before{width:16px;height:16px}
+.map-layout .photo-stage[data-marker-size="medio"] .map-marker.selected::before{width:18px;height:18px}
+.map-layout .photo-stage[data-marker-size="pequeno"] .map-marker{font-size:7px}
+.map-layout .photo-stage[data-marker-size="pequeno"] .map-marker::before{width:11px;height:11px}
+.map-layout .photo-stage[data-marker-size="pequeno"] .map-marker.selected::before{width:13px;height:13px}
+.map-size-control{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:#30262c;white-space:nowrap}
+.map-size-control select{min-height:36px;padding:4px 8px;font-size:13px;border:1px solid #d9c7cf;border-radius:10px;background:#fff;color:inherit}
 .map-layout .map-marker.pending{background:transparent;color:var(--map-rose-dark);border:0;outline:none}
 .map-layout .map-marker.pending::before{background:#fff9fb;border:1.5px dashed var(--map-rose);box-shadow:0 0 0 1px #fff,0 1px 3px #25121e33}
 .map-layout .map-marker:focus-visible{z-index:3;outline:2px solid #30262c;outline-offset:-1px;box-shadow:0 0 0 1px #fff}
